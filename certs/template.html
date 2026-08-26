@@ -12,21 +12,21 @@
   body{margin:0;background:#f4efe6;font-family:"Microsoft YaHei","PingFang SC",sans-serif;
        display:flex;justify-content:center;align-items:center;min-height:100vh;padding:24px;}
   .cert{width:820px;max-width:100%;background:#fffdf8;border:3px double var(--gold);
-        border-radius:10px;padding:18px;position:relative;
+        border-radius:10px;padding:18px;position:relative;overflow:hidden;
         box-shadow:0 10px 40px rgba(0,0,0,.15);}
   .cert::before{content:"";position:absolute;inset:10px;border:1px solid var(--line);border-radius:6px;pointer-events:none;}
-  .head{text-align:center;padding:14px 0 6px;}
+  .head{text-align:center;padding:14px 0 6px;position:relative;z-index:1;}
   .badge{font-size:13px;letter-spacing:4px;color:var(--gold);font-weight:700;}
   .title{font-size:34px;font-weight:800;margin:8px 0 2px;color:var(--ink);letter-spacing:2px;}
   .sub{font-size:14px;color:#666;margin-bottom:6px;}
   .rule{height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:10px 30px;}
-  .body{text-align:center;padding:10px 40px 4px;}
+  .body{text-align:center;padding:10px 40px 4px;position:relative;z-index:1;}
   .present{font-size:15px;color:#555;}
   .name{font-size:30px;font-weight:800;color:var(--ink);margin:6px 0;border-bottom:2px solid var(--line);
         display:inline-block;padding:0 30px 4px;min-width:280px;}
   .tier{font-size:18px;color:var(--gold);font-weight:700;margin:8px 0;}
   .desc{font-size:14px;color:#444;line-height:1.9;margin:10px auto;max-width:560px;text-align:justify;}
-  .meta{display:flex;justify-content:space-between;align-items:flex-end;padding:18px 40px 6px;font-size:13px;color:#555;}
+  .meta{display:flex;justify-content:space-between;align-items:flex-end;padding:18px 40px 6px;font-size:13px;color:#555;position:relative;z-index:1;}
   .meta .col{flex:1;}
   .meta .label{color:#999;font-size:11px;}
   .meta .val{font-weight:700;color:var(--ink);font-size:15px;}
@@ -42,19 +42,64 @@
     letter-spacing:.5px;padding:0 8px 0;border-top:1.5px solid #c0392b;
     margin:3px 8px 0;
   }
-  .verify{text-align:center;font-size:12px;color:#888;padding:8px 0 2px;}
+  .verify{text-align:center;font-size:12px;color:#888;padding:8px 0 2px;position:relative;z-index:1;}
   .verify a{color:var(--gold);text-decoration:none;}
-  .foot{text-align:center;font-size:11px;color:#aaa;padding-top:4px;}
+  .foot{text-align:center;font-size:11px;color:#aaa;padding-top:4px;position:relative;z-index:1;}
+
+  /* ============ 中级证书 · 深蓝暗金高级样式（仅 .cert.cert-inter 生效）============ */
+  .cert.cert-inter{background:radial-gradient(ellipse at 50% -10%, #1e3a5f 0%, #0f2440 55%, #0a1830 100%);
+        border:4px double #d4af37;border-radius:12px;box-shadow:0 14px 50px rgba(0,0,0,.55);}
+  .cert.cert-inter::before{border:1px solid rgba(212,175,55,.55);}
+  /* 四角烫金花饰 */
+  .cert.cert-inter::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+        background:
+          radial-gradient(circle at 22px 22px, rgba(212,175,55,.18) 0 2px, transparent 3px),
+          radial-gradient(circle at calc(100% - 22px) 22px, rgba(212,175,55,.18) 0 2px, transparent 3px),
+          radial-gradient(circle at 22px calc(100% - 22px), rgba(212,175,55,.18) 0 2px, transparent 3px),
+          radial-gradient(circle at calc(100% - 22px) calc(100% - 22px), rgba(212,175,55,.18) 0 2px, transparent 3px);
+  }
+  /* 中央超大半透明水印 */
+  .cert.cert-inter .watermark{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%) rotate(-28deg);
+        font-size:150px;font-weight:900;color:rgba(212,175,55,.05);letter-spacing:8px;z-index:0;
+        pointer-events:none;white-space:nowrap;user-select:none;}
+  .cert.cert-inter .head .badge{color:#d4af37;letter-spacing:6px;text-shadow:0 0 12px rgba(212,175,55,.4);}
+  .cert.cert-inter .head .title{color:#f5e6b8;text-shadow:0 2px 10px rgba(212,175,55,.35);letter-spacing:6px;}
+  .cert.cert-inter .head .sub{color:#9fb3cc;}
+  .cert.cert-inter .rule{background:linear-gradient(90deg,transparent,#d4af37 15%,#f5e6b8 50%,#d4af37 85%,transparent);}
+  .cert.cert-inter .present{color:#c3d0e2;}
+  .cert.cert-inter .name{color:#fdf6e0;border-bottom-color:#d4af37;text-shadow:0 1px 4px rgba(0,0,0,.4);}
+  .cert.cert-inter .tier{color:#f5e6b8;font-size:20px;text-shadow:0 0 10px rgba(212,175,55,.5);}
+  .cert.cert-inter .desc{color:#c9d6e6;}
+  .cert.cert-inter .meta{color:#b7c5da;}
+  .cert.cert-inter .meta .label{color:#7f93ad;letter-spacing:1px;}
+  .cert.cert-inter .meta .val{color:#f5e6b8;}
+  .cert.cert-inter .verify{color:#8aa0bd;}
+  .cert.cert-inter .verify a{color:#d4af37;}
+  .cert.cert-inter .foot{color:#6f84a0;}
+  /* 顶部金色勋章 + 绶带 */
+  .medal{position:relative;z-index:1;display:flex;justify-content:center;align-items:flex-start;padding-bottom:2px;}
+  .medal .ribbons{display:flex;gap:8px;align-items:flex-start;}
+  .medal .ribbon{width:14px;height:54px;background:linear-gradient(180deg,#c0392b,#8e2b20);
+        clip-path:polygon(0 0,100% 0,100% 100%,50% 82%,0 100%);box-shadow:0 2px 5px rgba(0,0,0,.4);}
+  .medal .badge2{width:64px;height:64px;border-radius:50%;margin-top:-6px;position:relative;z-index:2;
+        background:radial-gradient(circle at 38% 32%,#f9e9a8 0%,#d4af37 45%,#a9780f 100%);
+        border:3px solid #f5e6b8;box-shadow:0 3px 12px rgba(0,0,0,.5), inset 0 0 8px rgba(120,80,0,.5);
+        display:flex;justify-content:center;align-items:center;font-size:30px;color:#7a5502;line-height:1;
+        text-shadow:0 1px 0 rgba(255,255,255,.5);}
+  .medal .badge2::after{content:"";position:absolute;inset:6px;border-radius:50%;border:1px dashed rgba(120,80,0,.45);}
+
   @media print{body{background:#fff;}.cert{box-shadow:none;}}
 </style>
 </head>
 <body>
-  <div class="cert">
+  <div class="cert {{TIER_CLASS}}">
+    {{WATERMARK}}
     <div class="head">
       <div class="badge">FDE 学习先锋小队</div>
       <div class="title">结 营 证 书</div>
-      <div class="sub">Certificate of Completion · AI 交付工程师成长计划</div>
+      <div class="sub">{{SUB_TITLE}}</div>
     </div>
+    {{MEDAL}}
     <div class="rule"></div>
     <div class="body">
       <div class="present">兹证明</div>

@@ -6,7 +6,7 @@ FDE 结营证书生成器
   # 签发一张基础证书（99 题 ≥80 分）
   python certs/generator.py --name "张三" --tier basic --score 88
 
-  # 签发中级证书（99 题 + capstone 通过）
+  # 签发中级证书（100 题中级测验 + capstone 通过）
   python certs/generator.py --name "李四" --tier intermediate --score 92 --capstone
 
   # 同时导出一张可打印的 HTML 证书
@@ -34,10 +34,22 @@ ISSUES   = os.path.join(BASE, "issues")
 
 TIER_META = {
     "basic":        {"prefix": "B", "name": "结营基础证书",
-                     "exam": "99 题知识测验（成绩 ≥ 80 分）"},
+                     "exam": "99 题知识测验（成绩 ≥ 80 分）",
+                     "sub": "Certificate of Completion · AI 交付工程师成长计划",
+                     "tier_class": "cert-basic"},
     "intermediate": {"prefix": "I", "name": "结营中级证书",
-                     "exam": "99 题知识测验 + 结营测验项目（capstone）"},
+                     "exam": "100 题中级知识测验 + 结营测验项目（capstone）",
+                     "sub": "Intermediate Certificate · AI 交付工程师进阶认证",
+                     "tier_class": "cert-inter"},
 }
+
+# 中级证书专属视觉元素（深蓝暗金）；基础证书注入空值，不渲染
+INTER_WATERMARK = '<div class="watermark">FDE&nbsp;PRO</div>'
+INTER_MEDAL = ('<div class="medal"><div class="ribbons">'
+               '<div class="ribbon"></div>'
+               '<div class="badge2">★</div>'
+               '<div class="ribbon"></div>'
+               '</div></div>')
 
 
 def load(path):
@@ -107,7 +119,12 @@ def issue(name, tier, score, capstone_pass=False, emit_html=False):
         os.makedirs(ISSUES, exist_ok=True)
         with open(TEMPLATE, "r", encoding="utf-8") as f:
             tpl = f.read()
+        is_inter = (tier == "intermediate")
         html = (tpl
+                .replace("{{TIER_CLASS}}", meta["tier_class"])
+                .replace("{{WATERMARK}}", INTER_WATERMARK if is_inter else "")
+                .replace("{{MEDAL}}", INTER_MEDAL if is_inter else "")
+                .replace("{{SUB_TITLE}}", meta["sub"])
                 .replace("{{NAME}}", name)
                 .replace("{{TIER_NAME}}", meta["name"])
                 .replace("{{TIER_EXAM_DESC}}", meta["exam"])
