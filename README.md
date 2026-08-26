@@ -180,6 +180,9 @@ python certs/generator.py --name "张三" --tier basic --score 88
 
 > 一句话总结：**这是你给自己努力的一份小奖励，不是职业执照，更不是官方文凭。** 学有所成、能打能交付，才是真正的含金量。
 
+### 证书样式
+<img src="assets/Certificate-base.png" alt="基础结营证书" style="width: 50%;" />
+<img src="assets/Certificate-middle.png" alt="中级结营证书" style="width: 50%;" />
 ---
 
 📜 **FDE 学习先锋小队** · 让每一次学习都变成能交付的能力。
