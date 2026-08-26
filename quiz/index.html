@@ -97,6 +97,14 @@
         <div class="wt">📕 错题清单与解析（共 <span id="wcount">0</span> 题）</div>
         <div id="wrongList"></div>
       </div>
+      <div id="capstoneBox" class="hidden" style="margin-top:14px;text-align:left;
+        background:#f0f5ff;border:1px solid #b8c9e8;border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.8;color:#2c3e60;">
+        🎓 中级测验已通过！申请<b>结营中级证书</b>还需完成<b>结营项目（Capstone）</b>：<br/>
+        按模板提交「招标文件智能问答」系统交付物，群主按评分表打分（≥70 分且环境适配 ≥12 分即通过）。<br/>
+        <a href="https://xingxinginworld.github.io/xx-fde-learning/capstone/README.md"
+           target="_blank" style="color:#b8860b;font-weight:700;text-decoration:none;">
+           查看结营项目要求与提交模板 →</a>
+      </div>
       <div class="acts">
         <button class="ghost" onclick="shareResult()">生成成绩存证链接</button>
         <button class="ghost" onclick="location.reload()">重新测验</button>
@@ -186,6 +194,7 @@ function startQuiz(){
   document.getElementById("result").classList.add("hidden");
   document.getElementById("quiz").classList.remove("hidden");
   document.getElementById("wrongBox").classList.add("hidden");
+  document.getElementById("capstoneBox").classList.add("hidden");
   render();
 }
 
@@ -260,6 +269,10 @@ function finish(){
   document.getElementById("rwrong").textContent=`${EXAM_LEN-correct} / ${EXAM_LEN}`;
   const wb=document.getElementById("wrongBox");
   if(wrong.length>0) wb.classList.remove("hidden"); else wb.classList.add("hidden");
+
+  // 中级测验通过 → 显示 capstone 申请入口
+  const cb=document.getElementById("capstoneBox");
+  if(IS_INTER && pass) cb.classList.remove("hidden"); else cb.classList.add("hidden");
 
   document.getElementById("quiz").classList.add("hidden");
   document.getElementById("result").classList.remove("hidden");

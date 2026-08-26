@@ -70,7 +70,12 @@ async function verify(){
       return;
     }
     const tier = rec.tier_name || (rec.tier === "intermediate" ? "结营中级证书" : "结营基础证书");
-    const cap = rec.capstone_pass ? "已通过" : (rec.tier === "intermediate" ? "未通过" : "—");
+    let cap = "—";
+    if (rec.tier === "intermediate") {
+      cap = rec.capstone_pass
+        ? (rec.capstone_score != null ? `已通过 · ${rec.capstone_score} / 100 分` : "已通过")
+        : "未通过";
+    }
     out.innerHTML = `
       <div class="card">
         <div class="ok">✔ 证书真实有效</div>

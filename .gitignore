@@ -23,6 +23,10 @@ certs/registry.json
 # 导出的单张证书 HTML（按需本地生成，不公开）
 certs/issues/
 
+# ── Capstone 评分台账与学员提交（含真实姓名/作品，不公开）──
+capstone/results.json
+capstone/submissions/
+
 # ── 系统/编辑器 ───────────────────────────────────────
 .DS_Store
 Thumbs.db

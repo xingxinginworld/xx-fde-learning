@@ -44,9 +44,15 @@
 
 ## 四、提交方式
 
-1. 将交付物打包或提交到学习群（可附 GitHub 仓库链接）。
-2. 群主按 Rubric 打分，环境适配不达标直接不通过。
-3. 通过后，群主用 `certs/generator.py --tier intermediate --capstone` 签发中级证书。
+1. 复制 `capstone/submission/SUBMISSION.md` 模板到
+   `capstone/submissions/<你的姓名>/SUBMISSION.md`，逐项填写（含运行说明、效果自评、合规自查）。
+2. 交付物（代码仓库 / 文档）按模板中的清单链接或随提交单一并发到 9.9 学习群。
+3. 群主按 `capstone/grading.md` 评分表打分（含 12+3 题现场实测），
+   分数与结论记入 `capstone/results.json` 台账。
+4. **通过线：总分 ≥ 70 且「环境适配」单项 ≥ 12**，不满足直接不通过（可补交重评 1 次）。
+5. 通过后，群主用
+   `certs/generator.py --name "<姓名>" --tier intermediate --score <测验分> --capstone --emit-html`
+   签发中级证书（生成器会自动核对台账，未通过无法签发）。
 
 ---
 
