@@ -24,6 +24,9 @@ L0  免费开源层（本仓库 + GitHub Pages）
 L1  9.9 学习群（微信支付入群）
     └─ 99 题测验 → 通过发「结营基础证书」（带编号，GitHub 在线可查）
 
+L1+ 中级认证（群内进阶）
+    └─ 100 题中级测验（?bank=inter，难度更高、选项更隐蔽）→ 通过 + Capstone → 发「结营中级证书」
+
 L2  49.9 私人订制（1:1）
     └─ 基于 Day00 七维雷达，深度定制：学习路线 + 测试 + 实战
 ```
@@ -69,7 +72,7 @@ L2  49.9 私人订制（1:1）
 | **3 · 交付力** | Day10–11 Bad Case 与日志 / Git 与 Code Review | 对着课程复盘一个真实报错；用 Git 提一次 PR 练习 |
 | **4 · 政企落地** | Day12–16 网络拓扑 / 白名单 / 私有云 vs 公有云 / 离线部署 / 合规红线 | 跑 `labs/day12_lab/topo_sim.py`，改配置看连通性变化 |
 | **5 · 收口** | Day17–18 专属验收标准 / 结营与成长 | 用 Day17 标准给自己做的 Demo 打分 |
-| **★ 自测** | `quiz/` 99 题 | 本地起 `python -m http.server`，打开 `quiz/index.html` 自测 ≥80 即过关 |
+| **★ 自测** | `quiz/` 99 题 | 本地起 `python -m http.server`，打开 `quiz/index.html` 自测 ≥80 即过关（进阶：`quiz/index.html?bank=inter` 为 100 题中级测验） |
 
 ### 自学节奏建议
 - 每天 1 课 + 配套动手，约 3 周通关；
@@ -88,7 +91,7 @@ L2  49.9 私人订制（1:1）
 3. 群主核对指纹与用时 → 签发带编号证书 → 在验证页可查。
 
 ### 结营中级证书 `FDE-I-YYYY-NNNNN`
-1. 通过 99 题测验；
+1. 打开 `quiz/index.html?bank=inter`，完成 **100 题中级测验**（难度更高、选项更隐蔽，≥ 80 分通过）；
 2. 完成 **结营测验项目（Capstone）**：详见 `capstone/README.md`；
 3. 提交后群主按 Rubric 评分（环境适配单项须达标）→ 签发中级证书。
 
@@ -127,7 +130,7 @@ xx-fde-learning/
 ├── covers/                # 课程封面（18 张）
 ├── labs/day12_lab/        # 政企拓扑模拟器 + 实战练习册
 ├── rag_demo/              # 端到端 RAG 工程（Day09 配套）
-├── quiz/                  # 99 题测验（index.html / questions.js / result.html）
+├── quiz/                  # 测验（index.html / questions.js / questions_intermediate.js / explain*.js / result.html；?bank=inter 切中级 100 题）
 ├── capstone/              # 中级证书测验项目任务书 + 评分
 ├── certs/                 # 证书系统（template / generator / verify / 公开注册表）
 └── assets/                # 个人微信二维码等素材

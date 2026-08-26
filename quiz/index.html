@@ -111,6 +111,8 @@
 
 <script src="questions.js"></script>
 <script src="explain.js"></script>
+<script src="questions_intermediate.js"></script>
+<script src="explain_intermediate.js"></script>
 <script>
 // ── 纯 JS sha256（无外部依赖，离线可用）─────────────
 function sha256(ascii){
@@ -159,6 +161,17 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 }
 
+// ── 题库切换（?bank=inter 走中级题库）──────────────
+const IS_INTER = new URLSearchParams(location.search).get('bank')==='inter';
+const BANK = IS_INTER ? window.QUESTIONS_INTERMEDIATE : window.QUESTIONS;
+const EXPLAIN = IS_INTER ? window.EXPLAIN_INTERMEDIATE : window.EXPLAIN;
+const EXAM_LEN = IS_INTER ? BANK.length : 99;
+(function syncTitle(){
+  document.querySelector('h1').textContent = IS_INTER ? 'FDE 学习先锋小队 · 中级认证测验' : 'FDE 学习先锋小队 · 知识测验';
+  document.querySelector('.sub').textContent =
+    `${EXAM_LEN} 题 · ${IS_INTER ? '中级认证 · 通过后可申中级证书（需另过 capstone）' : '覆盖 Day00–Day18'} · 通过线 ≥ 80 分（答对 ≥ ${Math.round(EXAM_LEN*0.8)} 题）`;
+})();
+
 // ── 状态 ──────────────────────────────────────────────
 let Q=[], answers=[], cur=0, t0=0;
 
@@ -166,8 +179,8 @@ function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random
 
 function startQuiz(){
   t0=Date.now();
-  Q=shuffle(window.QUESTIONS.map(x=>({...x,opts:shuffle(x.options.map((t,i)=>({t,i})))})).slice(0,99));
-  answers=new Array(99).fill(null);
+  Q=shuffle(BANK.map(x=>({...x,opts:shuffle(x.options.map((t,i)=>({t,i})))})).slice(0,EXAM_LEN));
+  answers=new Array(EXAM_LEN).fill(null);
   cur=0;
   document.getElementById("start").classList.add("hidden");
   document.getElementById("result").classList.add("hidden");
@@ -189,12 +202,12 @@ function render(){
     b.onclick=()=>{answers[cur]=o.i;render();};
     box.appendChild(b);
   });
-  document.getElementById("prog").style.width=((cur+1)/99*100)+"%";
-  document.getElementById("pinfo").textContent=`第 ${cur+1} / 99 题`;
+  document.getElementById("prog").style.width=((cur+1)/EXAM_LEN*100)+"%";
+  document.getElementById("pinfo").textContent=`第 ${cur+1} / ${EXAM_LEN} 题`;
   const left=answers.filter(a=>a!==null).length;
   document.getElementById("sinfo").textContent=`已答 ${left} 题`;
   document.getElementById("btnPrev").disabled=cur===0;
-  document.getElementById("btnNext").textContent=cur===98?"交卷":"下一题";
+  document.getElementById("btnNext").textContent=cur===EXAM_LEN-1?"交卷":"下一题";
 }
 
 function prev(){if(cur>0){cur--;render();}}
@@ -206,7 +219,7 @@ function next(){
 function finish(){
   let correct=0;
   answers.forEach((a,i)=>{ if(a===Q[i].answer) correct++; });
-  const pct=Math.round(correct/99*100);
+  const pct=Math.round(correct/EXAM_LEN*100);
   const dur=Math.round((Date.now()-t0)/1000);
   const mm=String(Math.floor(dur/60)).padStart(2,"0"), ss=String(dur%60).padStart(2,"0");
   const fp=sha256(answers.join(",")+"|"+dur+"|"+"fde-learning");
@@ -232,7 +245,7 @@ function finish(){
       const yourL=a===null?"—":String.fromCharCode(65+a);
       const yourT=a===null?"（未作答）":(your?your.t:"（无效选项）");
       const corrL=String.fromCharCode(65+item.answer);
-      const expl=(window.EXPLAIN&&window.EXPLAIN[item.id])?window.EXPLAIN[item.id]:"（本题暂无解析）";
+      const expl=(EXPLAIN&&EXPLAIN[item.id])?EXPLAIN[item.id]:"（本题暂无解析）";
       wrong.push({q:item.q,yourL,yourT,corrL,corrT:corr.t,expl});
     }
   });
@@ -244,19 +257,19 @@ function finish(){
       <div class="we">解析：${escapeHtml(w.expl)}</div>
     </div>`).join("");
   document.getElementById("wcount").textContent=wrong.length;
-  document.getElementById("rwrong").textContent=`${99-correct} / 99`;
+  document.getElementById("rwrong").textContent=`${EXAM_LEN-correct} / ${EXAM_LEN}`;
   const wb=document.getElementById("wrongBox");
   if(wrong.length>0) wb.classList.remove("hidden"); else wb.classList.add("hidden");
 
   document.getElementById("quiz").classList.add("hidden");
   document.getElementById("result").classList.remove("hidden");
 
-  sessionStorage.setItem("fde_result",JSON.stringify({correct,wrong:99-correct,pct,dur:mm+":"+ss,fp,pass}));
+  sessionStorage.setItem("fde_result",JSON.stringify({correct,wrong:EXAM_LEN-correct,pct,dur:mm+":"+ss,fp,pass}));
 }
 
 function shareResult(){
   const r=JSON.parse(sessionStorage.getItem("fde_result")||"{}");
-  const url=`result.html?score=${r.pct}&correct=${r.correct}&wrong=${r.wrong}&time=${encodeURIComponent(r.dur)}&hash=${r.fp}&pass=${r.pass}`;
+  const url=`result.html?score=${r.pct}&correct=${r.correct}&wrong=${r.wrong}&time=${encodeURIComponent(r.dur)}&hash=${r.fp}&pass=${r.pass}&bank=${IS_INTER?'inter':''}`;
   window.open(url,"_blank");
 }
 </script>

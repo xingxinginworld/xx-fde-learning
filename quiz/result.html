@@ -28,7 +28,7 @@
 <body>
 <div class="wrap">
   <h1>成绩存证</h1>
-  <div class="sub">FDE 学习先锋小队 · 99 题知识测验</div>
+  <div class="sub" id="rsub">FDE 学习先锋小队 · 99 题知识测验</div>
   <div id="card" class="card">
     <div class="big" id="rscore">—</div>
     <div class="verdict" id="rverdict">读取中…</div>
@@ -46,14 +46,17 @@
 </div>
 <script>
 const p=new URLSearchParams(location.search);
+const IS_INTER=p.get("bank")==="inter";
+const TOTAL=IS_INTER?100:99;
 const score=p.get("score"), correct=p.get("correct"), wrong=p.get("wrong"), time=p.get("time"),
       hash=p.get("hash"), pass=p.get("pass")==="true";
+if(IS_INTER) document.getElementById("rsub").textContent="FDE 学习先锋小队 · 中级认证测验（100 题）";
 document.getElementById("rscore").textContent=score??"—";
 const v=document.getElementById("rverdict");
-v.textContent=(pass?"✔ 通过 · 具备结营基础证书资格":"✘ 未通过 · 需 ≥80 分");
+v.textContent=(pass?(IS_INTER?"✔ 通过 · 具备申中级证书资格（需另过 capstone）":"✔ 通过 · 具备结营基础证书资格"):"✘ 未通过 · 需 ≥80 分");
 v.className="verdict "+(pass?"pass":"fail");
-document.getElementById("rcorrect").textContent=(correct??"—")+" / 99";
-document.getElementById("rwrong").textContent=(wrong??"—")+" / 99";
+document.getElementById("rcorrect").textContent=(correct??"—")+" / "+TOTAL;
+document.getElementById("rwrong").textContent=(wrong??"—")+" / "+TOTAL;
 document.getElementById("rpercent").textContent=score??"—";
 document.getElementById("rtime").textContent=time??"—";
 document.getElementById("rhash").textContent=hash??"—";
