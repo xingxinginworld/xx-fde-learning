@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>结营证书 - FDE 学习先锋小队</title>
+<style>
+  :root{
+    --gold:#b8860b; --gold-soft:#d4af37; --ink:#1a1a2e; --line:#c9a96a;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:#f4efe6;font-family:"Microsoft YaHei","PingFang SC",sans-serif;
+       display:flex;justify-content:center;align-items:center;min-height:100vh;padding:24px;}
+  .cert{width:820px;max-width:100%;background:#fffdf8;border:3px double var(--gold);
+        border-radius:10px;padding:18px;position:relative;
+        box-shadow:0 10px 40px rgba(0,0,0,.15);}
+  .cert::before{content:"";position:absolute;inset:10px;border:1px solid var(--line);border-radius:6px;pointer-events:none;}
+  .head{text-align:center;padding:14px 0 6px;}
+  .badge{font-size:13px;letter-spacing:4px;color:var(--gold);font-weight:700;}
+  .title{font-size:34px;font-weight:800;margin:8px 0 2px;color:var(--ink);letter-spacing:2px;}
+  .sub{font-size:14px;color:#666;margin-bottom:6px;}
+  .rule{height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:10px 30px;}
+  .body{text-align:center;padding:10px 40px 4px;}
+  .present{font-size:15px;color:#555;}
+  .name{font-size:30px;font-weight:800;color:var(--ink);margin:6px 0;border-bottom:2px solid var(--line);
+        display:inline-block;padding:0 30px 4px;min-width:280px;}
+  .tier{font-size:18px;color:var(--gold);font-weight:700;margin:8px 0;}
+  .desc{font-size:14px;color:#444;line-height:1.9;margin:10px auto;max-width:560px;text-align:justify;}
+  .meta{display:flex;justify-content:space-between;align-items:flex-end;padding:18px 40px 6px;font-size:13px;color:#555;}
+  .meta .col{flex:1;}
+  .meta .label{color:#999;font-size:11px;}
+  .meta .val{font-weight:700;color:var(--ink);font-size:15px;}
+  .seal{
+    width:104px;height:104px;border:3px solid #c0392b;border-radius:50%;
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
+    position:relative;transform:rotate(-8deg);background:rgba(192,57,43,.04);
+    box-shadow:0 2px 8px rgba(192,57,43,.25);
+  }
+  .seal .star{font-size:24px;color:#c0392b;line-height:1;margin-bottom:2px;}
+  .seal .org{
+    font-size:10.5px;color:#c0392b;font-weight:800;text-align:center;line-height:1.3;
+    letter-spacing:.5px;padding:0 8px 0;border-top:1.5px solid #c0392b;
+    margin:3px 8px 0;
+  }
+  .verify{text-align:center;font-size:12px;color:#888;padding:8px 0 2px;}
+  .verify a{color:var(--gold);text-decoration:none;}
+  .foot{text-align:center;font-size:11px;color:#aaa;padding-top:4px;}
+  @media print{body{background:#fff;}.cert{box-shadow:none;}}
+</style>
+</head>
+<body>
+  <div class="cert">
+    <div class="head">
+      <div class="badge">FDE 学习先锋小队</div>
+      <div class="title">结 营 证 书</div>
+      <div class="sub">Certificate of Completion · AI 交付工程师成长计划</div>
+    </div>
+    <div class="rule"></div>
+    <div class="body">
+      <div class="present">兹证明</div>
+      <div class="name">{{NAME}}</div>
+      <div class="tier">{{TIER_NAME}}</div>
+      <div class="desc">
+        已完成「FDE 学习先锋小队」全部必修学习，并通过 {{TIER_EXAM_DESC}}，
+        具备 AI 交付工程师（FDE）核心能力：需求拆解、方案选型、原型搭建、代码改造、
+        交付管理与政企环境落地。特发此证，以资鼓励。
+      </div>
+    </div>
+    <div class="meta">
+      <div class="col">
+        <div class="label">证书编号 CERTIFICATE NO.</div>
+        <div class="val">{{ID}}</div>
+      </div>
+      <div class="col" style="text-align:center;">
+        <div class="label">测验成绩 SCORE</div>
+        <div class="val">{{SCORE}}</div>
+      </div>
+      <div class="col" style="text-align:right;">
+        <div class="label">发证日期 DATE</div>
+        <div class="val">{{DATE}}</div>
+      </div>
+    </div>
+    <div class="meta" style="border:none;padding-top:0;">
+      <div class="col" style="text-align:left;">
+        <div class="label">防伪校验 HASH</div>
+        <div class="val" style="font-size:11px;word-break:break-all;">{{HASH}}</div>
+      </div>
+      <div class="seal"><div class="star">★</div><div class="org">FDE自助<br/>发展委员会</div></div>
+    </div>
+    <div class="verify">
+      在线核验：<a href="{{VERIFY_URL}}">{{VERIFY_URL}}</a>
+    </div>
+    <div class="foot">本证书由 FDE 学习先锋小队签发 · 编号每年从 00001 起 · 官网可查</div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FDE v2 · Day 13 · LLM API 上内网全流程 · 白名单/域名/端口申请</title>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-bg: #eff6ff;
+  --blue-dark: #1e40af;
+  --orange: #ea580c;
+  --orange-bg: #fff7ed;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --green: #059669;
+  --green-bg: #ecfdf5;
+  --yellow: #d97706;
+  --yellow-bg: #fffbeb;
+  --purple: #7c3aed;
+  --purple-bg: #f5f3ff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-800: #1f2937;
+  --text: #1a1a2e;
+  --text-light: #6b7280;
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: #f0f4f8; color: var(--text); line-height: 1.8; font-size: 16px;
+}
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+.hero {
+  background: linear-gradient(135deg, #7c2d12 0%, #c2410c 55%, #ea580c 100%);
+  color: #fff; border-radius: var(--radius); padding: 32px 30px 26px; margin-bottom: 20px;
+}
+.hero-badge { display: inline-block; background: rgba(255,255,255,0.18); padding: 4px 14px; border-radius: 20px; font-size: 12px; margin-bottom: 10px; }
+.hero h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; }
+.hero .subtitle { font-size: 14.5px; opacity: 0.92; margin-bottom: 14px; line-height: 1.7; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; opacity: 0.85; }
+.hero-back { font-size: 12px; margin-top: 10px; opacity: 0.75; }
+.hero-back a { color: #fff; text-decoration: underline; }
+
+.card { background: #fff; border-radius: var(--radius); padding: 26px 26px 22px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.card h2 { font-size: 20px; font-weight: 700; color: var(--orange); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.card h3 { font-size: 17px; font-weight: 600; color: var(--gray-800); margin: 22px 0 10px; padding-left: 12px; border-left: 3px solid var(--orange); }
+.card h4 { font-size: 15px; font-weight: 600; margin: 14px 0 8px; color: var(--gray-800); }
+p { margin-bottom: 10px; }
+code { background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-size: 14px; font-family: "Cascadia Code", "Fira Code", Consolas, monospace; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-size: 14px; }
+th { background: var(--orange); color: #fff; padding: 9px 12px; text-align: left; font-weight: 600; font-size: 13px; }
+td { padding: 9px 12px; border-bottom: 1px solid var(--gray-200); vertical-align: top; }
+tr:nth-child(even) td { background: var(--gray-50); }
+
+.box { border-radius: 8px; padding: 14px 16px; margin: 14px 0; border-left: 4px solid; font-size: 14.5px; }
+.box-blue { background: var(--primary-bg); border-color: var(--primary); }
+.box-green { background: var(--green-bg); border-color: var(--green); }
+.box-yellow { background: var(--yellow-bg); border-color: var(--yellow); }
+.box-red { background: var(--red-bg); border-color: var(--red); }
+.box-purple { background: var(--purple-bg); border-color: var(--purple); }
+.box-orange { background: var(--orange-bg); border-color: var(--orange); }
+.box-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+
+.mentor { background: linear-gradient(135deg, #fff7ed 0%, #fef2f2 100%); border-radius: 10px; padding: 16px 18px; margin: 14px 0; border: 1px solid #fed7aa; position: relative; }
+.mentor::before { content: '👨‍🏫'; position: absolute; top: -12px; left: 16px; background: #fff; padding: 0 6px; font-size: 20px; }
+.mentor .mentor-title { font-weight: 700; color: #9a3412; font-size: 14px; margin-bottom: 6px; margin-top: 4px; }
+.mentor .mentor-body { font-size: 14.5px; color: var(--gray-800); line-height: 1.75; }
+.mentor .mentor-body p { margin-bottom: 8px; }
+
+.goal-list { list-style: none; padding: 0; }
+.goal-list li { padding: 8px 0 8px 32px; position: relative; font-size: 15px; }
+.goal-list li::before { content: '🎯'; position: absolute; left: 4px; top: 8px; font-size: 15px; }
+
+.mnemonic { background: linear-gradient(135deg, #fed7aa, #fdba74); border-radius: 10px; padding: 14px 18px; margin: 14px 0; text-align: center; }
+.mnemonic .m-title { font-size: 12px; color: #7c2d12; margin-bottom: 6px; letter-spacing: 2px; }
+.mnemonic .m-line { font-size: 18px; font-weight: 700; color: #7c2d12; letter-spacing: 3px; }
+.mnemonic .m-explain { font-size: 13px; color: #9a3412; margin-top: 6px; }
+
+.cheatsheet { border: 2px dashed var(--orange); border-radius: 10px; padding: 16px 18px; margin: 14px 0; background: #fff7ed; }
+.cheatsheet .cs-title { font-weight: 700; color: #9a3412; font-size: 15px; margin-bottom: 10px; }
+
+.steps { counter-reset: step; margin: 12px 0; }
+.step-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px dashed var(--gray-200); }
+.step-item:last-child { border-bottom: none; }
+.step-item .step-num { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--orange); color: #fff; text-align: center; line-height: 34px; font-weight: 700; }
+.step-item .step-body { flex: 1; }
+.step-item .step-body strong { color: #9a3412; }
+
+.quiz-item { border: 1px solid var(--gray-200); border-radius: 8px; margin: 10px 0; overflow: hidden; }
+.quiz-item summary { background: var(--orange-bg); padding: 12px 14px; cursor: pointer; font-weight: 600; color: var(--orange); font-size: 14.5px; }
+.quiz-item[open] summary { border-bottom: 1px solid var(--gray-200); }
+.quiz-body { padding: 12px 16px; }
+.quiz-options { list-style: none; padding: 0; }
+.quiz-options li { padding: 5px 0; font-size: 14px; }
+.quiz-answer { background: var(--green-bg); border-left: 3px solid var(--green); padding: 10px 12px; margin-top: 10px; font-size: 14px; border-radius: 4px; }
+.quiz-answer .ans-title { font-weight: 700; color: var(--green); margin-bottom: 6px; }
+.wrong-analysis { background: var(--red-bg); border-left: 3px solid var(--red); padding: 10px 12px; margin-top: 8px; font-size: 13.5px; border-radius: 4px; }
+.wrong-analysis .wa-title { font-weight: 700; color: var(--red); margin-bottom: 4px; }
+
+.case-block { border: 1px solid var(--gray-200); border-radius: 8px; margin: 12px 0; overflow: hidden; }
+.case-block summary { background: linear-gradient(135deg, #ffedd5, #fed7aa); padding: 12px 14px; cursor: pointer; font-weight: 600; color: #9a3412; font-size: 14.5px; }
+.case-block .case-body { padding: 14px 16px; font-size: 14px; }
+.case-block .case-body h5 { color: #9a3412; margin: 10px 0 6px; font-size: 14px; }
+
+.interview-quote { background: linear-gradient(135deg, #7c2d12, #c2410c); color: #fff; border-radius: 10px; padding: 18px 20px; margin: 14px 0; font-size: 15px; font-style: italic; line-height: 1.8; position: relative; }
+.interview-quote::before { content: '💼'; position: absolute; top: -10px; left: 16px; background: #fff; padding: 2px 6px; border-radius: 12px; font-size: 16px; }
+.interview-quote .iq-tag { display: block; font-size: 11px; opacity: 0.8; margin-bottom: 6px; font-style: normal; letter-spacing: 1px; }
+
+.footer { text-align: center; color: var(--text-light); font-size: 12px; padding: 20px 0 36px; border-top: 1px solid var(--gray-200); margin-top: 16px; }
+
+@media (max-width: 640px) {
+  .container { padding: 12px; }
+  .hero { padding: 24px 18px 20px; }
+  .hero h1 { font-size: 20px; }
+  .card { padding: 20px 16px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="hero">
+  <div class="hero-badge">FDE v2 · Phase 4 · Day 13</div>
+  <h1>🔐 LLM API 上内网全流程 · 白名单/域名/端口申请</h1>
+  <div class="subtitle"><strong>85% 的政企 AI 项目卡在白名单</strong>——不是技术问题，是流程问题。今天把这套流程走通，你就能把 3 周的申请周期压到 1 周。</div>
+  <div class="hero-meta">
+    <span>🎯 Phase 4 · 政企环境适配</span>
+    <span>⏱️ 预计 70 分钟</span>
+    <span>🧭 补齐能力：⑦ 啃环境</span>
+  </div>
+  <div class="hero-back">FDE v2 学习路径 · <a href="./day00_fde_panorama_and_radar.html">← 回到 Day 0 起点校准</a> · <a href="./day12_enterprise_network_topology.html">← Day 12 网络地形</a></div>
+</div>
+
+<!-- 板块 1：今日目标 -->
+<div class="card">
+  <h2>🎯 一、今日目标</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>你驻场过，知道申请单麻烦。但 AI 项目的白名单跟传统项目<strong>完全不是一个量级</strong>——依赖链更长（不止一个 API 域名）、安全部问得更刁（数据出不出境？流量峰值多少？）、审批链更长（IT、安全、网络运维三方都要点头）。</p>
+      <p>今天我把全流程走一遍，连话术模板都给你。下次你进场，别人 3 周批不下来的单子，你 1 周搞定——这就是 FDE 在政企现场的硬价值。</p>
+    </div>
+  </div>
+
+  <ul class="goal-list">
+    <li>看懂白名单申请的 <strong>3 个环节</strong>（准备 / 申请 / 落地）和各自耗时</li>
+    <li>记住申请单 5 要素口诀 <strong>「域·端·量·期·批」</strong></li>
+    <li>拿到 <strong>依赖域名清单 + 话术模板</strong>，进场第一周就能提交申请</li>
+    <li>会做连通性验证（<code>nslookup</code> / <code>telnet</code> / <code>curl -v</code>）和<strong>被拒申诉</strong></li>
+  </ul>
+</div>
+
+<!-- 板块 2：核心讲解 -->
+<div class="card">
+  <h2>📖 二、核心讲解</h2>
+
+  <h3>是什么：白名单申请的 3 个环节</h3>
+  <p>大白话——白名单就是客户防火墙上的"通行证名单"。你的服务要访问外网任何域名/端口，都得先登记、审批、放行。没登记的流量，一律掐断。</p>
+  <table>
+    <thead>
+      <tr><th style="width: 20%">环节</th><th style="width: 38%">干什么</th><th style="width: 22%">交付物</th><th>常见耗时</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>① 准备</strong></td><td>梳理依赖清单、估算流量、写业务合理性说明</td><td>《白名单申请单》</td><td>1-2 天（你自己干）</td></tr>
+      <tr><td><strong>② 申请</strong></td><td>走审批链：IT → 安全 → 网络运维（有时加合规）</td><td>审批通过记录</td><td>3-15 天（看客户效率）</td></tr>
+      <tr><td><strong>③ 落地</strong></td><td>网络运维开策略、你做连通性验证、归档清单</td><td>《白名单清单 v1》</td><td>1-2 天</td></tr>
+    </tbody>
+  </table>
+  <p><strong>关键认知：</strong>耗时大头在环节 ②，而环节 ② 快不快的决定因素，是环节 ① 你准备得专不专业。<strong>申请单越专业，审批链越短。</strong></p>
+
+  <div class="mnemonic">
+    <div class="m-title">□ □ □ 申请单 5 要素口诀 □ □ □</div>
+    <div class="m-line">域 · 端 · 量 · 期 · 批</div>
+    <div class="m-explain">域名清单 / 端口清单 / 流量峰值估算 / 有效期 / 审批归属人 · 缺一必被退回</div>
+  </div>
+
+  <h3>为什么：3 个高频翻车点</h3>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 1 · 只申请 API 域名，不申请依赖域名</div>
+    <div>
+      <p>你申请了 <code>dashscope.aliyuncs.com</code>，批了。结果部署当天 <code>pip install</code> 装不上依赖——因为你没申请 <code>pypi.org</code> 和 <code>files.pythonhosted.org</code>。模型要下载？<code>huggingface.co</code> 也没开。SDK 要上报心跳？又被掐。</p>
+      <p><strong>正确姿势：</strong>申请前把"开发期 / 推理期 / 部署期"三个阶段的出网需求<strong>一次性列全</strong>（见速查卡 2）。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 2 · 端口只申请 443</div>
+    <div>
+      <p>你以为 HTTPS 就完事了。结果流式输出要走 WebSocket（部分服务用 8443 等非标准端口）、私有化镜像仓库走 5000、数据库走 3306/5432——每一个没申请的端口都是一次现场翻车。</p>
+      <p><strong>正确姿势：</strong>画一张"服务间调用图"，把<strong>每一跳的端口</strong>都标出来，一次申请全。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 3 · 忘记回程流量估算</div>
+    <div>
+      <p>安全部最关心两件事：数据往哪走、流量有多大。你申请单上写"日常调用"，安全部直接退回——"峰值 QPS 多少？单日流量多少 GB？写清楚再来"。一来一回 3 天没了。</p>
+      <p><strong>正确姿势：</strong>用 Day 3 学的成本估算方法，把 <strong>QPS 峰值 + 单日 token 量 + 折算流量</strong> 算出来写进申请单。数字越具体，审批越快。</p>
+    </div>
+  </div>
+
+  <div class="box box-blue">
+    <div class="box-title">🧭 PM 行动指南：白名单申请前必备 4 件东西</div>
+    <div>
+      <p><strong>① 域名清单</strong>：主域名 + 依赖域名，逐个注明用途。</p>
+      <p><strong>② 端口清单</strong>：每个域名对应的端口和协议（HTTPS/WSS/TCP）。</p>
+      <p><strong>③ 流量峰值估算</strong>：QPS 峰值、单日调用量、折算出口流量。</p>
+      <p><strong>④ 业务合理性说明</strong>：一句话说清"不开这条，哪个业务功能就瘫痪"。</p>
+    </div>
+  </div>
+
+  <h3>怎么用：白名单申请全流程 5 步</h3>
+
+  <div class="steps">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>梳理依赖清单</strong>——按"开发期 / 推理期 / 部署期"三阶段列出所有出网域名和端口。别只盯着主 API。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>写申请单</strong>——5 要素（域·端·量·期·批）齐全，附业务合理性说明。用速查卡 1 的模板，填空即可。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>走审批链</strong>——一般是 IT（归属确认）→ 安全（数据合规审查）→ 网络运维（开策略）。提前约好三方时间，别串行干等。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>验证连通</strong>——<code>nslookup 域名</code> 看 DNS 解析 → <code>telnet 域名 端口</code> 看端口通不通 → <code>curl -v https://域名</code> 看握手和证书。三步全绿才算通。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>归档白名单清单</strong>——把批准的域名/端口/有效期/审批单号存成《白名单清单 v1》交给客户运维。到期前 30 天提醒续期。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 板块 3：动手步骤 -->
+<div class="card">
+  <h2>🛠️ 三、动手步骤：走一遍真实申请流程</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>下面三个案例，第一个我带你完整走一遍，连申请单原文都给你。后两个是你进场一定会遇到的场景，自己练。</p>
+    </div>
+  </div>
+
+  <details class="case-block" open>
+    <summary>📌 案例 A · 申请阿里云百炼 API 上内网（跟着做）</summary>
+    <div class="case-body">
+      <h5>Step 1 · 依赖清单（三阶段）</h5>
+      <table>
+        <tr><td><strong>推理期</strong></td><td><code>dashscope.aliyuncs.com:443</code>（模型推理主入口）</td></tr>
+        <tr><td><strong>开发期</strong></td><td><code>bailian.console.aliyun.com:443</code>（控制台查用量/管 Key）</td></tr>
+        <tr><td><strong>部署期</strong></td><td><code>pypi.org:443</code> + <code>files.pythonhosted.org:443</code>（装依赖，若走离线包则不用）</td></tr>
+      </table>
+
+      <h5>Step 2 · 申请单原文（模板填空版）</h5>
+      <pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;">申请事由：智能员工问答系统需调用大模型推理服务。
+域名清单：
+  1. dashscope.aliyuncs.com  端口 443  HTTPS  用途：模型推理
+  2. bailian.console.aliyun.com  端口 443  HTTPS  用途：用量监控
+端口：443（HTTPS）
+流量估算：峰值 20 QPS，单日约 5 万次调用，
+  出口流量约 2 GB/天（单次请求+响应约 40KB）
+有效期：12 个月（到期前 30 天续期）
+归属人：XXX（项目组）  业务对接人：XXX（信息部）
+业务必要性：若该域名不可达，员工问答功能整体不可用。</pre>
+
+      <h5>Step 3 · 审批链上的 3 种典型对手 & 应对</h5>
+      <table>
+        <tr><td><strong>网络运维</strong></td><td>问："峰值 20 QPS 怎么来的？"</td><td>答：日活 800 人 × 人均 8 次 ÷ 8 小时 ÷ 3600 秒 × 峰均比 3 倍，附计算过程</td></tr>
+        <tr><td><strong>安全部</strong></td><td>问："数据出不出境？"</td><td>答：阿里云国内节点，附服务商合规说明 + 数据不落境外承诺</td></tr>
+        <tr><td><strong>IT 部</strong></td><td>问："出了事谁负责？"</td><td>答：归属人写项目组负责人，附应急预案一页纸</td></tr>
+      </table>
+
+      <h5>Step 4-5 · 验证 + 归档</h5>
+      <p><code>nslookup dashscope.aliyuncs.com</code> → 有解析；<code>telnet dashscope.aliyuncs.com 443</code> → Connected；<code>curl -v https://dashscope.aliyuncs.com</code> → 200。三步全绿，归档清单，收工。</p>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 B · 申请 Hugging Face 模型下载白名单（自己练）</summary>
+    <div class="case-body">
+      <p><strong>场景：</strong>你要在客户内网部署一个开源模型，需要从 <code>huggingface.co</code> 下载权重文件（约 40GB）。你按案例 A 的格式提交了申请。</p>
+      <p style="color: var(--gray-500);">问题：在政企客户处，这个申请大概率被拒。先自己想 3 个被拒理由，再想 2 个替代方案。</p>
+
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--orange); font-weight: 600;">查看参考答案</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <p><strong>常见被拒理由：</strong>① 境外站点，安全部对"境外大流量下载"天然警惕；② 40GB 单次下载流量远超日常基线，触发风控；③ 模型来源不可控，安全部担心夹带风险。</p>
+          <p><strong>替代方案（按推荐顺序）：</strong>① 改用国内镜像源（如 <code>hf-mirror.com</code> 或 ModelScope），域名境内、合规好讲；② 在你自己办公室下载好，走客户"介质导入流程"（U 盘/光盘 + 杀毒 + 审批）拷入内网——政企对"介质导入"有成熟流程，比开境外白名单容易 10 倍。</p>
+          <p><strong>核心认知：</strong>白名单不是唯一通路。<strong>流程上走得通的路，才是好路。</strong></p>
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 C · 申请被拒：「跨境数据传输风险」申诉（自己练）</summary>
+    <div class="case-body">
+      <p><strong>场景：</strong>你的白名单申请被安全部驳回，理由一行字："涉及跨境数据传输风险，不予批准。"但你知道你用的明明是国内云服务商。</p>
+      <p style="color: var(--gray-500);">写一份 3 层申诉方案。提示：先证明、再补材料、最后给替代。</p>
+
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--orange); font-weight: 600;">查看参考答案</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <p><strong>第 1 层 · 证明数据不出境：</strong>附服务商的《数据中心位置说明》（国内节点）+ 服务协议中"数据境内存储"条款截图 + 一次 traceroute 结果证明链路不出境。</p>
+          <p><strong>第 2 层 · 补合规材料：</strong>主动提交《数据流向图》（Day 16 会细讲）+ 承诺"提示词与业务数据不用于服务商模型训练"的条款引用。</p>
+          <p><strong>第 3 层 · 给替代方案：</strong>"若仍不批准公有云方案，我方提供私有化部署备选（Day 14 选型），请安全部评估两条路径哪条更符合合规要求。"——把"对抗"变成"选择题"，审批通过率大增。</p>
+          <p><strong>话术金句：</strong><em>"我不是来求您放行的，我是来帮您把合规证据链补全的。"</em></p>
+        </div>
+      </details>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 4：速查卡 -->
+<div class="card">
+  <h2>📇 四、速查卡</h2>
+
+  <div class="cheatsheet">
+    <div class="cs-title">📝 白名单申请话术模板（填空版）</div>
+    <pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;">【申请事由】{系统名} 需访问 {服务名}，用于 {业务功能}。
+【域名清单】{域名1}:{端口} {协议} 用途:{...}（逐条列出）
+【流量估算】峰值 {N} QPS；单日 {M} 次调用；出口约 {X} GB/天。
+【有效期】{12} 个月，到期前 30 天由 {归属人} 发起续期。
+【归属与责任】归属人:{姓名/部门}；应急联系:{电话}。
+【业务必要性】若不可达，{具体功能} 将整体不可用。
+【合规说明】数据 {境内存储/不出境}，附 {证明材料清单}。</pre>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">🌐 AI 项目常见依赖域名清单（三阶段）</div>
+    <table>
+      <thead><tr><th>阶段</th><th>典型域名</th><th>用途</th><th>可否离线替代</th></tr></thead>
+      <tbody>
+        <tr><td>开发期</td><td>pypi.org / files.pythonhosted.org</td><td>pip 装依赖</td><td>✅ 离线 wheels 包（Day 15）</td></tr>
+        <tr><td>开发期</td><td>registry.npmjs.org</td><td>npm 装依赖</td><td>✅ 离线 pack / 私有镜像</td></tr>
+        <tr><td>部署期</td><td>huggingface.co / modelscope.cn</td><td>模型权重下载</td><td>✅ 介质导入（推荐）</td></tr>
+        <tr><td>推理期</td><td>dashscope.aliyuncs.com 等</td><td>LLM 推理主入口</td><td>❌ 必须开（或改私有化）</td></tr>
+        <tr><td>运维期</td><td>云监控/日志上报域名</td><td>SDK 心跳上报</td><td>⚠️ 可关，但要看 SDK 是否报错</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">🚫 被拒的 5 种典型场景 + 应对话术</div>
+    <table>
+      <thead><tr><th>被拒理由</th><th>应对</th></tr></thead>
+      <tbody>
+        <tr><td>跨境数据传输风险</td><td>三层申诉：证明境内 → 补合规材料 → 给私有化替代（案例 C）</td></tr>
+        <tr><td>流量估算不充分</td><td>附 QPS 计算过程（日活×人均×峰均比），数字要能复算</td></tr>
+        <tr><td>业务必要性不足</td><td>改写法：不说"提升体验"，说"该功能不可用将影响 X 业务考核指标"</td></tr>
+        <tr><td>无明确归属人</td><td>申请单第一行就写归属人+部门+电话，责任到人</td></tr>
+        <tr><td>涉密系统禁止外联</td><td>不申诉，直接改架构：私有化部署（Day 14）或 DMZ 中转方案</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 板块 5：5 题测验 -->
+<div class="card">
+  <h2>📝 五、5 题小测验</h2>
+  <p style="color: var(--gray-600); font-size: 14px;">先自己想 20 秒再点开答案。错项解析比正确答案更值钱。</p>
+
+  <details class="quiz-item">
+    <summary>Q1 · 白名单批下来就永久有效，对吗？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 对，批一次管到项目结束</li>
+        <li>B. 不对，一般有有效期，到期要续期，且人员/架构变动可能触发重新审批</li>
+        <li>C. 对，但每年要交一次费用</li>
+        <li>D. 不对，白名单每天随机抽查</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>白名单通常有有效期（常见 6-12 个月），且客户安全策略调整、项目归属人变更都可能触发复核。所以 Step 5 才强调"归档 + 到期前 30 天提醒续期"。项目上线半年后突然 API 不通，十有八九是白名单到期没人续。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 错在把审批当一锤子买卖</strong>——政企安全策略是动态的。<strong>C 错在编造费用</strong>——白名单是安全策略不是收费服务。<strong>D 错在臆想机制</strong>——没有"每天抽查"这种机制，但有到期失效和策略调整。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q2 · 部署当天发现 pip install 全部超时，最可能的原因是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 客户机器性能太差</li>
+        <li>B. 申请白名单时只申请了推理域名，没申请 pypi 依赖域名</li>
+        <li>C. pip 版本太旧</li>
+        <li>D. 依赖包本身有 bug</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>这是坑 1 的原现场景。推理域名通了不代表依赖域名通了。预防方法：申请前按"开发期/推理期/部署期"三阶段列全清单；或者干脆走离线 wheels 包（Day 15），彻底不依赖外网。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A/C/D 都是"技术归因"</strong>，在政企内网环境里，"网络不通"永远要排在"技术故障"前面排查。记住判断顺序：<strong>先问通不通，再问对不对</strong>。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q3 · 申请单 5 要素「域·端·量·期·批」中，「批」指的是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 批量申请的折扣</li>
+        <li>B. 审批归属人（谁负责、出了事找谁）</li>
+        <li>C. 批评与自我批评</li>
+        <li>D. 批处理任务</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>「批」= 审批归属人。政企流程里"责任到人"是审批能推进的前提——没有归属人的申请单，三个部门谁都不敢批。写清归属人+部门+电话，是申请单能被受理的第一条件。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A/D 是技术/商务臆想</strong>，与安全审批无关。<strong>C 是凑数选项</strong>。这题考的是你对政企"责任文化"的理解：流程的本质是责任分配。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q4 · 连通性验证的正确顺序是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. curl -v → telnet → nslookup</li>
+        <li>B. nslookup（DNS 解析）→ telnet（端口连通）→ curl -v（握手+证书）</li>
+        <li>C. telnet → curl -v → nslookup</li>
+        <li>D. 直接跑业务代码看报不报错</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>从底层到上层逐层验证：DNS 解析得了吗？→ 端口通吗？→ HTTPS 握手和证书正常吗？三层全绿才轮到业务层。哪层红了，问题就定位在哪层——DNS 红找网络运维查解析，端口红查防火墙策略，证书红查中间盒是否做了 SSL 劫持。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A/C 顺序颠倒</strong>——上层通了不代表下层没问题，且颠倒后无法分层定位。<strong>D 是最差的排查方式</strong>——业务报错信息往往模糊（"connection error"），无法告诉你死在哪一层。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q5 · 综合题——安全部以「数据出境风险」驳回你的公有云 API 申请，但你用的是境内服务商。请给出处理思路。</summary>
+    <div class="quiz-body">
+      <p style="color: var(--gray-600); margin-bottom: 8px;">用案例 C 的三层申诉框架作答。</p>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 参考答案</div>
+        <p><strong>第 1 层 证明：</strong>服务商数据中心境内位置说明 + traceroute 链路证明 + 服务协议"数据境内存储"条款。</p>
+        <p><strong>第 2 层 补材料：</strong>提交《数据流向图》+ "业务数据不用于模型训练"条款引用，把安全部的担心逐项写成证据链。</p>
+        <p><strong>第 3 层 给替代：</strong>同时提交私有化部署备选方案，请安全部在两条路径中选更合规的——把对抗变成选择题。</p>
+        <p><strong>底层心态：</strong>安全部不是敌人，是帮你把合规证据链补全的同事。你的目标是让他"敢批"，不是让他"认输"。</p>
+      </div>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 6：面试金句 + 心得笔记 -->
+<div class="card">
+  <h2>💼 六、面试金句预埋</h2>
+
+  <div class="interview-quote">
+    <span class="iq-tag">流程意识</span>
+    "政企 AI 项目里，<strong>白名单申请是技术工作，不是行政工作</strong>。依赖清单、端口清单、流量估算、合规证据链——你准备得越像工程师，审批链就越短。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">排查顺序</span>
+    "在客户内网排查问题，我永远先问<strong>'通不通'，再问'对不对'</strong>。DNS、端口、证书三层验证全绿之前，不看业务代码。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">协作心态</span>
+    "安全部驳回不是刁难，是他在履职。我的做法不是申诉到底，而是<strong>帮他把合规证据链补全</strong>，或者给他一个更合规的替代方案——把对抗变成选择题。"
+  </div>
+
+  <h3>📓 心得笔记</h3>
+  <div class="box box-red">
+    <div class="box-title">⚠️ 今天最反直觉的 3 件事</div>
+    <div>
+      <p><strong>1.</strong> 卡住项目的往往不是技术，是一张申请单。<em>（85% 的政企 AI 项目在白名单环节耗掉 2-3 周。）</em></p>
+      <p><strong>2.</strong> 白名单不是唯一通路。<em>（介质导入、离线包、国内镜像、私有化——流程上走得通的路才是好路。）</em></p>
+      <p><strong>3.</strong> 申请单的专业度决定审批链长度。<em>（你写得越像外行，被问的轮次就越多；数字越具体，批得越快。）</em></p>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  学习笔记 · AI 项目经理成长 · FDE v2 · Day 13<br>
+  下一站 → Day 14 私有化 vs 公有云 API 选型决策树
+</div>
+
+</div>
+</body>
+</html>

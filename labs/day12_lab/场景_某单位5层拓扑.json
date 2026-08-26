@@ -1,0 +1,63 @@
+{
+  "name": "某单位 5 层网络拓扑（Day12 实战场景）",
+  "note": "本场景为教学脱敏样例，单位统一称“某单位”，不对应任何真实机构。复用 rag_demo（RAG 招标文件问答）作为案例中的 AI 系统。",
+
+  "segments": {
+    "internet": {"name": "互联网",        "layer": 0, "egress": true,  "holds_prod_data": false},
+    "dmz":      {"name": "DMZ（对外服务区）", "layer": 1, "egress": true,  "holds_prod_data": false},
+    "office":   {"name": "办公网",        "layer": 2, "egress": false, "holds_prod_data": false},
+    "prod":     {"name": "生产网",        "layer": 3, "egress": false, "holds_prod_data": true},
+    "isolated": {"name": "隔离区（高密）",  "layer": 4, "egress": false, "holds_prod_data": true}
+  },
+
+  "rules": [
+    {"src": "internet", "dst": "dmz",      "mode": "open"},
+    {"src": "internet", "dst": "office",   "mode": "deny"},
+    {"src": "internet", "dst": "prod",     "mode": "deny"},
+    {"src": "internet", "dst": "isolated", "mode": "deny"},
+
+    {"src": "dmz", "dst": "internet",  "mode": "whitelist"},
+    {"src": "dmz", "dst": "office",   "mode": "open"},
+    {"src": "dmz", "dst": "prod",     "mode": "deny"},
+    {"src": "dmz", "dst": "isolated", "mode": "deny"},
+
+    {"src": "office", "dst": "internet",  "mode": "whitelist"},
+    {"src": "office", "dst": "dmz",      "mode": "open"},
+    {"src": "office", "dst": "prod",     "mode": "whitelist"},
+    {"src": "office", "dst": "isolated", "mode": "deny"},
+
+    {"src": "prod", "dst": "internet",  "mode": "deny"},
+    {"src": "prod", "dst": "dmz",      "mode": "deny"},
+    {"src": "prod", "dst": "office",   "mode": "deny"},
+    {"src": "prod", "dst": "isolated", "mode": "deny"},
+
+    {"src": "isolated", "dst": "*",        "mode": "deny"},
+    {"src": "*",        "dst": "isolated", "mode": "whitelist"}
+  ],
+
+  "placements": {
+    "good": {
+      "desc": "合规收口：RAG 全链路收在生产网内，LLM 私有化部署在生产网，任何生产数据都不出生产网。",
+      "assets": [
+        {"name": "Streamlit 界面",   "type": "ui",           "segment": "office", "carries_prod_data": false},
+        {"name": "检索服务",         "type": "service",      "segment": "prod",   "carries_prod_data": false},
+        {"name": "FAISS 索引",       "type": "index",        "segment": "prod",   "carries_prod_data": true},
+        {"name": "招标文件库",       "type": "db",           "segment": "prod",   "carries_prod_data": true},
+        {"name": "私有化 LLM",      "type": "private_llm",  "segment": "prod",   "carries_prod_data": false}
+      ],
+      "call_chain": ["Streamlit 界面", "检索服务", "FAISS 索引", "招标文件库", "检索服务", "私有化 LLM"]
+    },
+
+    "bad": {
+      "desc": "常见错误：把检索服务放在生产网，却让它直连互联网上的公网 LLM。生产网禁止直连互联网，且生产数据会出域。",
+      "assets": [
+        {"name": "Streamlit 界面",   "type": "ui",           "segment": "office", "carries_prod_data": false},
+        {"name": "检索服务",         "type": "service",      "segment": "prod",   "carries_prod_data": false},
+        {"name": "FAISS 索引",       "type": "index",        "segment": "prod",   "carries_prod_data": true},
+        {"name": "招标文件库",       "type": "db",           "segment": "prod",   "carries_prod_data": true},
+        {"name": "ModelScope LLM",  "type": "external_llm", "segment": "internet", "carries_prod_data": false}
+      ],
+      "call_chain": ["Streamlit 界面", "检索服务", "FAISS 索引", "检索服务", "ModelScope LLM"]
+    }
+  }
+}

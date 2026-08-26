@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FDE v2 · Day 15 · 离线环境部署 · pip/npm 内网镜像 + Python/Node 环境</title>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-bg: #eff6ff;
+  --blue-dark: #1e40af;
+  --orange: #ea580c;
+  --orange-bg: #fff7ed;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --green: #059669;
+  --green-bg: #ecfdf5;
+  --yellow: #d97706;
+  --yellow-bg: #fffbeb;
+  --purple: #7c3aed;
+  --purple-bg: #f5f3ff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-800: #1f2937;
+  --text: #1a1a2e;
+  --text-light: #6b7280;
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: #f0f4f8; color: var(--text); line-height: 1.8; font-size: 16px;
+}
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+.hero {
+  background: linear-gradient(135deg, #7c2d12 0%, #c2410c 55%, #ea580c 100%);
+  color: #fff; border-radius: var(--radius); padding: 32px 30px 26px; margin-bottom: 20px;
+}
+.hero-badge { display: inline-block; background: rgba(255,255,255,0.18); padding: 4px 14px; border-radius: 20px; font-size: 12px; margin-bottom: 10px; }
+.hero h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; }
+.hero .subtitle { font-size: 14.5px; opacity: 0.92; margin-bottom: 14px; line-height: 1.7; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; opacity: 0.85; }
+.hero-back { font-size: 12px; margin-top: 10px; opacity: 0.75; }
+.hero-back a { color: #fff; text-decoration: underline; }
+
+.card { background: #fff; border-radius: var(--radius); padding: 26px 26px 22px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.card h2 { font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.card h3 { font-size: 17px; font-weight: 600; color: var(--gray-800); margin: 22px 0 10px; padding-left: 12px; border-left: 3px solid var(--primary); }
+.card h4 { font-size: 15px; font-weight: 600; margin: 14px 0 8px; color: var(--gray-800); }
+p { margin-bottom: 10px; }
+code { background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-size: 14px; font-family: "Cascadia Code", "Fira Code", Consolas, monospace; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-size: 14px; }
+th { background: var(--primary); color: #fff; padding: 9px 12px; text-align: left; font-weight: 600; font-size: 13px; }
+td { padding: 9px 12px; border-bottom: 1px solid var(--gray-200); vertical-align: top; }
+tr:nth-child(even) td { background: var(--gray-50); }
+
+.box { border-radius: 8px; padding: 14px 16px; margin: 14px 0; border-left: 4px solid; font-size: 14.5px; }
+.box-blue { background: var(--primary-bg); border-color: var(--primary); }
+.box-green { background: var(--green-bg); border-color: var(--green); }
+.box-yellow { background: var(--yellow-bg); border-color: var(--yellow); }
+.box-red { background: var(--red-bg); border-color: var(--red); }
+.box-purple { background: var(--purple-bg); border-color: var(--purple); }
+.box-orange { background: var(--orange-bg); border-color: var(--orange); }
+.box-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+
+.mentor { background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%); border-radius: 10px; padding: 16px 18px; margin: 14px 0; border: 1px solid #dbeafe; position: relative; }
+.mentor::before { content: '👨‍🏫'; position: absolute; top: -12px; left: 16px; background: #fff; padding: 0 6px; font-size: 20px; }
+.mentor .mentor-title { font-weight: 700; color: var(--blue-dark); font-size: 14px; margin-bottom: 6px; margin-top: 4px; }
+.mentor .mentor-body { font-size: 14.5px; color: var(--gray-800); line-height: 1.75; }
+.mentor .mentor-body p { margin-bottom: 8px; }
+
+.goal-list { list-style: none; padding: 0; }
+.goal-list li { padding: 8px 0 8px 32px; position: relative; font-size: 15px; }
+.goal-list li::before { content: '🎯'; position: absolute; left: 4px; top: 8px; font-size: 15px; }
+
+.mnemonic { background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 10px; padding: 14px 18px; margin: 14px 0; text-align: center; }
+.mnemonic .m-title { font-size: 12px; color: #92400e; margin-bottom: 6px; letter-spacing: 2px; }
+.mnemonic .m-line { font-size: 18px; font-weight: 700; color: #78350f; letter-spacing: 3px; }
+.mnemonic .m-explain { font-size: 13px; color: #92400e; margin-top: 6px; }
+
+.cheatsheet { border: 2px dashed var(--primary); border-radius: 10px; padding: 16px 18px; margin: 14px 0; background: #f0f9ff; }
+.cheatsheet .cs-title { font-weight: 700; color: var(--blue-dark); font-size: 15px; margin-bottom: 10px; }
+
+.steps { counter-reset: step; margin: 12px 0; }
+.step-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px dashed var(--gray-200); }
+.step-item:last-child { border-bottom: none; }
+.step-item .step-num { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--primary); color: #fff; text-align: center; line-height: 34px; font-weight: 700; }
+.step-item .step-body { flex: 1; }
+.step-item .step-body strong { color: var(--blue-dark); }
+
+.quiz-item { border: 1px solid var(--gray-200); border-radius: 8px; margin: 10px 0; overflow: hidden; }
+.quiz-item summary { background: var(--primary-bg); padding: 12px 14px; cursor: pointer; font-weight: 600; color: var(--primary); font-size: 14.5px; }
+.quiz-item[open] summary { border-bottom: 1px solid var(--gray-200); }
+.quiz-body { padding: 12px 16px; }
+.quiz-options { list-style: none; padding: 0; }
+.quiz-options li { padding: 5px 0; font-size: 14px; }
+.quiz-answer { background: var(--green-bg); border-left: 3px solid var(--green); padding: 10px 12px; margin-top: 10px; font-size: 14px; border-radius: 4px; }
+.quiz-answer .ans-title { font-weight: 700; color: var(--green); margin-bottom: 6px; }
+.wrong-analysis { background: var(--red-bg); border-left: 3px solid var(--red); padding: 10px 12px; margin-top: 8px; font-size: 13.5px; border-radius: 4px; }
+.wrong-analysis .wa-title { font-weight: 700; color: var(--red); margin-bottom: 4px; }
+
+.case-block { border: 1px solid var(--gray-200); border-radius: 8px; margin: 12px 0; overflow: hidden; }
+.case-block summary { background: linear-gradient(135deg, #ede9fe, #ddd6fe); padding: 12px 14px; cursor: pointer; font-weight: 600; color: #5b21b6; font-size: 14.5px; }
+.case-block .case-body { padding: 14px 16px; font-size: 14px; }
+.case-block .case-body h5 { color: var(--blue-dark); margin: 10px 0 6px; font-size: 14px; }
+
+.interview-quote { background: linear-gradient(135deg, #1e3a5f, #1a56db); color: #fff; border-radius: 10px; padding: 18px 20px; margin: 14px 0; font-size: 15px; font-style: italic; line-height: 1.8; position: relative; }
+.interview-quote::before { content: '💼'; position: absolute; top: -10px; left: 16px; background: #fff; padding: 2px 6px; border-radius: 12px; font-size: 16px; }
+.interview-quote .iq-tag { display: block; font-size: 11px; opacity: 0.8; margin-bottom: 6px; font-style: normal; letter-spacing: 1px; }
+
+.footer { text-align: center; color: var(--text-light); font-size: 12px; padding: 20px 0 36px; border-top: 1px solid var(--gray-200); margin-top: 16px; }
+
+@media (max-width: 640px) {
+  .container { padding: 12px; }
+  .hero { padding: 24px 18px 20px; }
+  .hero h1 { font-size: 20px; }
+  .card { padding: 20px 16px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="hero">
+  <div class="hero-badge">FDE v2 · Phase 4 · Day 15</div>
+  <h1>📦 离线环境部署 · pip/npm + Python/Node</h1>
+  <div class="subtitle">Demo 在你办公室跑得好好的，到 <strong>客户离线机器上一装就翻车</strong>——今天教你把离线部署这块最坑的活彻底搞定，不再靠 U 盘反复来回。</div>
+  <div class="hero-meta">
+    <span>🎯 Phase 4 · 政企环境适配</span>
+    <span>⏱️ 预计 80-90 分钟</span>
+    <span>🧭 补齐能力：⑦ 啃环境</span>
+  </div>
+  <div class="hero-back">FDE v2 学习路径 · <a href="./day00_fde_panorama_and_radar.html">← 回到 Day 0 起点校准</a></div>
+</div>
+
+<!-- 板块 1：今日目标 -->
+<div class="card">
+  <h2>🎯 一、今日目标</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>你 PM 时候不用管这活，运维/实施同事帮你搞。但转 FDE 之后，你自己写的 Demo 别人不会打包，你不会 debug 就只能干瞪眼。而且政企驻场 90% 遇到的第一个大坑就是——<strong>客户机器没网</strong>。你的 Demo 在某公司办公室跑得欢，进某单位内网抓瞎。</p>
+      <p>今天不要求你成为运维专家，要求你能<strong>独立把一个 FastAPI+Streamlit 的 RAG Demo 从有网机器搬到离线 Linux 服务器</strong>，且知道每一步为什么这么做。翻车了能自己判断在哪一层。</p>
+    </div>
+  </div>
+
+  <ul class="goal-list">
+    <li>能用 <strong>「打·传·装·启·守」五步口诀</strong> 复述离线部署全流程</li>
+    <li>掌握 <code>pip download --platform</code> 关键参数，包能装得上目标平台</li>
+    <li>能独立写一份 <strong>「零基础运维也能跑」的 SOP 手册</strong></li>
+    <li>看到 <code>ERROR: Could not find a version</code> 能 30 秒定位是哪一层出错</li>
+  </ul>
+</div>
+
+<!-- 板块 2：核心讲解 -->
+<div class="card">
+  <h2>📖 二、核心讲解</h2>
+
+  <h3>是什么：离线部署的 3 层困难</h3>
+  <p>大白话——离线环境不是"网速慢"，是<strong>网络物理隔绝、可能连你的电脑都不能连</strong>。分 3 层困难：</p>
+  <table>
+    <thead>
+      <tr><th style="width:20%">困难层</th><th style="width:30%">表现</th><th>典型翻车</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>① 依赖装不上</strong></td><td>pip/npm 联不上镜像源</td><td>装了半天报 "Could not find a version"</td></tr>
+      <tr><td><strong>② 网络访问不到</strong></td><td>调外部 API、拉模型、下 HuggingFace 全断</td><td>模型没下载完程序起不来</td></tr>
+      <tr><td><strong>③ 权限不够</strong></td><td>非 root 用户、SELinux、防火墙、开机自启</td><td>手动能跑，重启就没了；日志写不进指定目录</td></tr>
+    </tbody>
+  </table>
+  <p><strong>反直觉的地方：</strong>90% 的翻车不是代码 bug，是<strong>环境不一致</strong>。同事的 macOS、你的 Windows 装了 Python 3.11 + M 系列 wheel，客户是 CentOS 7 + Python 3.6 + x86_64——三层都对不上，包装不上是必然。</p>
+
+  <div class="mnemonic">
+    <div class="m-title">□ □ □ 离线部署五步口诀 □ □ □</div>
+    <div class="m-line">打 · 传 · 装 · 启 · 守</div>
+    <div class="m-explain">依赖打包 · 传输 · 安装 · 启动 · 守护 — 少任何一步都翻车</div>
+  </div>
+
+  <h3>为什么：FDE 视角下的三个大坑</h3>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 1 · 只 <code>pip freeze &gt; requirements.txt</code> 就以为够了</div>
+    <div>
+      <p><code>requirements.txt</code> 只记录了 Python 包，没记录：<em>系统级 apt 依赖（gcc/libpq-dev/ffmpeg）、CUDA 驱动、GLIBC 版本、字体、时区、SSL 证书</em>。</p>
+      <p>典型翻车：你在 Ubuntu 22 上跑得好好的，客户 CentOS 7 装 <code>psycopg2</code> 需要 <code>libpq-dev</code>，装 <code>Pillow</code> 需要 <code>libjpeg</code>，装 <code>opencv-python</code> 需要 <code>libGL.so.1</code>——这些都不在你的 requirements.txt 里。到现场才发现，加起来又是半天。</p>
+      <p><strong>正确姿势：</strong>除了 <code>requirements.txt</code>，另外维护一份 <code>system-deps.md</code>，列出所有 <code>apt install</code> / <code>yum install</code> 的系统包，且注明用途。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 2 · 依赖包直接 zip 复制——二进制平台差异翻车</div>
+    <div>
+      <p>Python wheel 包有平台差异：<code>numpy-1.24-cp310-cp310-macosx_11_0_arm64.whl</code> 只能在 macOS ARM64 装，<code>numpy-1.24-cp310-cp310-manylinux2014_x86_64.whl</code> 才能在 Linux x86 装。你在 Mac 上 <code>pip download</code> 默认拉的是 Mac 版，复制到 CentOS 就是废纸。</p>
+      <p><strong>正确姿势：</strong>下载时 <em>显式指定目标平台</em>——<br>
+      <code>pip download -r requirements.txt -d ./wheels --platform manylinux2014_x86_64 --python-version 3.10 --only-binary=:all:</code></p>
+      <p>Node 类似——<code>npm pack</code> 出的是通用 tar 包，但如果依赖了 <code>node-sass</code>、<code>sharp</code> 这类含 native binding 的包，也要在目标平台重新构建，或用 <code>npm ci --offline</code> 且预先在同架构机器打包。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 3 · 不预演在类似的隔离环境测——现场发现装不上就是灾难现场</div>
+    <div>
+      <p>客户现场机会难得，一次不行下次可能要一周后。你到现场才发现装不上，客户信息部长脸色难看，你还得排队等他给你放行申请。</p>
+      <p><strong>正确姿势：</strong>去客户现场之前，在自己电脑上开一台 <strong>干净同架构 VM</strong>（例如 VMware 或 Docker 里的 CentOS 7），<strong>断网</strong>，用你打的包 <em>从零装一遍</em>。所有报错在这里踩完，再出门。</p>
+    </div>
+  </div>
+
+  <div class="box box-blue">
+    <div class="box-title">🧭 PM 行动指南：离线部署前必做 4 件事</div>
+    <div>
+      <p><strong>Step A · 拉一台干净同架构机器预演</strong>——问客户要目标机器的 <code>uname -a</code>、<code>cat /etc/os-release</code>、<code>python3 --version</code>、GPU/CUDA 版本。自己搭同版本 VM 或容器。</p>
+      <p><strong>Step B · 系统依赖列清单</strong>——除 requirements.txt 外，写一份 <code>system-deps.md</code>：GLIBC / gcc / CUDA / ffmpeg / libpq / 字体 / 时区，逐项标"必需 / 可选 / 备用"。</p>
+      <p><strong>Step C · 依赖打包指定平台</strong>——<code>pip download --platform manylinux2014_x86_64 --python-version 3.10 --only-binary=:all:</code>，Node 用 <code>npm pack</code> 或 verdaccio 私有镜像。</p>
+      <p><strong>Step D · 起手 SOP 手册</strong>——手册要写到"客户运维小张只会 Ctrl+C/V"的程度：每一步是一行命令、预期输出、报错怎么办。</p>
+    </div>
+  </div>
+
+  <h3>怎么用：五步完成离线 Python/Node 部署</h3>
+
+  <div class="steps">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>依赖打包（打）</strong>——在有网机器上：<br>
+        <code>pip download -r requirements.txt -d ./wheels --platform manylinux2014_x86_64 --python-version 3.10 --only-binary=:all:</code><br>
+        npm：<code>npm pack &lt;pkg&gt;</code> 逐个打，或起 <code>verdaccio</code> 私有镜像预缓存全部依赖后 tarball 出来。<br>
+        <em>关键：把 Python 解释器本身也打进去（<code>python-3.10.13-amd64.tar.xz</code>），别指望客户机器已经有对版本。</em>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>传输到客户机器（传）</strong>——三种方式：<br>
+        · <em>堡垒机 SCP</em>——央国企多数走这条，速度慢但合规。<br>
+        · <em>U 盘导入</em>——最后手段，先申请审批，且介质要过防病毒扫描。<br>
+        · <em>OSS 内网桶</em>——客户如有内网对象存储最省事，走内部专线。<br>
+        <em>关键：把包分卷压缩（<code>tar -czf - dir | split -b 500M</code>）避免大文件传输失败要重来。</em>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>离线安装（装）</strong>——目标机器上：<br>
+        <code>pip install --no-index --find-links=./wheels -r requirements.txt</code><br>
+        npm：<code>npm install --offline --prefer-offline</code>，或提前 <code>npm ci --cache ./npm-cache --prefer-offline</code>。<br>
+        <em>关键：<code>--no-index</code> 强制不走网络，否则 pip 会尝试连 pypi.org 卡住。</em>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>服务启动（启）</strong>——写一份启动脚本 <code>start.sh</code>：<br>
+        <code>#!/bin/bash</code><br>
+        <code>export PYTHONPATH=$(pwd)</code><br>
+        <code>export TZ=Asia/Shanghai</code><br>
+        <code>nohup python -m uvicorn app:app --host 0.0.0.0 --port 8000 &gt; logs/app.log 2&gt;&amp;1 &amp;</code><br>
+        <em>关键：日志目录、端口、时区、环境变量在这一层固定，别让客户运维猜。</em>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>守护（守）</strong>——写 <code>systemd</code> 单元让服务开机自启、崩溃重启：<br>
+        <code>[Service]<br>Type=simple<br>ExecStart=/opt/app/start.sh<br>Restart=always<br>RestartSec=5</code><br>
+        <em>关键：客户机器一年可能因运维重启 5-10 次，没 systemd 你的服务就是"死一次要你上门一次"。</em>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 板块 3：动手步骤 -->
+<div class="card">
+  <h2>🛠️ 三、动手步骤</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>三个案例。第一个我把完整命令序列给你，你敲一遍。后两个自己想，翻车了对照参考答案。这活儿光看没用，指头必须动一遍。</p>
+    </div>
+  </div>
+
+  <details class="case-block" open>
+    <summary>📌 案例 A · 把 FastAPI + Streamlit RAG Demo 部署到离线 CentOS 7（跟着做）</summary>
+    <div class="case-body">
+      <h5>目标环境</h5>
+      <p>CentOS 7.9 · Python 3.10（客户机器只有 Python 3.6，需要自带）· 8G 内存 · 无 GPU · 无外网。</p>
+
+      <h5>Step 1 · 在你办公室机器上（有网）打包</h5>
+      <pre style="background:var(--gray-100);padding:12px;border-radius:6px;font-size:13px;overflow-x:auto;"><code># 1.1 建干净虚拟环境
+python3.10 -m venv .venv &amp;&amp; source .venv/bin/activate
+
+# 1.2 生成锁定版本
+pip freeze &gt; requirements.txt
+
+# 1.3 下载所有依赖（关键 —— 显式指定 Linux 平台）
+pip download -r requirements.txt \
+  -d ./wheels \
+  --platform manylinux2014_x86_64 \
+  --python-version 3.10 \
+  --only-binary=:all:
+
+# 1.4 下载 Python 解释器本体
+wget https://www.python.org/ftp/python/3.10.13/Python-3.10.13.tgz
+
+# 1.5 打个 tar 包
+tar -czf offline-rag-demo.tar.gz wheels/ Python-3.10.13.tgz app/ start.sh system-deps.md README.md</code></pre>
+
+      <h5>Step 2 · 传输</h5>
+      <p>走客户堡垒机 SCP。分卷压缩以防大文件传输中断：<br>
+      <code>split -b 500M offline-rag-demo.tar.gz part_</code></p>
+
+      <h5>Step 3 · 客户机器上离线安装</h5>
+      <pre style="background:var(--gray-100);padding:12px;border-radius:6px;font-size:13px;overflow-x:auto;"><code># 3.1 合并分卷
+cat part_* &gt; offline-rag-demo.tar.gz &amp;&amp; tar -xzf offline-rag-demo.tar.gz
+
+# 3.2 先装系统依赖（提前和客户运维协调好 yum 本地源）
+sudo yum install -y gcc openssl-devel bzip2-devel libffi-devel
+
+# 3.3 编译安装 Python 3.10
+tar -xzf Python-3.10.13.tgz &amp;&amp; cd Python-3.10.13
+./configure --prefix=/opt/python310 --enable-optimizations
+make -j4 &amp;&amp; sudo make altinstall
+
+# 3.4 建虚拟环境 + 离线装依赖
+/opt/python310/bin/python3.10 -m venv .venv
+source .venv/bin/activate
+pip install --no-index --find-links=./wheels -r requirements.txt</code></pre>
+
+      <h5>Step 4 · 启动与守护</h5>
+      <p>写 <code>start.sh</code> 和 <code>rag-demo.service</code>（systemd unit），<code>systemctl enable rag-demo &amp;&amp; systemctl start rag-demo</code>。</p>
+
+      <h5>可能翻车的 5 个地方（预防清单）</h5>
+      <ul style="margin-left:24px;">
+        <li>① GLIBC 版本太老（CentOS 7 是 2.17，PyTorch 2.x 要求 ≥ 2.24）→ 换 CentOS 7 兼容的 PyTorch 1.13 版本，或让客户升级到 CentOS Stream 8</li>
+        <li>② SSL 证书缺失（HTTPS 请求报 SSLError）→ 打包时把 <code>certifi</code> 一起打，或复制系统 CA</li>
+        <li>③ 中文乱码（<code>UnicodeDecodeError</code>）→ 设置 <code>LANG=zh_CN.UTF-8</code> 和 <code>PYTHONIOENCODING=utf-8</code></li>
+        <li>④ 端口被防火墙拦→ 提前跟客户运维要 <code>firewall-cmd</code> 开放 8000 端口</li>
+        <li>⑤ SELinux 阻止服务写日志→ <code>setenforce 0</code> 临时关闭，或写 <code>audit2allow</code> 策略</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 B · 把 Day 6 的 Function Calling Agent 部署到隔离环境（自己练）</summary>
+    <div class="case-body">
+      <p><strong>目标：</strong>你在 Day 6 写的 Agent（用 OpenAI 兼容 API + tools 定义）要放到客户隔离环境。客户提供一个内网大模型 API 服务（http://10.10.1.5:8080/v1）。</p>
+      <p style="color: var(--gray-500);">写下你的打包 + 部署方案，注意跟纯 RAG 场景的差异。</p>
+
+      <details style="margin-top:12px;">
+        <summary style="cursor:pointer;color:var(--primary);font-weight:600;">查看参考答案</summary>
+        <div style="padding:10px 14px;background:var(--gray-50);border-radius:6px;margin-top:8px;">
+          <p><strong>核心差异：</strong>Agent 的外部工具调用要重新对接内网。原本代码里写死 <code>base_url="https://api.openai.com/v1"</code>，要改成 <code>os.getenv("LLM_BASE_URL", "http://10.10.1.5:8080/v1")</code> 环境变量注入。</p>
+          <p><strong>关键动作：</strong></p>
+          <ul style="margin-left:24px;">
+            <li>① 所有外部 URL 全部提取到 <code>.env</code>（或 config 文件），不写死</li>
+            <li>② 检查工具函数里有没有调用外部服务（天气 API、股票 API、Google 搜索）——离线环境要么去掉、要么替换成客户内部同类服务</li>
+            <li>③ 依赖打包与案例 A 相同，但注意 <code>openai</code> SDK 依赖 <code>httpx</code> + <code>httpx-sse</code>，别漏</li>
+            <li>④ 内网 LLM 服务可能不支持完整 OpenAI 协议，测通 <code>/chat/completions</code> 和 <code>tools</code> 参数</li>
+            <li>⑤ 写一份《内网 LLM 服务兼容性自检脚本》交给客户运维</li>
+          </ul>
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 Bug case · 离线机器 pip install 报 "Could not find a version"（自己练）</summary>
+    <div class="case-body">
+      <p><strong>现场：</strong>你按案例 A 步骤操作到 Step 3.4，敲 <code>pip install --no-index --find-links=./wheels -r requirements.txt</code>，报错：<br>
+      <code>ERROR: Could not find a version that satisfies the requirement lxml==4.9.3</code></p>
+      <p style="color: var(--gray-500);">3 种可能原因分别是什么？怎么排查？</p>
+
+      <details style="margin-top:12px;">
+        <summary style="cursor:pointer;color:var(--primary);font-weight:600;">查看参考答案</summary>
+        <div style="padding:10px 14px;background:var(--gray-50);border-radius:6px;margin-top:8px;">
+          <p><strong>原因 1 · 平台不匹配</strong>——你打包时用的是 macOS，下载的是 <code>lxml-4.9.3-cp310-cp310-macosx_11_0_arm64.whl</code>，但客户是 Linux x86_64。<br><em>排查：</em><code>ls ./wheels/lxml*</code>，看文件名里的 <code>manylinux</code> 或 <code>macosx</code>；<em>解决：</em>重新在有网机器 <code>pip download --platform manylinux2014_x86_64</code>。</p>
+          <p><strong>原因 2 · Python 版本不匹配</strong>——你打包时指定的是 Python 3.10（<code>cp310</code>），但客户机器实际用的是 Python 3.9（<code>cp39</code>）。<br><em>排查：</em><code>python --version</code> 看客户实际版本；<em>解决：</em>要么客户升级 Python，要么重新 <code>--python-version 3.9</code> 打包。</p>
+          <p><strong>原因 3 · 只下了源码没下二进制</strong>——某些包（尤其含 C 扩展的，如 <code>lxml</code>、<code>psycopg2</code>）默认只发 sdist 源码，需要 <code>--only-binary=:all:</code> 强制拉预编译 wheel。你如果没加这个参数，可能只下了 <code>lxml-4.9.3.tar.gz</code>，离线机没有编译工具装不了。<br><em>排查：</em>看 wheels 目录里是 <code>.whl</code> 还是 <code>.tar.gz</code>；<em>解决：</em>加 <code>--only-binary=:all:</code>，或在离线机装 gcc + python-devel 让它现场编译。</p>
+          <p><strong>面试金句：</strong><em>"离线 pip 报错先看 <code>ls wheels/</code>，文件名里的 <code>manylinux/macosx</code>、<code>cp310/cp39</code>、<code>.whl/.tar.gz</code> 三个片段决定错在哪一层。"</em></p>
+        </div>
+      </details>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 4：速查卡 -->
+<div class="card">
+  <h2>📇 四、速查卡</h2>
+
+  <div class="cheatsheet">
+    <div class="cs-title">⚙️ pip/npm 离线打包命令速查</div>
+    <table>
+      <thead>
+        <tr><th>场景</th><th>命令</th><th>关键参数说明</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>pip 打包（有网）</td><td><code>pip download -r requirements.txt -d ./wheels --platform manylinux2014_x86_64 --python-version 3.10 --only-binary=:all:</code></td><td>三个参数缺一不可</td></tr>
+        <tr><td>pip 安装（离线）</td><td><code>pip install --no-index --find-links=./wheels -r requirements.txt</code></td><td><code>--no-index</code> 强制不走网络</td></tr>
+        <tr><td>npm 打包（有网）</td><td><code>npm ci --cache ./npm-cache --prefer-offline</code> 或 verdaccio 私有 registry</td><td>提前预缓存全部依赖</td></tr>
+        <tr><td>npm 安装（离线）</td><td><code>npm install --offline --prefer-offline --cache ./npm-cache</code></td><td><code>--offline</code> 拒绝任何网络请求</td></tr>
+        <tr><td>conda 打包</td><td><code>conda-pack -n myenv -o myenv.tar.gz</code></td><td>整个 conda 环境打包，最省事</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">🔧 系统级依赖预检清单</div>
+    <table>
+      <thead>
+        <tr><th>依赖</th><th>检查命令</th><th>常触发的 Python 包</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>GLIBC 版本</td><td><code>ldd --version</code></td><td>PyTorch (需 ≥ 2.24)、TensorFlow</td></tr>
+        <tr><td>gcc/g++</td><td><code>gcc --version</code></td><td>含 C 扩展的包（lxml、psycopg2）</td></tr>
+        <tr><td>CUDA/cuDNN</td><td><code>nvidia-smi</code> / <code>nvcc --version</code></td><td>PyTorch-CUDA、vllm、transformers</td></tr>
+        <tr><td>ffmpeg</td><td><code>ffmpeg -version</code></td><td>whisper、moviepy、pydub</td></tr>
+        <tr><td>libpq</td><td><code>pg_config --version</code></td><td>psycopg2</td></tr>
+        <tr><td>libGL</td><td><code>ldconfig -p | grep libGL</code></td><td>opencv-python</td></tr>
+        <tr><td>libjpeg/libpng</td><td><code>rpm -qa | grep -E "libjpeg|libpng"</code></td><td>Pillow</td></tr>
+        <tr><td>字体</td><td><code>fc-list :lang=zh</code></td><td>matplotlib、reportlab 中文</td></tr>
+        <tr><td>时区</td><td><code>date</code> / <code>ls /etc/localtime</code></td><td>所有日志/scheduler</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">🚨 离线部署翻车 Top 10（保命清单）</div>
+    <ol style="margin-left:24px;">
+      <li><strong>Python 版本不匹配</strong>——打包指定 3.10，客户机器只有 3.6/3.9</li>
+      <li><strong>GLIBC 版本太老</strong>——CentOS 7 的 GLIBC 2.17 装不上新版 PyTorch</li>
+      <li><strong>SSL 证书缺失</strong>——离线机无系统 CA，HTTPS 请求全 fail</li>
+      <li><strong>时区错乱</strong>——UTC 时区导致日志时间对不上</li>
+      <li><strong>中文编码</strong>——LANG 未设置导致中文乱码或异常</li>
+      <li><strong>权限不够</strong>——非 root 用户不能写 <code>/var/log</code></li>
+      <li><strong>端口占用/防火墙</strong>——8000 端口被占，或 <code>firewalld</code> 拦</li>
+      <li><strong>SELinux 阻止</strong>——服务写日志报 Permission denied 但目录权限看着对</li>
+      <li><strong>DNS 解析</strong>——离线环境用了内部域名但 /etc/hosts 没配</li>
+      <li><strong>开机不自启</strong>——手动能跑，客户机器重启就没了（缺 systemd unit）</li>
+    </ol>
+  </div>
+</div>
+
+<!-- 板块 5：5 题小测验 -->
+<div class="card">
+  <h2>📝 五、5 题小测验</h2>
+  <p style="color: var(--gray-600); font-size: 14px;">建议先自己想 20 秒再点开答案。答错也别慌——错项解析比正确答案更值钱。</p>
+
+  <details class="quiz-item">
+    <summary>Q1 · 你在 Mac 上执行 <code>pip download -r req.txt -d ./wheels</code>，然后传到 CentOS 装，报"Could not find a version"，最可能原因？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. requirements.txt 版本号写错了</li>
+        <li>B. 下的包是 macOS ARM64 版本，Linux 装不上</li>
+        <li>C. CentOS 上 Python 没装</li>
+        <li>D. 网络还是在偷偷走 pypi</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>没加 <code>--platform manylinux2014_x86_64</code>，pip 默认按当前机器（Mac ARM）下载。同版本号的包，wheel 文件的 platform tag 不匹配就装不上。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 如果版本号写错，报错是 "No matching distribution"</strong>，措辞不同。<strong>C 如果 Python 没装，根本调不起 pip</strong>，报的是 command not found。<strong>D 如果网络在走，报的是 "Connection timeout"</strong>，不是 "Could not find a version"。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q2 · "打·传·装·启·守" 里，「守」这一步的核心目的是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 让服务比别人跑得快</li>
+        <li>B. 让服务开机自启、崩溃自动重启</li>
+        <li>C. 让服务日志更详细</li>
+        <li>D. 让服务连不上外网</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>「守」= 守护进程。客户机器一年可能重启 5-10 次（补丁/演练/断电），没 systemd 你的服务重启后就没了，客户要打电话给你上门重启，你在某公司某单位驻场应该体会过这种活多痛苦。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 性能不是"守"关注的</strong>——性能是启动参数（worker 数、并发数）的事。<strong>C 日志详细度是 logging 配置的事</strong>，不是 systemd。<strong>D 完全无关</strong>，且离线环境本来就断外网。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q3 · 客户机器是 CentOS 7，你打的 PyTorch 2.1 装完 <code>import torch</code> 报 GLIBC 版本不够，怎么办？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 让客户升级 GLIBC（把 GLIBC 拷过去替换）</li>
+        <li>B. 换成兼容的 PyTorch 1.13 版本</li>
+        <li>C. 强行 <code>ldconfig</code> 一下</li>
+        <li>D. 让客户重装 CentOS 8</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>PyTorch 2.x 要 GLIBC ≥ 2.24，CentOS 7 是 2.17。合理选择是回退到 <strong>PyTorch 1.13</strong>（兼容 GLIBC 2.17），或让客户长期规划升级到 CentOS Stream 8/9。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 是灾难操作</strong>——GLIBC 是系统底层，暴力替换会让整个系统的其他程序全崩，甚至开不了机。生产系统这种操作要挨批。<strong>C <code>ldconfig</code> 只是刷新链接缓存</strong>，解决不了版本问题。<strong>D 重装系统对已经跑着别的业务的客户是灾难</strong>，你没那个权限也没那个必要。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q4 · 离线部署前你要问客户运维要哪几个关键信息？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 操作系统版本 + Python 版本 + CPU 架构</li>
+        <li>B. 操作系统版本 + Python 版本 + CPU 架构 + GPU/CUDA + GLIBC 版本 + 是否有 root</li>
+        <li>C. 只要客户 IP 就行</li>
+        <li>D. 让客户运维准备好一个能上网的机器</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>预演的目的就是在自己 VM 里搭出<strong>和客户机器一模一样</strong>的环境。这 6 项少任何一项都可能翻车——尤其 GLIBC 版本和 root 权限，前者决定能不能装 PyTorch，后者决定能不能装 systemd unit。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 少了 GLIBC 和权限</strong>，是最常见的疏漏。<strong>C 只有 IP 完全不够</strong>——你连能不能装 Python 都不知道。<strong>D 是幻想</strong>——离线环境本质就是没网，让客户给你一台联网机是变相不做离线部署。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q5 · 综合题——客户运维凌晨 3 点电话："你那服务重启后起不来"。你怎么远程指挥他排查？</summary>
+    <div class="quiz-body">
+      <p style="color: var(--gray-600); margin-bottom: 8px;">按逐层排查思路写下你的话术。</p>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 参考答案：<strong>三层排查法</strong></div>
+        <p><strong>第一层 · 服务层</strong>——让他敲：<code>systemctl status rag-demo</code>，看服务是否 activated；<code>journalctl -u rag-demo -n 100</code>，看最后 100 行日志。90% 的问题这一步就能定位。</p>
+        <p><strong>第二层 · 依赖层</strong>——如果 systemd 说服务启动失败，让他手动跑：<code>source .venv/bin/activate &amp;&amp; python -c "import torch, fastapi"</code>，看是否有 import 错误。多半是升级过 Python 或某个依赖被误删。</p>
+        <p><strong>第三层 · 环境层</strong>——如果 import 正常但服务连不上，看端口和防火墙：<code>ss -tlnp | grep 8000</code> 看端口占用；<code>firewall-cmd --list-ports</code> 看防火墙。</p>
+        <p><strong>话术：</strong>"张老师您别急，我引导您三步：第一步敲这个看输出发我截图；第二步这样这样；第三步这样。90% 从这三步定位。"</p>
+        <p><strong>面试金句：</strong><em>"离线部署交付质量看两个指标——SOP 手册薄不薄（薄好），凌晨电话次数多不多（少好）。"</em></p>
+      </div>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 6：面试金句 + 心得笔记 -->
+<div class="card">
+  <h2>💼 六、面试金句预埋</h2>
+
+  <div class="interview-quote">
+    <span class="iq-tag">预演文化</span>
+    "离线部署我从来不带着 Demo 直接去客户现场。<strong>去之前先在自己 VM 里搭一台一模一样的机器，断网从零装一遍</strong>。所有报错在这里踩完，现场只做已经验证过的流程。这么干过一次，现场翻车率能从 50% 降到 5%。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">平台匹配意识</span>
+    "<code>pip download</code> 我从来加三个参数——<code>--platform</code>、<code>--python-version</code>、<code>--only-binary=:all:</code>。这三个参数不加，一定翻车。这不是知识点，是我一次现场被客户信息部长骂了两小时之后刻在骨头上的肌肉记忆。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">零基础可运维</span>
+    "我写的 SOP 手册标准是——<strong>让一个只会 Ctrl+C/V 的客户运维能独立跑起来</strong>。每一步一行命令、预期输出、报错怎么办。这才叫交付。不然客户永远拴着你，你出差费比 API 还贵。"
+  </div>
+
+  <h3>📓 心得笔记</h3>
+  <div class="box box-red">
+    <div class="box-title">⚠️ 今天最反直觉的 3 件事</div>
+    <div>
+      <p><strong>1.</strong> "requirements.txt + pip install" 只是完成了 20% 的离线部署——系统依赖、Python 解释器、CUDA、字体、时区，这些才是大头。</p>
+      <p><strong>2.</strong> 依赖包是有平台的。Mac 打的包 Linux 装不上，跟"文件复制过去应该都能用"的直觉完全相反。</p>
+      <p><strong>3.</strong> 没有 systemd 的部署等于半成品——客户机器一定会重启，你的服务一定要能起得来。</p>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  学习笔记 · AI 项目经理成长 · FDE v2 · Day 15<br>
+  下一站 → Day 16 合规红线清单：等保 2.0 / 数据脱敏 / 日志留存 / 跨境合规
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FDE v2 · Day 11 · Git 基础 + Code Review + 提 issue/PR</title>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-bg: #eff6ff;
+  --blue-dark: #1e40af;
+  --orange: #ea580c;
+  --orange-bg: #fff7ed;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --green: #059669;
+  --green-bg: #ecfdf5;
+  --yellow: #d97706;
+  --yellow-bg: #fffbeb;
+  --purple: #7c3aed;
+  --purple-bg: #f5f3ff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-800: #1f2937;
+  --text: #1a1a2e;
+  --text-light: #6b7280;
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: #f0f4f8; color: var(--text); line-height: 1.8; font-size: 16px;
+}
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+.hero {
+  background: linear-gradient(135deg, #1e3a5f 0%, #1a56db 55%, #0d7377 100%);
+  color: #fff; border-radius: var(--radius); padding: 32px 30px 26px; margin-bottom: 20px;
+}
+.hero-badge { display: inline-block; background: rgba(255,255,255,0.18); padding: 4px 14px; border-radius: 20px; font-size: 12px; margin-bottom: 10px; }
+.hero h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; }
+.hero .subtitle { font-size: 14.5px; opacity: 0.92; margin-bottom: 14px; line-height: 1.7; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; opacity: 0.85; }
+.hero-back { font-size: 12px; margin-top: 10px; opacity: 0.75; }
+.hero-back a { color: #fff; text-decoration: underline; }
+
+.card { background: #fff; border-radius: var(--radius); padding: 26px 26px 22px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.card h2 { font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.card h3 { font-size: 17px; font-weight: 600; color: var(--gray-800); margin: 22px 0 10px; padding-left: 12px; border-left: 3px solid var(--primary); }
+.card h4 { font-size: 15px; font-weight: 600; margin: 14px 0 8px; color: var(--gray-800); }
+p { margin-bottom: 10px; }
+code { background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-size: 14px; font-family: "Cascadia Code", "Fira Code", Consolas, monospace; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-size: 14px; }
+th { background: var(--primary); color: #fff; padding: 9px 12px; text-align: left; font-weight: 600; font-size: 13px; }
+td { padding: 9px 12px; border-bottom: 1px solid var(--gray-200); vertical-align: top; }
+tr:nth-child(even) td { background: var(--gray-50); }
+
+.box { border-radius: 8px; padding: 14px 16px; margin: 14px 0; border-left: 4px solid; font-size: 14.5px; }
+.box-blue { background: var(--primary-bg); border-color: var(--primary); }
+.box-green { background: var(--green-bg); border-color: var(--green); }
+.box-yellow { background: var(--yellow-bg); border-color: var(--yellow); }
+.box-red { background: var(--red-bg); border-color: var(--red); }
+.box-purple { background: var(--purple-bg); border-color: var(--purple); }
+.box-orange { background: var(--orange-bg); border-color: var(--orange); }
+.box-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+
+.mentor { background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%); border-radius: 10px; padding: 16px 18px; margin: 14px 0; border: 1px solid #dbeafe; position: relative; }
+.mentor::before { content: '👨‍🏫'; position: absolute; top: -12px; left: 16px; background: #fff; padding: 0 6px; font-size: 20px; }
+.mentor .mentor-title { font-weight: 700; color: var(--blue-dark); font-size: 14px; margin-bottom: 6px; margin-top: 4px; }
+.mentor .mentor-body { font-size: 14.5px; color: var(--gray-800); line-height: 1.75; }
+.mentor .mentor-body p { margin-bottom: 8px; }
+
+.goal-list { list-style: none; padding: 0; }
+.goal-list li { padding: 8px 0 8px 32px; position: relative; font-size: 15px; }
+.goal-list li::before { content: '🎯'; position: absolute; left: 4px; top: 8px; font-size: 15px; }
+
+.mnemonic { background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 10px; padding: 14px 18px; margin: 14px 0; text-align: center; }
+.mnemonic .m-title { font-size: 12px; color: #92400e; margin-bottom: 6px; letter-spacing: 2px; }
+.mnemonic .m-line { font-size: 18px; font-weight: 700; color: #78350f; letter-spacing: 3px; }
+.mnemonic .m-explain { font-size: 13px; color: #92400e; margin-top: 6px; }
+
+.cheatsheet { border: 2px dashed var(--primary); border-radius: 10px; padding: 16px 18px; margin: 14px 0; background: #f0f9ff; }
+.cheatsheet .cs-title { font-weight: 700; color: var(--blue-dark); font-size: 15px; margin-bottom: 10px; }
+
+.steps { counter-reset: step; margin: 12px 0; }
+.step-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px dashed var(--gray-200); }
+.step-item:last-child { border-bottom: none; }
+.step-item .step-num { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--primary); color: #fff; text-align: center; line-height: 34px; font-weight: 700; }
+.step-item .step-body { flex: 1; }
+.step-item .step-body strong { color: var(--blue-dark); }
+
+.quiz-item { border: 1px solid var(--gray-200); border-radius: 8px; margin: 10px 0; overflow: hidden; }
+.quiz-item summary { background: var(--primary-bg); padding: 12px 14px; cursor: pointer; font-weight: 600; color: var(--primary); font-size: 14.5px; }
+.quiz-item[open] summary { border-bottom: 1px solid var(--gray-200); }
+.quiz-body { padding: 12px 16px; }
+.quiz-options { list-style: none; padding: 0; }
+.quiz-options li { padding: 5px 0; font-size: 14px; }
+.quiz-answer { background: var(--green-bg); border-left: 3px solid var(--green); padding: 10px 12px; margin-top: 10px; font-size: 14px; border-radius: 4px; }
+.quiz-answer .ans-title { font-weight: 700; color: var(--green); margin-bottom: 6px; }
+.wrong-analysis { background: var(--red-bg); border-left: 3px solid var(--red); padding: 10px 12px; margin-top: 8px; font-size: 13.5px; border-radius: 4px; }
+.wrong-analysis .wa-title { font-weight: 700; color: var(--red); margin-bottom: 4px; }
+
+.case-block { border: 1px solid var(--gray-200); border-radius: 8px; margin: 12px 0; overflow: hidden; }
+.case-block summary { background: linear-gradient(135deg, #ede9fe, #ddd6fe); padding: 12px 14px; cursor: pointer; font-weight: 600; color: #5b21b6; font-size: 14.5px; }
+.case-block .case-body { padding: 14px 16px; font-size: 14px; }
+.case-block .case-body h5 { color: var(--blue-dark); margin: 10px 0 6px; font-size: 14px; }
+
+.interview-quote { background: linear-gradient(135deg, #1e3a5f, #1a56db); color: #fff; border-radius: 10px; padding: 18px 20px; margin: 14px 0; font-size: 15px; font-style: italic; line-height: 1.8; position: relative; }
+.interview-quote::before { content: '💼'; position: absolute; top: -10px; left: 16px; background: #fff; padding: 2px 6px; border-radius: 12px; font-size: 16px; }
+.interview-quote .iq-tag { display: block; font-size: 11px; opacity: 0.8; margin-bottom: 6px; font-style: normal; letter-spacing: 1px; }
+
+.code-block { background: #1e293b; color: #e2e8f0; border-radius: 8px; padding: 14px 16px; margin: 12px 0; font-family: "Cascadia Code", "Fira Code", Consolas, monospace; font-size: 13px; line-height: 1.6; overflow-x: auto; white-space: pre; }
+.code-block .comment { color: #94a3b8; }
+.code-block .kw { color: #f59e0b; }
+.code-block .str { color: #86efac; }
+.code-block .bad { color: #fca5a5; text-decoration: underline wavy; }
+
+.footer { text-align: center; color: var(--text-light); font-size: 12px; padding: 20px 0 36px; border-top: 1px solid var(--gray-200); margin-top: 16px; }
+
+@media (max-width: 640px) {
+  .container { padding: 12px; }
+  .hero { padding: 24px 18px 20px; }
+  .hero h1 { font-size: 20px; }
+  .card { padding: 20px 16px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="hero">
+  <div class="hero-badge">FDE v2 · Phase 3 · Day 11</div>
+  <h1>🧑‍💻 读别人代码的 FDE 视角 · Git + Code Review + Issue</h1>
+  <div class="subtitle">你不用当开发，但你要 <strong>看得懂开发在写什么、能自己改小 bug、能提有质量的 issue</strong>——这是 FDE 和 PM 最直接的分野。</div>
+  <div class="hero-meta">
+    <span>🎯 Phase 3 · 让 Agent 改得动</span>
+    <span>⏱️ 预计 70-80 分钟</span>
+    <span>🧭 补齐能力：④ 改得动（3.4）</span>
+  </div>
+  <div class="hero-back">FDE v2 学习路径 · <a href="./day00_fde_panorama_and_radar.html">← 回到 Day 0 起点校准</a></div>
+</div>
+
+<!-- 板块 1：今日目标 -->
+<div class="card">
+  <h2>🎯 一、今日目标</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>你在某公司多年，Git 大概率是"用过"但没系统学过——clone 会、commit 会、push 会，一遇到冲突就叫开发。这种程度做 PM 够用，做 FDE 不够。FDE 每天要读开发提交的 diff、要自己去改 Prompt 和配置、要给开发提有质量的 issue。<strong>你不用当开发，但你得能自己动小手术</strong>。</p>
+      <p>今天要教你的不是 Git 全部命令，是 <strong>FDE 场景下最常用的 20 条</strong>；不是全栈 code review，是 <strong>看 Prompt / 配置 / Agent 逻辑这几块的 review 视角</strong>。学完你能自己改 Prompt 提 PR 不叫开发，能提出的 issue 让开发一看就懂——这两件事就把你和普通 PM 拉开一个身位。</p>
+    </div>
+  </div>
+
+  <ul class="goal-list">
+    <li>掌握 <strong>「20 条 Git 命令」</strong>，按日常/协作/救火三档分类背熟</li>
+    <li>会用 <strong>「FDE 5 个 Code Review 关注点」</strong> 看一段 Agent 代码找问题</li>
+    <li>能写 <strong>「让开发不火大的 Issue」</strong>——含复现步骤 / 期望 / 环境 / 建议</li>
+    <li>敢开 branch 提 commit 推 PR——分支就是保险，不怕搞坏主干</li>
+    <li>能对开发说出 <strong>「我看你这段 Prompt 硬编码了，建议抽到 config」</strong> 的话术</li>
+  </ul>
+</div>
+
+<!-- 板块 2：核心讲解 -->
+<div class="card">
+  <h2>📖 二、核心讲解</h2>
+
+  <h3>是什么：FDE 要读的代码到底是什么</h3>
+  <p>先破个误会——FDE 不是要读全部代码。开发写的业务 CRUD、UI 组件、数据库连接池这些你可以不管。<strong>FDE 需要读的是这四块</strong>：</p>
+  <table>
+    <thead>
+      <tr><th style="width: 22%">代码类型</th><th style="width: 30%">在项目里长啥样</th><th>你要能干什么</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>① Prompt / 提示词</strong></td><td><code>prompts/*.txt</code>、<code>*.py</code> 里的 f-string、YAML 配置</td><td>看懂、能改、能提 A/B 版本</td></tr>
+      <tr><td><strong>② Config / 参数配置</strong></td><td><code>config.yaml</code>、<code>.env</code>、<code>settings.py</code></td><td>知道每个参数干啥、敢改敢回滚</td></tr>
+      <tr><td><strong>③ 数据管道</strong></td><td>ETL / 切片 / 向量化 / 数据清洗脚本</td><td>看懂流程、知道 chunk_size 之类关键参数在哪</td></tr>
+      <tr><td><strong>④ Agent 逻辑</strong></td><td>工具定义 / 意图路由 / 多步编排</td><td>看懂 flow、能画时序图讲清楚</td></tr>
+    </tbody>
+  </table>
+  <p><strong>反直觉的地方：</strong>这四块加起来通常只占项目代码 10-20%，但它们决定了 <strong>80% 的效果</strong>。这才是 FDE 最应该盯紧的地方。</p>
+
+  <div class="mnemonic">
+    <div class="m-title">□ □ □ Git 日常五连击 □ □ □</div>
+    <div class="m-line">clone · branch · commit · pull · merge</div>
+    <div class="m-explain">拉代码 → 开分支 → 提改动 → 拉更新 → 合并 · 90% 的日常操作在这里</div>
+  </div>
+
+  <h3>为什么：FDE 读代码的三个大坑</h3>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 1 · 觉得"读代码是开发的事"</div>
+    <div>
+      <p>"我是 PM 不是开发，代码让开发写让开发看"——这句话在传统交付里能过，在 FDE 岗位上是死刑。你不读代码，就<strong>永远只能等开发回复</strong>——客户催一个 Prompt 微调，开发排期两周后，你没法自己上手。</p>
+      <p>更糟的是——开发写完你不 review，Prompt 里硬编码了客户名、参数不可配置、日志一行没有，等到部署到客户环境炸了，客户找你，你回去找开发，开发说"这周没空"，然后循环——<strong>这就是外包 PM 转 FDE 最容易翻船的地方</strong>。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 2 · 只会 clone 不敢 branch commit</div>
+    <div>
+      <p>Git 的核心哲学一句话：<strong>分支就是保险</strong>。你在自己的分支上想改啥改啥，改坏了删掉重开一个就完事，主干（main/master）永远干净。</p>
+      <p>可很多 PM 学 Git 只学到 clone，然后直接在 main 上改，改坏了 <code>git reset --hard</code> 又不敢，最后叫开发帮忙——这就是不敢 branch 的代价。</p>
+      <p><strong>正确姿势：</strong>拿到任何仓库第一件事——<code>git checkout -b feature/xxx-fix</code>，从此在自己的分支上折腾，天塌了就 <code>git branch -D</code> 删掉重来。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 3 · 提 issue 只说"跑不了"</div>
+    <div>
+      <p>你以前当 PM 转达客户问题，习惯性一句"客户说这个功能有问题"就丢给开发。开发看到就火大——<strong>什么问题？怎么复现？期望是什么？在哪个环境？</strong> 一问三不知，来回三轮才定位到问题。</p>
+      <p>FDE 提 issue 有标准模板（下面速查卡有），最少 5 个字段：Title / Steps to reproduce / Expected vs Actual / Environment / Suggestion。开发一看就能动手，不用来回追问。</p>
+      <p><strong>老 PM 的通病：</strong>你觉得"我把客户的话原话转给开发就完事了"——不是。FDE 的价值就是<strong>做一层信息压缩和结构化</strong>，让开发不用再花时间猜。</p>
+    </div>
+  </div>
+
+  <div class="box box-blue">
+    <div class="box-title">🧭 PM 行动指南：FDE Code Review 5 个关注点</div>
+    <div>
+      <p><strong>① Prompt 有没有硬编码</strong>——客户名、模型名、系统提示词是否可配置？换个客户要不要改代码？</p>
+      <p><strong>② 参数是否可配置</strong>——chunk_size、top_k、temperature、max_tokens 是不是都在 config 里？不在的话调优就要改代码。</p>
+      <p><strong>③ 错误处理是否完备</strong>——LLM API 超时、限流、返回格式异常、工具调用失败——每一种都有兜底吗？</p>
+      <p><strong>④ 日志是否够</strong>——input / prompt / output / usage / latency 有没有埋？出问题能不能靠日志定位？</p>
+      <p><strong>⑤ 是否有测试</strong>——评测集在哪？回归测试怎么跑？有没有 fixture？</p>
+    </div>
+  </div>
+
+  <h3>怎么用：Code Review 4 步法</h3>
+
+  <div class="steps">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>先跑一遍</strong>——review 之前先把代码 clone 下来能跑通。跑不通说明 README 有问题、依赖有问题，这本身就是一条 review 意见。<em>能跑起来才敢评论。</em>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>读整体结构</strong>——先看目录树和入口文件，画一个模块关系图。理解 <em>数据从哪进来、经过哪几个模块、从哪儿输出</em>。别一上来陷进某个函数细节。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>按 5 个关注点找问题</strong>——对着上面那 5 条清单一条条扫。找硬编码 grep 一下 <code>"客户名"</code>；找参数配置看 <code>config.yaml</code>；找错误处理搜 <code>try/except</code>；找日志搜 <code>logger</code>；找测试看 <code>tests/</code> 目录。<em>5 分钟能出 5 条意见。</em>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>提问题不提断言</strong>——review 评论用<strong>问句</strong>比断言好："这里为啥没做超时兜底？"比"这里必须加超时"好——你不是老板是同行者。给建议要给 <em>怎么改的思路 / 参考</em>，不是光丢一句"这里不对"。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 板块 3：动手步骤 -->
+<div class="card">
+  <h2>🛠️ 三、动手步骤：一段真实 Agent 代码做 Code Review</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>下面这段 30 行代码是我给某电力公司做知识问答 Agent 时，开发第一版提交上来的代码。你先自己看 3 分钟，试着找出问题；然后对照参考答案。这个案例里至少有 5 个可 review 的点。</p>
+    </div>
+  </div>
+
+  <details class="case-block" open>
+    <summary>📌 案例 A · 电力知识问答 Agent 代码（跟着做）</summary>
+    <div class="case-body">
+      <h5>开发提交的第一版代码</h5>
+      <div class="code-block"><span class="comment"># file: qa_agent.py</span>
+<span class="kw">import</span> openai
+
+<span class="kw">def</span> answer_question(question):
+    openai.api_key = <span class="str">"sk-abc123xxx"</span>   <span class="comment"># ← 观察 1</span>
+
+    prompt = <span class="str">f"""你是某单位某分公司的智能问答助手。
+请根据知识库回答用户问题。
+用户问题: {question}
+请用简洁准确的中文回答。"""</span>   <span class="comment"># ← 观察 2</span>
+
+    <span class="comment"># 检索</span>
+    chunks = vector_db.search(question, top_k=<span class="kw">3</span>)   <span class="comment"># ← 观察 3</span>
+    context = <span class="str">"\n"</span>.join([c[<span class="str">"text"</span>] <span class="kw">for</span> c <span class="kw">in</span> chunks])
+
+    response = openai.ChatCompletion.create(
+        model=<span class="str">"gpt-4"</span>,
+        messages=[
+            {<span class="str">"role"</span>: <span class="str">"system"</span>, <span class="str">"content"</span>: prompt},
+            {<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: context + <span class="str">"\n\n"</span> + question}
+        ],
+        temperature=<span class="kw">0.7</span>
+    )                                                     <span class="comment"># ← 观察 4</span>
+
+    <span class="kw">return</span> response[<span class="str">"choices"</span>][<span class="kw">0</span>][<span class="str">"message"</span>][<span class="str">"content"</span>]   <span class="comment"># ← 观察 5</span></div>
+
+      <h5>Step 1 · 先跑一遍</h5>
+      <p>你 clone 下来跑不起来——为啥？<code>openai.api_key</code> 是硬编码的假 key，且 <code>vector_db</code> 没导入。<strong>这本身就是第一条 review 意见：项目没法开箱运行。</strong></p>
+
+      <h5>Step 2 · 读整体结构</h5>
+      <p>流程还算清楚：接受问题 → 检索 → 生成 → 返回。但没有分文件 / 没有类封装 / 没有配置层——这是"能跑就行"的原型代码，不是生产代码。</p>
+
+      <h5>Step 3 · 按 5 个关注点找问题</h5>
+      <table>
+        <thead><tr><th style="width: 12%">编号</th><th style="width: 22%">对应关注点</th><th>问题</th></tr></thead>
+        <tbody>
+          <tr><td><strong>观察 1</strong></td><td>① Prompt 硬编码 + 敏感信息</td><td>API Key 硬编码在代码里，且要 push 到 Git——<strong>这是 P0 事故</strong>。应改用环境变量 <code>os.getenv("OPENAI_API_KEY")</code>。</td></tr>
+          <tr><td><strong>观察 2</strong></td><td>① Prompt 硬编码</td><td>"某单位某分公司"写死在 Prompt 里，换客户就要改代码。应抽到 <code>prompts/qa_system.txt</code>，客户名走 <code>{customer_name}</code> 变量。</td></tr>
+          <tr><td><strong>观察 3</strong></td><td>② 参数不可配置</td><td><code>top_k=3</code> 是魔法数字，调优时找不到。应放 <code>config.yaml</code> 里。</td></tr>
+          <tr><td><strong>观察 4</strong></td><td>③ 错误处理缺失 + ④ 日志缺失</td><td>没有 try/except——API 超时、限流、余额不足全会抛异常直接崩。没有任何 logger 记录 input/output/latency——出问题查不到。<code>model="gpt-4"</code> 也硬编码。</td></tr>
+          <tr><td><strong>观察 5</strong></td><td>③ 无格式兜底</td><td>直接下标访问 <code>["choices"][0]</code>——如果 API 返回结构变了或者 error，直接 KeyError。应先判空判 error。</td></tr>
+        </tbody>
+      </table>
+
+      <h5>Step 4 · 写 Review 评论（示范）</h5>
+      <div class="box box-blue">
+        <p><strong>@开发同学，整体流程清晰，但有几个我担心的点想跟你讨论下：</strong></p>
+        <p><strong>1. [P0] API Key 硬编码</strong>——第 4 行 <code>openai.api_key</code> 直接写在代码里，如果 push 到 Git 上 key 就泄漏了。是不是应该改成 <code>os.getenv("OPENAI_API_KEY")</code>，并把 <code>.env</code> 加进 <code>.gitignore</code>？</p>
+        <p><strong>2. [P1] 客户名硬编码</strong>——"某单位某分公司"写在 Prompt 里，我们后面要接别的客户就得改代码。能不能抽到 <code>prompts/qa_system.txt</code>，客户名用 <code>{customer_name}</code> 参数注入？</p>
+        <p><strong>3. [P1] 无异常处理</strong>——OpenAI API 会遇到 429 / 500 / 超时，现在这段代码只要出一次就整个 Agent 崩掉。建议包一层 try/except + 重试装饰器（tenacity 库可以直接用）。</p>
+        <p><strong>4. [P2] 无日志埋点</strong>——现在这段代码出问题只能靠猜。参考 Day 10 讲的可观测性，最低要记 <code>input/prompt/output/usage/latency</code>。</p>
+        <p><strong>5. [P2] 魔法数字</strong>——<code>top_k=3</code>、<code>temperature=0.7</code>、<code>model="gpt-4"</code>都建议进 <code>config.yaml</code>，我们后面调优不用改代码。</p>
+        <p><em>整体没啥大问题，属于第一版原型阶段该有的样子。上面 5 条改完就能进 PoC 了。辛苦。</em></p>
+      </div>
+
+      <h5>📓 复盘一句话</h5>
+      <p><strong>Review 不是挑刺，是同步担心。措辞用问句 + 分优先级 P0/P1/P2，开发接受度高 10 倍。</strong></p>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 B · RAG 切片代码 review（自己练）</summary>
+    <div class="case-body">
+      <p>假设你看到下面这段 RAG 切片代码，请你按 5 个关注点找出问题：</p>
+      <div class="code-block"><span class="kw">def</span> build_rag_index():
+    docs = load_all_pdfs(<span class="str">"/data/customer_docs/"</span>)
+    chunks = []
+    <span class="kw">for</span> doc <span class="kw">in</span> docs:
+        text = doc.extract_text()
+        <span class="kw">for</span> i <span class="kw">in</span> <span class="kw">range</span>(<span class="kw">0</span>, <span class="kw">len</span>(text), <span class="kw">500</span>):
+            chunks.append(text[i:i+<span class="kw">500</span>])
+    embeddings = openai.Embedding.create(
+        model=<span class="str">"text-embedding-ada-002"</span>,
+        input=chunks
+    )
+    milvus.insert(<span class="str">"kb_index"</span>, embeddings)
+    <span class="kw">print</span>(<span class="str">"done"</span>)</div>
+
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--primary); font-weight: 600;">查看参考答案</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <p><strong>至少 6 个可 review 的点：</strong></p>
+          <ol style="margin-left: 24px;">
+            <li><strong>路径硬编码</strong> <code>/data/customer_docs/</code>——应传参 / 走 config</li>
+            <li><strong>chunk_size = 500 硬编码</strong>——500 字符是不是太小/太大？<strong>应放 config</strong>，方便调优</li>
+            <li><strong>切片策略太粗</strong>——按固定字符切会切断句子和上下文，应用 <code>RecursiveCharacterTextSplitter</code> 加 chunk_overlap</li>
+            <li><strong>无异常处理</strong>——某个 PDF 提取失败会中断整个流程，应 try/except 单个文档 + 记录失败清单</li>
+            <li><strong>用 print 代替 logger</strong>——生产代码不能用 print，应用 logging 记录：多少文档、多少 chunk、耗时</li>
+            <li><strong>无索引版本管理</strong>——每次重建都覆盖 <code>kb_index</code>，出问题回不去。应加版本号 <code>kb_index_v20240315</code>，切换用别名</li>
+          </ol>
+          <p><strong>加分项：</strong>问一句"这个 embedding 模型是 OpenAI 的，客户内网出不去，怎么办？"——这个问题涉及 Day 12-13 的白名单问题，本身就是好 review。</p>
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 C · 判断题：反例 vs 正例 issue（自己练）</summary>
+    <div class="case-body">
+      <p><strong>反例 Issue：</strong></p>
+      <div class="box box-red">
+        <p><em>标题：跑不起来</em></p>
+        <p><em>内容：客户那边说 Agent 有问题，你看下什么情况。</em></p>
+      </div>
+
+      <p><strong>正例 Issue：</strong></p>
+      <div class="box box-green">
+        <p><em>标题：[Bug] RAG 查询"招标截止时间"返回"投标截止时间"，疑似检索层召回错误</em></p>
+        <p><em>Steps to reproduce:</em></p>
+        <p><em>1. 在客户环境（青海分公司生产环境 v0.3.2）打开 Agent</em></p>
+        <p><em>2. 输入问题："2024 年智能配电终端项目招标截止时间是什么时候？"</em></p>
+        <p><em>3. Agent 返回："投标截止时间是 2024 年 3 月 15 日"</em></p>
+        <p><em>Expected: 返回招标文件领取截止或说明该字段无法查询</em></p>
+        <p><em>Actual: 返回了投标截止时间，语义错误</em></p>
+        <p><em>Environment: v0.3.2 / 青海生产环境 / qwen-max / 2024-03-10 14:22:11</em></p>
+        <p><em>Trace ID: trace-abc123（Langfuse 链接）</em></p>
+        <p><em>Suggestion: 疑似检索层"招标"vs"投标"语义混淆，见 Trace 中 top-3 均为"投标"chunk。建议加 BM25 + 向量混合检索。</em></p>
+      </div>
+      <p style="color: var(--gray-500);">对比两个 issue，说说好 issue 有哪 5 个要素。</p>
+
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--primary); font-weight: 600;">查看参考答案</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <p><strong>好 issue 的 5 个要素（BUG 类）：</strong></p>
+          <ol style="margin-left: 24px;">
+            <li><strong>Title：一句话说清"什么场景 + 什么问题 + 疑似原因"</strong>——开发扫标题就能判断优先级</li>
+            <li><strong>Steps to reproduce：能复现</strong>——最少 3 步，别人拿到能一步步跟着操作</li>
+            <li><strong>Expected vs Actual：预期是什么、实际是什么</strong>——差异明确，避免"我以为的 vs 你以为的"</li>
+            <li><strong>Environment：版本 / 环境 / 时间戳 / Trace ID</strong>——开发能快速定位到对应日志</li>
+            <li><strong>Suggestion：给个思路（可选但强推荐）</strong>——你不用给完整方案，但给方向让开发少走弯路</li>
+          </ol>
+          <p><strong>反例的错法</strong>："跑不起来"是最糟的 issue——没复现、没环境、没证据、没建议。开发第一反应是"你能不能自己先查一下再来？"</p>
+          <p><strong>老 PM 转 FDE 最容易犯的错：</strong>习惯性把客户原话直接甩给开发。FDE 的价值就是 <strong>在客户原话和开发行动之间做一层压缩和结构化</strong>——issue 质量就是这层压缩的产物。</p>
+        </div>
+      </details>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 4：速查卡 -->
+<div class="card">
+  <h2>📇 四、速查卡</h2>
+
+  <div class="cheatsheet">
+    <div class="cs-title">🔧 Git 命令 20 条速查（按用途分组）</div>
+    <table>
+      <thead><tr><th style="width: 30%">分组</th><th style="width: 22%">命令</th><th>作用</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="8"><strong>日常（每天用）</strong></td><td><code>git clone URL</code></td><td>拉一个远程仓库到本地</td></tr>
+        <tr><td><code>git status</code></td><td>看当前有啥改动、在哪个分支</td></tr>
+        <tr><td><code>git branch -a</code></td><td>看所有分支（含远程）</td></tr>
+        <tr><td><code>git checkout -b feat/xxx</code></td><td>新建并切换到分支</td></tr>
+        <tr><td><code>git add .</code></td><td>暂存所有改动</td></tr>
+        <tr><td><code>git commit -m "..."</code></td><td>提交到本地</td></tr>
+        <tr><td><code>git push -u origin xxx</code></td><td>推到远程分支</td></tr>
+        <tr><td><code>git pull</code></td><td>拉远程最新（当前分支）</td></tr>
+        <tr><td rowspan="6"><strong>协作（跟人配合用）</strong></td><td><code>git fetch</code></td><td>只下载不合并，先看看远程有啥</td></tr>
+        <tr><td><code>git log --oneline -20</code></td><td>看最近 20 条提交记录</td></tr>
+        <tr><td><code>git diff HEAD~1</code></td><td>看当前 vs 上一次提交的差异</td></tr>
+        <tr><td><code>git blame file.py</code></td><td>看某文件每一行是谁写的、什么时候写的</td></tr>
+        <tr><td><code>git merge branch-name</code></td><td>把 branch-name 合入当前分支</td></tr>
+        <tr><td><code>git cherry-pick abc123</code></td><td>把某个 commit 单独摘到当前分支</td></tr>
+        <tr><td rowspan="6"><strong>救火（出事了用）</strong></td><td><code>git stash</code></td><td>把当前改动暂存起来（不 commit），先干别的</td></tr>
+        <tr><td><code>git stash pop</code></td><td>把暂存的改动取回来</td></tr>
+        <tr><td><code>git reset --soft HEAD~1</code></td><td>撤销最后一次 commit 保留改动</td></tr>
+        <tr><td><code>git revert abc123</code></td><td>反向再 commit 一次，取消某历史提交（安全）</td></tr>
+        <tr><td><code>git rebase main</code></td><td>把当前分支的改动接到 main 最新之后</td></tr>
+        <tr><td><code>git tag v0.3.2</code></td><td>打个版本标签，用来发布/回滚</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">👀 FDE Code Review 5 关注点清单</div>
+    <ol style="margin-left: 24px;">
+      <li><strong>Prompt 有没有硬编码</strong>——客户名 / 系统提示词 / 模型名 是否可配置？</li>
+      <li><strong>参数是否可配置</strong>——chunk_size / top_k / temperature / max_tokens 是否在 config？</li>
+      <li><strong>错误处理是否完备</strong>——超时 / 限流 / 格式异常 / 工具失败 都兜住了吗？</li>
+      <li><strong>日志是否够</strong>——input / prompt / output / usage / latency 埋了吗？</li>
+      <li><strong>是否有测试</strong>——评测集在哪？回归测试跑得起来吗？</li>
+    </ol>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">📮 Issue / PR 模板三合一（Bug / Feature / Question）</div>
+    <table>
+      <thead><tr><th style="width: 18%">类型</th><th>必填字段</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Bug</strong></td><td>Title（含场景+现象+疑似原因）/ Steps to reproduce / Expected vs Actual / Environment（版本+环境+时间+Trace ID）/ Suggestion（可选）</td></tr>
+        <tr><td><strong>Feature</strong></td><td>Title / Background（为啥要做）/ User Story（谁用+干啥+为啥）/ Acceptance Criteria（怎么算做完）/ 相关截图或原型</td></tr>
+        <tr><td><strong>Question</strong></td><td>Title / Context（你在做什么）/ 已经尝试过什么 / 具体疑问 / 期望的答复形式</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size: 13px; color: var(--gray-600); margin-top: 8px;">📌 通用规则：Title 短于 80 字符 · 一个 issue 只讲一件事 · 附上截图/日志/Trace 链接 · @ 相关人</p>
+  </div>
+</div>
+
+<!-- 板块 5：5 题测验 -->
+<div class="card">
+  <h2>📝 五、5 题小测验</h2>
+  <p style="color: var(--gray-600); font-size: 14px;">建议先自己想 20 秒再点开答案。错项解析比正确答案更值钱。</p>
+
+  <details class="quiz-item">
+    <summary>Q1 · 拿到一个新仓库要改一段 Prompt，第一步最正确的是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 直接在 main 分支上改，改完 commit push</li>
+        <li>B. 先 fork 一份自己的仓库再改</li>
+        <li>C. <code>git checkout -b fix/prompt-xxx</code> 新开分支再改</li>
+        <li>D. 找开发同学帮改，自己不动手</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：C</div>
+        <p>分支就是保险——新开分支改，改坏了删掉重来主干干净。这是 Git 最基本的纪律。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 是最典型的新手错法</strong>——直接改 main，改坏了 push 上去全组遭殃。<strong>B fork 是外部贡献者玩法</strong>——同一个团队内 fork 反而复杂化，多数场景开分支就够。<strong>D 是最坏答案</strong>——FDE 岗位就要求你能自己改小改动，永远等开发就是永远做不了 FDE。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q2 · Code Review 里发现开发把 API Key 硬编码进了代码，正确处理是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 私下告诉开发让他改，别公开评论怕他没面子</li>
+        <li>B. 在 review 里标 [P0]，说明理由并给出替换方案（环境变量）</li>
+        <li>C. 自己在合并前偷偷把 key 改成假的</li>
+        <li>D. 无所谓反正是开发环境的 key，先上线再说</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>公开标 [P0] 不是让开发难堪，是<strong>沉淀团队规范</strong>——所有人以后都知道这类问题的严重性。同时给出替换方案是 FDE 的基本礼貌。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A "怕他没面子"这个想法本身就错了</strong>——review 是对事不对人的团队机制，私聊反而让规范无法沉淀。<strong>C 偷改是最糟的做法</strong>——你没告诉开发他就学不会。<strong>D 是灾难思维</strong>——开发环境的 key 一样值钱，push 到 Git 后爬虫几分钟就能扫到。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q3 · 下面 5 个关注点里，FDE 最应该盯紧的是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. Prompt 是否硬编码 + 参数是否可配置 + 错误处理 + 日志 + 测试</li>
+        <li>B. 代码风格是否符合 PEP 8 + 变量命名是否规范</li>
+        <li>C. 数据库连接池大小 + 前端 UI 组件设计</li>
+        <li>D. 单元测试覆盖率是否达到 80% 以上</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：A</div>
+        <p>这 5 条就是 FDE 视角 Code Review 的核心——它们决定了 <strong>系统能不能改动、能不能查问题、能不能换客户</strong>。B/C/D 是开发或测试角色该管的事，FDE 关注度低。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>B 变量命名规范由 linter 自动管</strong>，FDE 花时间挑这个是本末倒置。<strong>C 是全栈开发或架构师视角</strong>，跟 AI 效果关系不大。<strong>D 是测试工程师视角</strong>，AI 项目单元测试覆盖率不是核心指标，评测集覆盖率才是。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q4 · 提 issue 时，下面哪个是必填字段？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 你个人的邮箱和电话，方便开发联系你</li>
+        <li>B. Steps to reproduce + Expected vs Actual + Environment</li>
+        <li>C. 客户领导的姓名和职位，说明这个 issue 有多重要</li>
+        <li>D. 你猜测的完整技术方案，让开发照着做</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>复现步骤 + 预期实际 + 环境信息，这是"让开发能立刻上手"的最小信息集。开发拿到就能定位问题，不用来回追问。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 联系方式在项目群里就有，不用重复</strong>——issue 是给团队看的技术记录。<strong>C 说客户压力是老 PM 的坏习惯</strong>——issue 里搞压迫不解决技术问题，反而让开发反感。<strong>D 假装是开发是最尴尬的越界</strong>——你可以在 Suggestion 里给方向，但完整方案让开发决定。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q5 · 综合题：领导让你给一个新接手的 Agent 项目做 30 分钟 review，你怎么规划？</summary>
+    <div class="quiz-body">
+      <p style="color: var(--gray-600); margin-bottom: 8px;">给出你的时间分配和 review 计划。</p>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 参考答案：跑通 → 看结构 → 扫 5 点 → 写评论</div>
+        <p><strong>0-5 分钟 · 跑通：</strong>clone 下来按 README 装依赖跑起来。跑不起来记一条"入门体验差"issue。</p>
+        <p><strong>5-10 分钟 · 看结构：</strong>看目录树 + 入口文件 + main 函数。画一个数据流图：input → 什么模块 → 什么模块 → output。理清主链路。</p>
+        <p><strong>10-25 分钟 · 扫 5 点：</strong></p>
+        <ul style="margin-left: 24px;">
+          <li>grep 客户名/模型名/API URL——找硬编码</li>
+          <li>找 config 文件——看关键参数是不是都进 config 了</li>
+          <li>搜 try/except 和 retry——看错误处理覆盖度</li>
+          <li>搜 logger / logging——看日志埋点</li>
+          <li>看 tests/ 目录——有没有评测集和回归脚本</li>
+        </ul>
+        <p><strong>25-30 分钟 · 写评论：</strong>整理成结构化 review 意见，标 P0/P1/P2 优先级，每一条给出理由 + 建议改法。整体 3-5 条建议，别 20 条把开发压垮。</p>
+        <p><strong>面试金句：</strong><em>"Code review 30 分钟能出 5 条 P0/P1 意见，说明这个 review 有价值。出 20 条鸡毛蒜皮意见，开发看到就想关掉。抓大放小、分优先级，是 review 的核心手艺。"</em></p>
+      </div>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 6：面试金句 + 心得笔记 -->
+<div class="card">
+  <h2>💼 六、面试金句预埋</h2>
+
+  <div class="interview-quote">
+    <span class="iq-tag">可改性意识</span>
+    "我看代码有一个核心视角——<strong>可改性</strong>。硬编码越多、参数越死、日志越少的代码，未来越难迭代。<strong>Prompt / config / 错误处理 / 日志 / 测试</strong>这 5 条是我 review 每个 Agent 项目必扫的关注点。抓这 5 条效率比全量 review 高 10 倍。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">协作效率</span>
+    "我做 FDE 一个坚持——<strong>能自己改的小改动绝不叫开发</strong>。Prompt 微调、config 参数调、少量脚本修改都自己上，开分支提 PR 让开发 review。开发省下来的时间，可以用来做真正需要工程能力的架构改造。<strong>FDE 的价值不是当二传手，是真正减轻开发负担</strong>。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">Issue 质量文化</span>
+    "我提的每一条 issue 都按 <strong>Steps / Expected / Environment / Suggestion</strong> 结构化写。这不是形式主义——好 issue 让开发 5 分钟就能定位问题；差 issue 让开发花 30 分钟追问。<strong>Issue 质量就是团队协作效率的一半</strong>，这是我从外包 PM 转 FDE 学到的最值钱的一课。"
+  </div>
+
+  <h3>📓 心得笔记</h3>
+  <div class="box box-red">
+    <div class="box-title">⚠️ 今天最反直觉的 3 件事</div>
+    <div>
+      <p><strong>1.</strong> FDE 不用读全部代码——只用读 Prompt / config / 数据管道 / Agent 逻辑这 4 块，它们决定 80% 的效果。<em>（抓大放小，别被业务 CRUD 淹没。）</em></p>
+      <p><strong>2.</strong> 分支就是保险——不敢开分支，是不敢改代码的根本原因。<em>（<code>git checkout -b</code> 是 FDE 的自由通行证。）</em></p>
+      <p><strong>3.</strong> Issue 是压缩，不是转达——把客户原话直接甩给开发，是老 PM 的老毛病。FDE 要做结构化压缩。<em>（好 issue 是 FDE 的核心产出物之一。）</em></p>
+    </div>
+  </div>
+
+  <div class="box box-orange">
+    <div class="box-title">🎯 老 PM 转 FDE 的思维切换</div>
+    <div>
+      <p>你以前的角色是"客户 ←→ 开发的中间人"——传话为主。现在 FDE 的角色是<strong>"客户信息压缩器 + 开发协作者 + 小改动动手者"</strong>——同一个岗位，价值密度差 3 倍。开分支 / commit / 提 PR 这些动作不难，难的是<strong>敢动手</strong>。第一次改怕搞坏是正常的，改 5 次以后就自然了。</p>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  学习笔记 · AI 项目经理成长 · FDE v2 · Day 11<br>
+  下一站 → Day 12 政企网络地形入门（Phase 4 启程 · Hero 换色）
+</div>
+
+</div>
+</body>
+</html>

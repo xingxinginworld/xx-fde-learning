@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FDE v2 · Day 4 · 跑通第一个 LLM API 调用</title>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-bg: #eff6ff;
+  --blue-dark: #1e40af;
+  --orange: #ea580c;
+  --orange-bg: #fff7ed;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --green: #059669;
+  --green-bg: #ecfdf5;
+  --yellow: #d97706;
+  --yellow-bg: #fffbeb;
+  --purple: #7c3aed;
+  --purple-bg: #f5f3ff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-800: #1f2937;
+  --text: #1a1a2e;
+  --text-light: #6b7280;
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: #f0f4f8; color: var(--text); line-height: 1.8; font-size: 16px;
+}
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+.hero {
+  background: linear-gradient(135deg, #1e3a5f 0%, #1a56db 55%, #0d7377 100%);
+  color: #fff; border-radius: var(--radius); padding: 32px 30px 26px; margin-bottom: 20px;
+}
+.hero-badge { display: inline-block; background: rgba(255,255,255,0.18); padding: 4px 14px; border-radius: 20px; font-size: 12px; margin-bottom: 10px; }
+.hero h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; }
+.hero .subtitle { font-size: 14.5px; opacity: 0.92; margin-bottom: 14px; line-height: 1.7; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; opacity: 0.85; }
+.hero-back { font-size: 12px; margin-top: 10px; opacity: 0.75; }
+.hero-back a { color: #fff; text-decoration: underline; }
+
+.card { background: #fff; border-radius: var(--radius); padding: 26px 26px 22px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.card h2 { font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.card h3 { font-size: 17px; font-weight: 600; color: var(--gray-800); margin: 22px 0 10px; padding-left: 12px; border-left: 3px solid var(--primary); }
+.card h4 { font-size: 15px; font-weight: 600; margin: 14px 0 8px; color: var(--gray-800); }
+p { margin-bottom: 10px; }
+code { background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-size: 14px; font-family: "Cascadia Code", "Fira Code", Consolas, monospace; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-size: 14px; }
+th { background: var(--primary); color: #fff; padding: 9px 12px; text-align: left; font-weight: 600; font-size: 13px; }
+td { padding: 9px 12px; border-bottom: 1px solid var(--gray-200); vertical-align: top; }
+tr:nth-child(even) td { background: var(--gray-50); }
+
+.box { border-radius: 8px; padding: 14px 16px; margin: 14px 0; border-left: 4px solid; font-size: 14.5px; }
+.box-blue { background: var(--primary-bg); border-color: var(--primary); }
+.box-green { background: var(--green-bg); border-color: var(--green); }
+.box-yellow { background: var(--yellow-bg); border-color: var(--yellow); }
+.box-red { background: var(--red-bg); border-color: var(--red); }
+.box-purple { background: var(--purple-bg); border-color: var(--purple); }
+.box-orange { background: var(--orange-bg); border-color: var(--orange); }
+.box-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+
+.mentor { background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%); border-radius: 10px; padding: 16px 18px; margin: 14px 0; border: 1px solid #dbeafe; position: relative; }
+.mentor::before { content: '👨‍🏫'; position: absolute; top: -12px; left: 16px; background: #fff; padding: 0 6px; font-size: 20px; }
+.mentor .mentor-title { font-weight: 700; color: var(--blue-dark); font-size: 14px; margin-bottom: 6px; margin-top: 4px; }
+.mentor .mentor-body { font-size: 14.5px; color: var(--gray-800); line-height: 1.75; }
+.mentor .mentor-body p { margin-bottom: 8px; }
+
+.goal-list { list-style: none; padding: 0; }
+.goal-list li { padding: 8px 0 8px 32px; position: relative; font-size: 15px; }
+.goal-list li::before { content: '🎯'; position: absolute; left: 4px; top: 8px; font-size: 15px; }
+
+.mnemonic { background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 10px; padding: 14px 18px; margin: 14px 0; text-align: center; }
+.mnemonic .m-title { font-size: 12px; color: #92400e; margin-bottom: 6px; letter-spacing: 2px; }
+.mnemonic .m-line { font-size: 18px; font-weight: 700; color: #78350f; letter-spacing: 3px; }
+.mnemonic .m-explain { font-size: 13px; color: #92400e; margin-top: 6px; }
+
+.cheatsheet { border: 2px dashed var(--primary); border-radius: 10px; padding: 16px 18px; margin: 14px 0; background: #f0f9ff; }
+.cheatsheet .cs-title { font-weight: 700; color: var(--blue-dark); font-size: 15px; margin-bottom: 10px; }
+
+.steps { counter-reset: step; margin: 12px 0; }
+.step-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px dashed var(--gray-200); }
+.step-item:last-child { border-bottom: none; }
+.step-item .step-num { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--primary); color: #fff; text-align: center; line-height: 34px; font-weight: 700; }
+.step-item .step-body { flex: 1; }
+.step-item .step-body strong { color: var(--blue-dark); }
+
+.quiz-item { border: 1px solid var(--gray-200); border-radius: 8px; margin: 10px 0; overflow: hidden; }
+.quiz-item summary { background: var(--primary-bg); padding: 12px 14px; cursor: pointer; font-weight: 600; color: var(--primary); font-size: 14.5px; }
+.quiz-item[open] summary { border-bottom: 1px solid var(--gray-200); }
+.quiz-body { padding: 12px 16px; }
+.quiz-options { list-style: none; padding: 0; }
+.quiz-options li { padding: 5px 0; font-size: 14px; }
+.quiz-answer { background: var(--green-bg); border-left: 3px solid var(--green); padding: 10px 12px; margin-top: 10px; font-size: 14px; border-radius: 4px; }
+.quiz-answer .ans-title { font-weight: 700; color: var(--green); margin-bottom: 6px; }
+.wrong-analysis { background: var(--red-bg); border-left: 3px solid var(--red); padding: 10px 12px; margin-top: 8px; font-size: 13.5px; border-radius: 4px; }
+.wrong-analysis .wa-title { font-weight: 700; color: var(--red); margin-bottom: 4px; }
+
+.case-block { border: 1px solid var(--gray-200); border-radius: 8px; margin: 12px 0; overflow: hidden; }
+.case-block summary { background: linear-gradient(135deg, #ede9fe, #ddd6fe); padding: 12px 14px; cursor: pointer; font-weight: 600; color: #5b21b6; font-size: 14.5px; }
+.case-block .case-body { padding: 14px 16px; font-size: 14px; }
+.case-block .case-body h5 { color: var(--blue-dark); margin: 10px 0 6px; font-size: 14px; }
+
+.interview-quote { background: linear-gradient(135deg, #1e3a5f, #1a56db); color: #fff; border-radius: 10px; padding: 18px 20px; margin: 14px 0; font-size: 15px; font-style: italic; line-height: 1.8; position: relative; }
+.interview-quote::before { content: '💼'; position: absolute; top: -10px; left: 16px; background: #fff; padding: 2px 6px; border-radius: 12px; font-size: 16px; }
+.interview-quote .iq-tag { display: block; font-size: 11px; opacity: 0.8; margin-bottom: 6px; font-style: normal; letter-spacing: 1px; }
+
+.flow-diagram { background: #f8fafc; border: 1px dashed var(--gray-300); border-radius: 8px; padding: 14px 16px; margin: 12px 0; font-family: "Cascadia Code", Consolas, monospace; font-size: 13px; line-height: 1.9; color: var(--gray-800); white-space: pre; overflow-x: auto; }
+
+.footer { text-align: center; color: var(--text-light); font-size: 12px; padding: 20px 0 36px; border-top: 1px solid var(--gray-200); margin-top: 16px; }
+
+@media (max-width: 640px) {
+  .container { padding: 12px; }
+  .hero { padding: 24px 18px 20px; }
+  .hero h1 { font-size: 20px; }
+  .card { padding: 20px 16px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="hero">
+  <div class="hero-badge">FDE v2 · Phase 2 · Day 4</div>
+  <h1>⚡ 跑通第一个 LLM API 调用</h1>
+  <div class="subtitle">今天不看理论。<strong>5 分钟内在你自己电脑上跑通一次真实的大模型调用</strong>——这是 FDE 的第一次"亲手做出来"。之前你在 PPT 上看过无数次的"调用大模型"，今天要变成你手里跑出来的一段 JSON。</div>
+  <div class="hero-meta">
+    <span>🎯 Phase 2 · 从零起步搭原型</span>
+    <span>⏱️ 预计 70-80 分钟</span>
+    <span>🧭 补齐能力：③ 搭原型（第一次亲手做）</span>
+  </div>
+  <div class="hero-back">FDE v2 学习路径 · <a href="./day00_fde_panorama_and_radar.html">← 回到 Day 0 起点校准</a></div>
+</div>
+
+<!-- 板块 1：今日目标 -->
+<div class="card">
+  <h2>🎯 一、今日目标</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>你自评 ③ 搭原型 2.6——是所有能力里的短板。这不奇怪，你 15 年做外包 PM，写代码这件事早就交给开发同学了。但 FDE 岗位卡住的就是这一条：<strong>没亲手跑过 API，你所有对"大模型能力边界"的判断都是二手信息</strong>。</p>
+      <p>今天不学任何理论。你就干一件事——打开电脑，装依赖、拿 Key、写 3 行代码、看着 Response 打印在你的终端上。哪怕这 3 行代码你是完全抄我的，跑通那一刻你对 FDE 这个岗的感觉都会不一样。</p>
+      <p>放心，我不指望你今天变成开发。我指望的是：明天再和客户聊 AI 方案时，你脑子里有<strong>一个真实跑过的 Response 长什么样</strong>。</p>
+    </div>
+  </div>
+
+  <ul class="goal-list">
+    <li>搞清 <strong>「LLM API 请求-响应」</strong> 的 5 个环节，画得出流程图</li>
+    <li>亲手 <strong>跑通一次阿里云百炼调用</strong>，看到真实的 Response JSON</li>
+    <li>掌握 <strong>「Key·Endpoint·Request·Response·Parse」</strong> 五段口诀</li>
+    <li>会读 <strong>usage / finish_reason</strong>——知道模型是否被截断、烧了多少 Token</li>
+    <li>会写一份 <strong>「翻译助手 + 合同摘要器」</strong> 的最小可用原型（自己练手用）</li>
+  </ul>
+</div>
+
+<!-- 板块 2：核心讲解 -->
+<div class="card">
+  <h2>📖 二、核心讲解</h2>
+
+  <h3>是什么：一次 LLM 调用到底发生了什么？</h3>
+  <p>大白话——你调用一次 API，就是<strong>把一段文字打包成 HTTP 请求发出去，模型算完了再把答案打包成 JSON 发回来</strong>。就这么简单。之所以感觉神秘，是因为中间"模型推理"那一步在服务器里，你看不见。</p>
+
+  <div class="flow-diagram">
+┌─────────────┐   HTTP POST   ┌───────────────┐    转发    ┌──────────────┐
+│  你的代码    │ ────────────▶ │  API 网关     │ ────────▶ │  模型推理引擎 │
+│ (Python)    │  带 Key 认证  │ (dashscope)   │           │  (qwen-plus) │
+└─────────────┘               └───────────────┘           └──────┬───────┘
+       ▲                                                          │
+       │                                                          │
+       │       ┌───────────────┐    JSON 响应                    │
+       └───────│  客户端 Parse │ ◀────── (choices + usage) ◀──── ┘
+               └───────────────┘
+  </div>
+
+  <p>把这个流程<strong>拆成 5 个动作</strong>，就是今天要记的口诀：</p>
+
+  <table>
+    <thead>
+      <tr><th style="width: 18%">动作</th><th style="width: 28%">你要做什么</th><th>为什么重要</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>① Key</strong> 拿 Key</td><td>去平台申请 API_KEY，放到环境变量里</td><td>没 Key 一切免谈；硬编码到代码里就是安全事故</td></tr>
+      <tr><td><strong>② Endpoint</strong> 定地址</td><td>选好平台 URL（百炼 / OpenAI 兼容模式）</td><td>选错地址会 404；OpenAI 兼容模式代码几乎通用</td></tr>
+      <tr><td><strong>③ Request</strong> 组请求</td><td>拼 messages、选 model、调 temperature</td><td>参数决定了输出稳定性和成本</td></tr>
+      <tr><td><strong>④ Response</strong> 收响应</td><td>看 content、usage、finish_reason</td><td>不看 usage 你永远不知道花了多少钱</td></tr>
+      <tr><td><strong>⑤ Parse</strong> 解结果</td><td>取出 content，做异常处理</td><td>网络抖动 / 超时 / 限流是常态，兜底必备</td></tr>
+    </tbody>
+  </table>
+
+  <div class="mnemonic">
+    <div class="m-title">□ □ □ 五段调用口诀 □ □ □</div>
+    <div class="m-line">Key · Endpoint · Request · Response · Parse</div>
+    <div class="m-explain">拿钥匙 · 定门牌 · 递话 · 收话 · 拆包</div>
+  </div>
+
+  <h3>为什么：PM 上手 API 的三个大坑</h3>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 1 · 只在 PPT 上看过，从没自己跑过一次</div>
+    <div>
+      <p>这是 90% 的 PM 转 FDE 的头号病。你会画架构图、会写"调用大模型 API"这五个字，但真让你跑一次，你不知道 Key 从哪申请、依赖装哪个包、Response 长啥样。</p>
+      <p>结果就是——和客户聊方案时，你说的每一句都是<strong>二手信息</strong>。客户问"这个 Token 大概烧多少钱"，你要回去问算法同学；客户问"接口延迟能到多少"，你还要回去问。<strong>这就是外包 PM 和 FDE 的分水岭</strong>。</p>
+      <p><strong>正确姿势：</strong>不管你多忙，先花 30 分钟把最简的 Hello World 跑通。跑一次，你以后在客户面前的底气就不一样。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 2 · 拿到 Response 就当结果，不看 usage 和 finish_reason</div>
+    <div>
+      <p>Response 里除了 <code>content</code>（模型说的话），还有两个 PM 必看的字段：</p>
+      <ul style="margin-left: 24px;">
+        <li><strong>usage</strong>：这次调用烧了多少 Token（prompt_tokens + completion_tokens）——直接对应<strong>花了多少钱</strong>。</li>
+        <li><strong>finish_reason</strong>：模型为什么停下来。<code>stop</code> 是自然结束；<code>length</code> 是被 max_tokens 截断（结果不完整！）；<code>content_filter</code> 是被安全策略拦了。</li>
+      </ul>
+      <p>见过太多 PM 拿到一段被截断的 JSON 直接给客户演示，客户当场发现最后一行是半截——尴尬到没法收场。</p>
+      <p><strong>正确姿势：</strong>每次调用后，先打印 <code>usage</code> 和 <code>finish_reason</code>，形成肌肉记忆。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 3 · 把 API Key 硬编码到代码里推到 Git</div>
+    <div>
+      <p>新手最贵的一课——把 <code>api_key = "sk-xxxxxx"</code> 直接写在代码里，然后 git push 到 GitHub。3 小时后你会收到平台账单短信：<strong>10 万 Token 一夜被刷完</strong>。</p>
+      <p>爬 GitHub 找泄漏 Key 是有专门的黑产脚本的。就算你的仓库是"私有"，团队里任何人拉一份到自己机器上都可能有风险。</p>
+      <p><strong>正确姿势：</strong>永远用 <strong>环境变量</strong> 或 <strong>.env 文件</strong>（配套 .gitignore 把 .env 排除）读 Key，代码里只出现变量名，不出现 Key 值。</p>
+    </div>
+  </div>
+
+  <div class="box box-blue">
+    <div class="box-title">🧭 PM 行动指南：跑通第一个 API 调用要过 4 关</div>
+    <div>
+      <p><strong>关 1 · Key 拿到</strong>：去阿里云百炼申请（新账号有免费额度），复制 <code>sk-</code> 开头那串。</p>
+      <p><strong>关 2 · 依赖装好</strong>：<code>pip install dashscope</code>（官方 SDK）或 <code>pip install openai</code>（走百炼的 OpenAI 兼容模式，代码更通用）。</p>
+      <p><strong>关 3 · 网络通</strong>：如果你在公司内网，先确认 <code>dashscope.aliyuncs.com</code> 不在防火墙黑名单里。测试：<code>curl -I https://dashscope.aliyuncs.com</code> 有响应就 OK。</p>
+      <p><strong>关 4 · 响应正确</strong>：跑通后看到 <code>choices[0].message.content</code> 里有模型回答的中文——这一关过了，你今天的目标就达成 80%。</p>
+    </div>
+  </div>
+
+  <h3>怎么用：5 步搭好第一个调用</h3>
+
+  <div class="steps">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>申请 Key</strong> —— 去 <code>bailian.console.aliyun.com</code> 注册登录，进"API-KEY 管理"页面创建。新用户通常有百万级 Token 免费额度，够你练一整周。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>装依赖</strong> —— 打开终端跑 <code>pip install openai python-dotenv</code>。<em>用 openai 库走 OpenAI 兼容模式，好处是以后换 DeepSeek、Kimi、豆包代码几乎不动。</em>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>写 Key 到 .env</strong> —— 在你的项目根目录建一个 <code>.env</code> 文件，写 <code>DASHSCOPE_API_KEY=sk-xxxxxxxx</code>。同目录建 <code>.gitignore</code> 加一行 <code>.env</code>。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>写第一段调用代码</strong> —— 见下面动手步骤 v1 版本，抄进 <code>hello_llm.py</code>，<code>python hello_llm.py</code> 运行。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>看 Response、调参数</strong> —— 跑通后先打印全部 Response 看结构，再逐步加 system_prompt、调 temperature 感受输出变化。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 板块 3：动手步骤 -->
+<div class="card">
+  <h2>🛠️ 三、动手步骤：3 段代码从 Hello World 到多轮对话</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>下面这三段代码是<strong>递进的</strong>——v1 最简、v2 加人设、v3 加对话历史。你先原封不动跑一遍 v1，跑通了再改到 v2，v3 是给你未来做"多轮问答 Agent"的雏形。全程建议边跑边把 Response 打印出来看，比看 100 页文档管用。</p>
+    </div>
+  </div>
+
+  <details class="case-block" open>
+    <summary>📌 案例 A · 跟做：v1 最简一次调用（能跑就赢一半）</summary>
+    <div class="case-body">
+      <h5>目标</h5>
+      <p>让模型回答一句话："你是谁？"——看看它怎么回。</p>
+
+      <h5>完整代码 · hello_llm_v1.py</h5>
+      <pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;"># -*- coding: utf-8 -*-
+# hello_llm_v1.py —— 你人生第一段大模型调用代码
+
+import os                              # 用来读环境变量
+from dotenv import load_dotenv         # 加载 .env 文件里的 Key
+from openai import OpenAI              # OpenAI 兼容客户端
+
+load_dotenv()                          # 把 .env 里的变量注入到 os.environ
+
+# 【第 1 步 · Key】从环境变量读 Key，绝对不要写死在代码里
+api_key = os.getenv("DASHSCOPE_API_KEY")
+
+# 【第 2 步 · Endpoint】百炼的 OpenAI 兼容地址（记牢这个 URL）
+client = OpenAI(
+    api_key=api_key,
+    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+)
+
+# 【第 3 步 · Request】组请求：messages 是对话列表，role 有 user/system/assistant
+response = client.chat.completions.create(
+    model="qwen-plus",                 # 用性价比款；正式项目可换 qwen-max
+    messages=[
+        {"role": "user", "content": "你是谁？用一句话介绍自己。"}
+    ],
+)
+
+# 【第 4 步 · Response】把关键字段都打出来看一眼
+print("=== 模型回答 ===")
+print(response.choices[0].message.content)   # 模型说的话
+print("\n=== usage（烧了多少 Token） ===")
+print(response.usage)                         # 输入/输出 Token 用量
+print("\n=== finish_reason（为啥停下） ===")
+print(response.choices[0].finish_reason)      # stop=正常 / length=被截断</pre>
+
+      <h5>预期输出</h5>
+      <pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;">=== 模型回答 ===
+我是通义千问，由阿里云研发的大规模语言模型，可以回答问题、创作文字、编程等。
+
+=== usage（烧了多少 Token） ===
+CompletionUsage(completion_tokens=28, prompt_tokens=13, total_tokens=41)
+
+=== finish_reason（为啥停下） ===
+stop</pre>
+
+      <h5>你要看懂的 3 件事</h5>
+      <ol style="margin-left: 24px;">
+        <li><strong>choices[0]</strong>——为啥有下标？因为一次调用可以让模型返回多个候选（<code>n=3</code> 就有 3 个），默认只返回 1 个，所以取 [0]。</li>
+        <li><strong>usage 三个字段</strong>——prompt_tokens 是你发过去的，completion_tokens 是模型返回的，total 是总和。<strong>钱按 total 收</strong>。</li>
+        <li><strong>finish_reason=stop</strong>——最健康的状态。如果看到 <code>length</code>，说明输出被 max_tokens 卡断了，要调大参数。</li>
+      </ol>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>📌 案例 A · 跟做：v2 加 system_prompt 和 temperature</summary>
+    <div class="case-body">
+      <h5>目标</h5>
+      <p>让模型扮演"资深招投标顾问"，用低温度输出稳定答案。</p>
+
+      <h5>完整代码 · hello_llm_v2.py</h5>
+      <pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;"># -*- coding: utf-8 -*-
+# hello_llm_v2.py —— 加人设 + 调参数
+
+import os
+from dotenv import load_dotenv
+from openai import OpenAI
+
+load_dotenv()
+client = OpenAI(
+    api_key=os.getenv("DASHSCOPE_API_KEY"),
+    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+)
+
+# 【关键 1】system 消息：给模型定人设，会影响后续所有回答的风格
+system_prompt = """你是一位资深招投标顾问，回答风格：
+1. 先给结论，再给理由；
+2. 涉及金额或期限的必须明确写数字；
+3. 不确定的地方说"需要根据招标文件确认"，绝不编造。"""
+
+user_question = "评标委员会至少几人？有没有奇偶数要求？"
+
+# 【关键 2】把 system 放在 messages 第一条，永远排在最前
+response = client.chat.completions.create(
+    model="qwen-plus",
+    messages=[
+        {"role": "system", "content": system_prompt},   # 定人设
+        {"role": "user", "content": user_question},     # 用户提问
+    ],
+    temperature=0.2,        # 【关键 3】0-2 之间：越低越稳定，事实类问答用 0.1-0.3
+    max_tokens=500,         # 【关键 4】限制输出长度，避免超预算
+    top_p=0.9,              # 【可选】和 temperature 二选一调；一般默认 0.9 够用
+)
+
+print("=== 回答 ===")
+print(response.choices[0].message.content)
+print(f"\n[usage] 输入 {response.usage.prompt_tokens} tokens, "
+      f"输出 {response.usage.completion_tokens} tokens, "
+      f"finish={response.choices[0].finish_reason}")</pre>
+
+      <h5>关键参数对照</h5>
+      <table>
+        <tr><td><strong>temperature=0.2</strong></td><td>低温 → 稳定、少发挥。事实问答、抽取任务用</td></tr>
+        <tr><td><strong>temperature=0.8-1.0</strong></td><td>高温 → 有创意、多样化。文案、脑暴用</td></tr>
+        <tr><td><strong>max_tokens=500</strong></td><td>约 350 个中文字。政企场景常用 800-2000</td></tr>
+      </table>
+
+      <p>跑一遍，再把 <code>temperature</code> 改成 <code>1.2</code> 跑一遍——同一个问题，感受下答案的"抖动幅度"。这是你对"模型稳定性"最直接的一课。</p>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>📌 案例 A · 跟做：v3 加多轮对话历史</summary>
+    <div class="case-body">
+      <h5>目标</h5>
+      <p>模型能"记得"上一轮说了啥——这是所有 Chatbot / Agent 的最小骨架。</p>
+
+      <h5>完整代码 · hello_llm_v3.py</h5>
+      <pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;"># -*- coding: utf-8 -*-
+# hello_llm_v3.py —— 简易多轮对话（记忆靠维护 messages 列表）
+
+import os
+from dotenv import load_dotenv
+from openai import OpenAI
+
+load_dotenv()
+client = OpenAI(
+    api_key=os.getenv("DASHSCOPE_API_KEY"),
+    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+)
+
+# 【核心思路】模型本身"无状态"，多轮对话靠你把历史都塞进 messages
+history = [
+    {"role": "system", "content": "你是招投标顾问，简洁回答。"}
+]
+
+def chat(user_input: str) -> str:
+    """一次对话：把用户话拼进历史，请求，收回答，再拼进历史。"""
+    history.append({"role": "user", "content": user_input})   # 记用户说的话
+
+    try:
+        response = client.chat.completions.create(
+            model="qwen-plus",
+            messages=history,
+            temperature=0.3,
+        )
+        answer = response.choices[0].message.content
+        history.append({"role": "assistant", "content": answer})   # 记模型说的话
+        return answer
+    except Exception as e:
+        # 【关键】异常兜底：网络抖动、限流、超时都可能出错
+        return f"[调用失败] {type(e).__name__}: {e}"
+
+# 简单命令行循环
+if __name__ == "__main__":
+    print("多轮对话 Demo（输入 quit 退出）")
+    while True:
+        q = input("\n你: ").strip()
+        if q.lower() in ("quit", "exit", "q"):
+            break
+        print(f"AI: {chat(q)}")
+        print(f"[历史长度 {len(history)} 条]")</pre>
+
+      <h5>试试这个对话</h5>
+      <ol style="margin-left: 24px;">
+        <li>你："某市政采购项目预算 800 万，评标委员会几人？"</li>
+        <li>你："<strong>刚才那个项目</strong>，如果我想缩短评审时间，能怎么办？"（看模型能否记住"800 万政采"这个上下文）</li>
+      </ol>
+
+      <div class="box box-yellow">
+        <div class="box-title">⚠️ 多轮对话的成本坑</div>
+        <div>每轮都会把 <strong>全部历史</strong> 一起发给模型——第 10 轮时你发过去的 prompt_tokens 已经很大。生产环境要做"历史截断/摘要压缩"，Day 8 会讲。</div>
+      </div>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 B · 自练 1：写一个"翻译助手"（英译中，可控风格）</summary>
+    <div class="case-body">
+      <p><strong>需求：</strong>输入英文，输出中文。支持两种风格：<em>正式（合同、公告用）</em>、<em>口语（邮件、聊天用）</em>。</p>
+
+      <p><strong>动手前先想 3 件事：</strong></p>
+      <ol style="margin-left: 24px;">
+        <li>system_prompt 里怎么写风格约束？</li>
+        <li>user 消息里除了原文还要传什么？（提示：风格参数）</li>
+        <li>temperature 用多少？（翻译要稳定，别太发挥）</li>
+      </ol>
+
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--primary); font-weight: 600;">查看参考实现</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;"># translator.py
+import os
+from dotenv import load_dotenv
+from openai import OpenAI
+
+load_dotenv()
+client = OpenAI(
+    api_key=os.getenv("DASHSCOPE_API_KEY"),
+    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+)
+
+def translate(text: str, style: str = "formal") -> str:
+    """英译中；style: formal(正式) / casual(口语)"""
+    style_hint = {
+        "formal": "用正式书面语，保留专业术语，适合合同/公告场景。",
+        "casual": "用口语化中文，通顺自然，适合邮件/聊天场景。",
+    }[style]
+
+    response = client.chat.completions.create(
+        model="qwen-plus",
+        messages=[
+            {"role": "system",
+             "content": f"你是专业中英翻译。要求：{style_hint} 只输出译文，不加解释。"},
+            {"role": "user", "content": text},
+        ],
+        temperature=0.2,   # 翻译要稳定
+    )
+    return response.choices[0].message.content
+
+if __name__ == "__main__":
+    en = "The Contractor shall deliver the equipment by December 31, 2025."
+    print("正式:", translate(en, "formal"))
+    print("口语:", translate(en, "casual"))</pre>
+          <p><strong>关键点：</strong>用 f-string 把风格参数拼进 system_prompt，一句话切换风格；<code>temperature=0.2</code> 保证同一句英文每次翻译结果基本一致。</p>
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 C · 自练 2：写一个"合同摘要器"（长文本→结构化摘要）</summary>
+    <div class="case-body">
+      <p><strong>需求：</strong>输入一段 1000+ 字的合同文本，输出结构化摘要：<em>合同标的 / 甲方 / 乙方 / 金额 / 签约日期 / 关键条款</em>。</p>
+
+      <p><strong>提示：</strong></p>
+      <ol style="margin-left: 24px;">
+        <li>system_prompt 里要明确列出摘要的 6 个字段；</li>
+        <li>让模型用 Markdown 表格返回（Day 5 会讲怎么强制 JSON）；</li>
+        <li>max_tokens 给足（建议 800+），避免摘要被截断；</li>
+        <li>每次调用打印 <code>finish_reason</code>，看有没有 <code>length</code>。</li>
+      </ol>
+
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--primary); font-weight: 600;">查看参考实现</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;"># contract_summarizer.py
+import os
+from dotenv import load_dotenv
+from openai import OpenAI
+
+load_dotenv()
+client = OpenAI(
+    api_key=os.getenv("DASHSCOPE_API_KEY"),
+    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+)
+
+SYSTEM = """你是合同摘要助手。请从下方合同全文中抽取 6 个字段，用 Markdown 表格输出：
+| 字段 | 内容 |
+| 合同标的 | ... |
+| 甲方 | ... |
+| 乙方 | ... |
+| 合同金额 | ... |
+| 签约日期 | ... |
+| 关键条款 | 逗号分隔的 3-5 条 |
+未找到的字段填"未提及"，绝不编造。"""
+
+def summarize(contract_text: str) -> dict:
+    resp = client.chat.completions.create(
+        model="qwen-plus",
+        messages=[
+            {"role": "system", "content": SYSTEM},
+            {"role": "user", "content": contract_text},
+        ],
+        temperature=0.1,     # 抽取任务用最低温
+        max_tokens=1000,     # 摘要留足空间
+    )
+    return {
+        "content": resp.choices[0].message.content,
+        "tokens": resp.usage.total_tokens,
+        "finish": resp.choices[0].finish_reason,
+    }
+
+if __name__ == "__main__":
+    contract = open("sample_contract.txt", encoding="utf-8").read()
+    result = summarize(contract)
+    print(result["content"])
+    print(f"\n[烧了 {result['tokens']} tokens, finish={result['finish']}]")
+    if result["finish"] == "length":
+        print("⚠️ 警告：被截断，请调大 max_tokens")</pre>
+          <p><strong>关键点：</strong>抽取任务用 <code>temperature=0.1</code> 保稳；摘要器<strong>永远要检查 finish_reason</strong>；用"未找到填未提及，绝不编造"这句话大幅降低幻觉。</p>
+        </div>
+      </details>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 4：速查卡 -->
+<div class="card">
+  <h2>📇 四、速查卡</h2>
+
+  <div class="cheatsheet">
+    <div class="cs-title">🩺 常见错误码对照表（错了不慌）</div>
+    <table>
+      <thead><tr><th>状态码</th><th>含义</th><th>怎么办</th></tr></thead>
+      <tbody>
+        <tr><td><strong>400</strong> Bad Request</td><td>参数不对：model 名写错 / messages 格式错 / 图片超大</td><td>回头对着官方文档核参数，重点看拼写</td></tr>
+        <tr><td><strong>401</strong> Unauthorized</td><td>Key 无效：拼错、过期、被禁用</td><td>回控制台重生成 Key；检查环境变量是否加载</td></tr>
+        <tr><td><strong>403</strong> Forbidden</td><td>没权限：该模型你账号没开通</td><td>控制台申请开通模型；或换个已开通的模型</td></tr>
+        <tr><td><strong>429</strong> Too Many Requests</td><td>限流：调太快，触发 QPS 限制</td><td>加 <code>time.sleep(1)</code> 或做指数退避重试</td></tr>
+        <tr><td><strong>500</strong> Internal Error</td><td>服务端问题：模型抽风或平台故障</td><td>重试 1-2 次，仍不行去平台状态页看有无告警</td></tr>
+        <tr><td><strong>Timeout</strong></td><td>超时：长文本推理慢 / 网络差</td><td>设置 <code>timeout=60</code>，或换更快的 model（qwen-turbo）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">⚙️ 核心参数速查（每个都要能一句话说清）</div>
+    <table>
+      <thead><tr><th>参数</th><th>作用</th><th>推荐值</th></tr></thead>
+      <tbody>
+        <tr><td><code>temperature</code></td><td>随机性：越高越发挥，越低越稳定</td><td>抽取/翻译 0.1-0.3；对话 0.5-0.7；创意 0.8-1.2</td></tr>
+        <tr><td><code>top_p</code></td><td>核采样：只从概率累积 top_p 的 token 里选</td><td>默认 0.9；和 temperature 二选一调，别同时</td></tr>
+        <tr><td><code>max_tokens</code></td><td>限制输出长度上限</td><td>短问答 300-500；摘要/生成 800-2000；文档 4000+</td></tr>
+        <tr><td><code>stop</code></td><td>遇到指定字符串就停止生成</td><td>结构化输出常用，如 <code>stop=["\\n\\n"]</code></td></tr>
+        <tr><td><code>stream</code></td><td>流式返回：一个 Token 一个 Token 推</td><td>用户交互场景 True（体验好）；后台任务 False</td></tr>
+        <tr><td><code>n</code></td><td>返回几个候选答案</td><td>一般 1；A/B 测试或投票时用 3-5</td></tr>
+        <tr><td><code>timeout</code></td><td>整体请求超时秒数</td><td>默认 60；长文本设 120；关键路径永远设</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">🔐 让 API Key 更安全的 3 种做法</div>
+    <ol style="margin-left: 24px;">
+      <li><strong>本地开发用 .env 文件</strong>——项目根目录建 <code>.env</code>，配 <code>.gitignore</code> 把它排除。<code>python-dotenv</code> 自动加载。</li>
+      <li><strong>生产环境用环境变量或密钥管理服务</strong>——K8s Secret / AWS Secrets Manager / 阿里云 KMS。代码里永远 <code>os.getenv()</code>。</li>
+      <li><strong>Key 定期轮换 + 最小权限</strong>——每 90 天换一次；给不同应用发不同 Key；能限制额度就限制。<em>万一泄漏，一键禁用旧 Key。</em></li>
+    </ol>
+    <p style="color: var(--red); margin-top: 8px;"><strong>红线：</strong>永远不要把 Key 写在代码里、粘到聊天群里、截图给客户看。</p>
+  </div>
+</div>
+
+<!-- 板块 5：5 题测验 -->
+<div class="card">
+  <h2>📝 五、5 题小测验</h2>
+  <p style="color: var(--gray-600); font-size: 14px;">先想 30 秒再点开答案。错项解析才是这一节的核心资产。</p>
+
+  <details class="quiz-item">
+    <summary>Q1 · 抽取合同关键字段的任务，你应该把 temperature 设成多少？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 1.5（要模型充分发挥）</li>
+        <li>B. 0.7（默认值就好）</li>
+        <li>C. 0.1-0.2（越低越稳定）</li>
+        <li>D. 完全不设，让模型自己决定</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：C</div>
+        <p>抽取任务追求<strong>稳定、可重复、不编造</strong>——同一份合同今天抽出来的甲方和明天抽出来的必须一致。低温（0.1-0.2）让模型选概率最高的 token，输出趋近确定性。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 错得离谱</strong>——1.5 是创意写作用的高温，抽取任务用高温等于让模型"猜着抽"，同样一份合同两次抽的甲方可能不一样。<strong>B 是默认值</strong>——默认 0.7 适合聊天，抽取偏高，会出现"看起来合理但其实错"的答案。<strong>D 错在没主动控制</strong>——参数不设走默认值，等于放弃了对稳定性的调优。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q2 · 调用返回 finish_reason="length"，说明什么？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 模型自然结束，一切正常</li>
+        <li>B. 输出被 max_tokens 上限截断了，结果可能不完整</li>
+        <li>C. 输入太长，请求被拒</li>
+        <li>D. 模型触发了安全策略</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p><code>length</code> 意味着模型话没说完就被 max_tokens 卡断了——生产环境下这是重大 Bug。合同摘要抽到一半、JSON 结构没闭合，直接程序崩。<strong>PM 必须每次调用都检查这个字段</strong>。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 错在混淆了 stop 和 length</strong>——正常结束是 <code>stop</code>，length 是被截断，两者本质不同。<strong>C 错在错误归因</strong>——输入过长会返回 400 错误码，不是走 finish_reason 这条路。<strong>D 错在字段搞错</strong>——安全策略触发是 <code>content_filter</code>，不是 length。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q3 · 你的代码 push 到 Git 后突然收到平台账单短信，最可能是啥原因？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 服务器被 DDoS 攻击</li>
+        <li>B. API Key 硬编码在代码里被爬取到，遭黑产刷 Token</li>
+        <li>C. 阿里云平台故障，账单算错</li>
+        <li>D. 你的代码有死循环，调用不停</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>GitHub 上有专门的黑产脚本 24 小时扫 <code>sk-</code> 开头的字符串，一旦发现立刻用你的 Key 刷模型。这是新人最贵的一课——<strong>永远用环境变量读 Key，永远配 .gitignore 排除 .env</strong>。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 错在张冠李戴</strong>——DDoS 攻击不会让你的账单飙升，只会让服务响应变慢。<strong>C 是甩锅思维</strong>——平台账单极少算错，先自查自己的 Key 是否泄漏。<strong>D 可能但不是主因</strong>——死循环通常你自己能发现（进程还在跑），黑产刷 Key 是无感的更可怕。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q4 · 一次调用 usage 显示 prompt_tokens=8000 / completion_tokens=200，说明什么？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 输入很长，输出很短——典型的抽取或摘要任务</li>
+        <li>B. 输入很短，输出很长——典型的生成任务</li>
+        <li>C. 模型抽风了，输入输出不平衡</li>
+        <li>D. 计费出错，应该退款</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：A</div>
+        <p>输入 8000 Token（约 6000 中文字）、输出 200——非常典型的"读长文档、出短结论"场景，比如合同摘要、简历筛选、会议纪要抽取。<strong>PM 要建立的直觉：抽取/摘要类任务，prompt_tokens 通常是 completion_tokens 的 10-100 倍</strong>——所以要重点优化的是输入压缩，不是输出。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>B 正好反了</strong>——生成任务是输入短输出长（比如"写一份 500 字周报"），typical prompt=50 / completion=800。<strong>C 是不懂业务</strong>——不同任务类型 usage 分布本来就不同，不平衡不代表错。<strong>D 是甩锅</strong>——usage 计费是按 Token 精算的，很少出错，先看自己的任务模式。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q5 · 综合题——你的调用返回 429，怎么处理最合适？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 立刻重试 100 次，直到成功</li>
+        <li>B. 加 <code>time.sleep(0.5)</code> 后重试，最多 3 次；仍失败则记日志报警</li>
+        <li>C. 换个 Key 继续调</li>
+        <li>D. 忽略，反正下次调用可能就成功了</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>429 表示限流，说明你调太快了。<strong>正确工程做法是"指数退避重试"</strong>：第 1 次等 0.5 秒、第 2 次等 1 秒、第 3 次等 2 秒，超过 3 次记日志告警。这是生产环境的基本盘。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 错在暴力重试</strong>——不加间隔的重试 100 次会加剧限流，还可能触发平台风控封 Key。<strong>C 错在绕过限制</strong>——换 Key 是钻空子，一旦被平台识别可能封整个账号；正确做法是限流后退避。<strong>D 错在没有工程意识</strong>——生产系统"忽略错误"就是等着凌晨被人叫醒。</p>
+      </div>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 6：面试金句 + 心得笔记 -->
+<div class="card">
+  <h2>💼 六、面试金句预埋</h2>
+
+  <div class="interview-quote">
+    <span class="iq-tag">动手能力 · 亲手跑通</span>
+    "我入门 FDE 的第一件事就是<strong>亲手在自己电脑上跑通一次 API 调用</strong>。这一次跑通之后，我对'一次大模型调用要烧多少 Token、延迟多少、Response 长什么样'不再是二手信息。以后跟客户聊方案，我说的每一句都是自己验证过的。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">工程意识 · Key 管理</span>
+    "API Key 我永远用环境变量或密钥管理服务读，绝不硬编码。<strong>Key 一旦泄漏 3 小时就能被刷空</strong>——这在 GitHub 上有专门的黑产脚本。生产环境还要做 Key 轮换和最小权限。这是 FDE 的基础工程素养。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">Response 结构化理解</span>
+    "拿到 Response 我一定看三个字段——<strong>content 是内容、usage 是钱、finish_reason 是完整性</strong>。见过太多同事拿被 length 截断的 JSON 直接给客户演示，最后一行是半截。这三个字段是 FDE 的仪表盘，缺一不可。"
+  </div>
+
+  <h3>📓 心得笔记</h3>
+  <div class="box box-red">
+    <div class="box-title">⚠️ 今天最反直觉的 3 件事</div>
+    <div>
+      <p><strong>1.</strong> "调 API"根本不难——5 行 Python 就能跑通。难的是<strong>你敢不敢在客户面前说"我跑过"</strong>。<em>（PM 转 FDE 的心理关比技术关重。）</em></p>
+      <p><strong>2.</strong> Response 里最值钱的不是 content，是 <strong>usage 和 finish_reason</strong>。<em>（这两个字段决定了成本和完整性，PM 视角比开发视角更该看。）</em></p>
+      <p><strong>3.</strong> temperature 不是"随便设"——<strong>抽取用 0.1 / 对话用 0.5 / 创意用 1.0</strong>，是三档决然不同的策略。<em>（PM 要能一眼看出场景该用哪档，这是需求判断力。）</em></p>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  学习笔记 · AI 项目经理成长 · FDE v2 · Day 4<br>
+  上一站 ← Day 3 · 下一站 → Day 5 Prompt 结构化 JSON 输出
+</div>
+
+</div>
+</body>
+</html>

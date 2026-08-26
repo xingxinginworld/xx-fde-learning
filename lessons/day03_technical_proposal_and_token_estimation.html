@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FDE v2 · Day 3 · 技术方案文档 + Token/成本估算实操</title>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-bg: #eff6ff;
+  --blue-dark: #1e40af;
+  --orange: #ea580c;
+  --orange-bg: #fff7ed;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --green: #059669;
+  --green-bg: #ecfdf5;
+  --yellow: #d97706;
+  --yellow-bg: #fffbeb;
+  --purple: #7c3aed;
+  --purple-bg: #f5f3ff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-800: #1f2937;
+  --text: #1a1a2e;
+  --text-light: #6b7280;
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: #f0f4f8; color: var(--text); line-height: 1.8; font-size: 16px;
+}
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+.hero {
+  background: linear-gradient(135deg, #1e3a5f 0%, #1a56db 55%, #0d7377 100%);
+  color: #fff; border-radius: var(--radius); padding: 32px 30px 26px; margin-bottom: 20px;
+}
+.hero-badge { display: inline-block; background: rgba(255,255,255,0.18); padding: 4px 14px; border-radius: 20px; font-size: 12px; margin-bottom: 10px; }
+.hero h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; }
+.hero .subtitle { font-size: 14.5px; opacity: 0.92; margin-bottom: 14px; line-height: 1.7; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; opacity: 0.85; }
+.hero-back { font-size: 12px; margin-top: 10px; opacity: 0.75; }
+.hero-back a { color: #fff; text-decoration: underline; }
+
+.card { background: #fff; border-radius: var(--radius); padding: 26px 26px 22px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.card h2 { font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.card h3 { font-size: 17px; font-weight: 600; color: var(--gray-800); margin: 22px 0 10px; padding-left: 12px; border-left: 3px solid var(--primary); }
+.card h4 { font-size: 15px; font-weight: 600; margin: 14px 0 8px; color: var(--gray-800); }
+p { margin-bottom: 10px; }
+code { background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-size: 14px; font-family: "Cascadia Code", "Fira Code", Consolas, monospace; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-size: 14px; }
+th { background: var(--primary); color: #fff; padding: 9px 12px; text-align: left; font-weight: 600; font-size: 13px; }
+td { padding: 9px 12px; border-bottom: 1px solid var(--gray-200); vertical-align: top; }
+tr:nth-child(even) td { background: var(--gray-50); }
+
+.box { border-radius: 8px; padding: 14px 16px; margin: 14px 0; border-left: 4px solid; font-size: 14.5px; }
+.box-blue { background: var(--primary-bg); border-color: var(--primary); }
+.box-green { background: var(--green-bg); border-color: var(--green); }
+.box-yellow { background: var(--yellow-bg); border-color: var(--yellow); }
+.box-red { background: var(--red-bg); border-color: var(--red); }
+.box-purple { background: var(--purple-bg); border-color: var(--purple); }
+.box-orange { background: var(--orange-bg); border-color: var(--orange); }
+.box-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+
+/* 导师说 */
+.mentor { background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%); border-radius: 10px; padding: 16px 18px; margin: 14px 0; border: 1px solid #dbeafe; position: relative; }
+.mentor::before { content: '👨‍🏫'; position: absolute; top: -12px; left: 16px; background: #fff; padding: 0 6px; font-size: 20px; }
+.mentor .mentor-title { font-weight: 700; color: var(--blue-dark); font-size: 14px; margin-bottom: 6px; margin-top: 4px; }
+.mentor .mentor-body { font-size: 14.5px; color: var(--gray-800); line-height: 1.75; }
+.mentor .mentor-body p { margin-bottom: 8px; }
+
+/* 目标清单 */
+.goal-list { list-style: none; padding: 0; }
+.goal-list li { padding: 8px 0 8px 32px; position: relative; font-size: 15px; }
+.goal-list li::before { content: '🎯'; position: absolute; left: 4px; top: 8px; font-size: 15px; }
+
+/* 口诀卡 */
+.mnemonic { background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 10px; padding: 14px 18px; margin: 14px 0; text-align: center; }
+.mnemonic .m-title { font-size: 12px; color: #92400e; margin-bottom: 6px; letter-spacing: 2px; }
+.mnemonic .m-line { font-size: 18px; font-weight: 700; color: #78350f; letter-spacing: 3px; }
+.mnemonic .m-explain { font-size: 13px; color: #92400e; margin-top: 6px; }
+
+/* 速查卡 */
+.cheatsheet { border: 2px dashed var(--primary); border-radius: 10px; padding: 16px 18px; margin: 14px 0; background: #f0f9ff; }
+.cheatsheet .cs-title { font-weight: 700; color: var(--blue-dark); font-size: 15px; margin-bottom: 10px; }
+
+/* 步骤 */
+.steps { counter-reset: step; margin: 12px 0; }
+.step-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px dashed var(--gray-200); }
+.step-item:last-child { border-bottom: none; }
+.step-item .step-num { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--primary); color: #fff; text-align: center; line-height: 34px; font-weight: 700; }
+.step-item .step-body { flex: 1; }
+.step-item .step-body strong { color: var(--blue-dark); }
+
+/* 测验 */
+.quiz-item { border: 1px solid var(--gray-200); border-radius: 8px; margin: 10px 0; overflow: hidden; }
+.quiz-item summary { background: var(--primary-bg); padding: 12px 14px; cursor: pointer; font-weight: 600; color: var(--primary); font-size: 14.5px; }
+.quiz-item[open] summary { border-bottom: 1px solid var(--gray-200); }
+.quiz-body { padding: 12px 16px; }
+.quiz-options { list-style: none; padding: 0; }
+.quiz-options li { padding: 5px 0; font-size: 14px; }
+.quiz-answer { background: var(--green-bg); border-left: 3px solid var(--green); padding: 10px 12px; margin-top: 10px; font-size: 14px; border-radius: 4px; }
+.quiz-answer .ans-title { font-weight: 700; color: var(--green); margin-bottom: 6px; }
+.wrong-analysis { background: var(--red-bg); border-left: 3px solid var(--red); padding: 10px 12px; margin-top: 8px; font-size: 13.5px; border-radius: 4px; }
+.wrong-analysis .wa-title { font-weight: 700; color: var(--red); margin-bottom: 4px; }
+
+/* 案例块 */
+.case-block { border: 1px solid var(--gray-200); border-radius: 8px; margin: 12px 0; overflow: hidden; }
+.case-block summary { background: linear-gradient(135deg, #ede9fe, #ddd6fe); padding: 12px 14px; cursor: pointer; font-weight: 600; color: #5b21b6; font-size: 14.5px; }
+.case-block .case-body { padding: 14px 16px; font-size: 14px; }
+.case-block .case-body h5 { color: var(--blue-dark); margin: 10px 0 6px; font-size: 14px; }
+
+/* 面试金句 */
+.interview-quote { background: linear-gradient(135deg, #1e3a5f, #1a56db); color: #fff; border-radius: 10px; padding: 18px 20px; margin: 14px 0; font-size: 15px; font-style: italic; line-height: 1.8; position: relative; }
+.interview-quote::before { content: '💼'; position: absolute; top: -10px; left: 16px; background: #fff; padding: 2px 6px; border-radius: 12px; font-size: 16px; }
+.interview-quote .iq-tag { display: block; font-size: 11px; opacity: 0.8; margin-bottom: 6px; font-style: normal; letter-spacing: 1px; }
+
+.footer { text-align: center; color: var(--text-light); font-size: 12px; padding: 20px 0 36px; border-top: 1px solid var(--gray-200); margin-top: 16px; }
+
+@media (max-width: 640px) {
+  .container { padding: 12px; }
+  .hero { padding: 24px 18px 20px; }
+  .hero h1 { font-size: 20px; }
+  .card { padding: 20px 16px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="hero">
+  <div class="hero-badge">FDE v2 · Phase 1 · Day 3</div>
+  <h1>📄 技术方案文档 + Token/成本估算实操</h1>
+  <div class="subtitle">方案文档要同时通过<strong>客户的商务审查</strong>和<strong>开发的技术审查</strong>——一份文档搞两件事的模板，我给你。今天还会教你把 Token 成本算到"客户不敢砍、开发不能挑"的地步。</div>
+  <div class="hero-meta">
+    <span>🎯 Phase 1 · 需求到方案</span>
+    <span>⏱️ 预计 70-80 分钟</span>
+    <span>🧭 补齐能力：② 会翻译（2.4 → 3.7）</span>
+  </div>
+  <div class="hero-back">FDE v2 学习路径 · <a href="./day00_fde_panorama_and_radar.html">← 回到 Day 0 起点校准</a> · <a href="./day02_architecture_selection_decision_tree.html">← Day 2 架构选型决策树</a></div>
+</div>
+
+<!-- 板块 1：今日目标 -->
+<div class="card">
+  <h2>🎯 一、今日目标</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>Day 1 判断"该不该做"，Day 2 决定"用哪种架构"，今天要落到<strong>把这两天的结论写成一份能签合同的文档</strong>。这是 FDE 交付链最赚钱的一环——PPT 给客户看的动作，方案文档给开发看的细节，Token 估算给采购看的账本。<strong>三件事必须在同一份文档里搞定</strong>。</p>
+      <p>你 PM 老本行写过很多方案，但 AI 方案有一个不一样的地方——<strong>它有推理成本</strong>。传统项目上线后成本是固定的，AI 项目每一次调用都在花钱。这就是为什么方案文档里必须有 Token 估算章节，你算不清就等着一年后被采购追杀。</p>
+      <p>今天最重要的一件事：<strong>算 Token 不是数学题，是采购谈判的筹码</strong>。你把公式和三档规模算出来，客户想砍你还得先说服自己的采购。</p>
+    </div>
+  </div>
+
+  <ul class="goal-list">
+    <li>掌握 <strong>AI 项目方案文档的 6 段结构</strong>，一份文档同时通过客户 / 开发 / 合规三方审查</li>
+    <li>会用 <strong>「Token 估算公式 + 三档规模法」</strong>，把成本算到月度级并给出扩展性说明</li>
+    <li>看懂主流大模型 <strong>输入 / 输出单价差异</strong>，能给客户做「模型选型 × 成本」对比表</li>
+    <li>识别方案文档里 <strong>5 个高频坑点</strong>，写完自检不翻车</li>
+  </ul>
+</div>
+
+<!-- 板块 2：核心讲解 -->
+<div class="card">
+  <h2>📖 二、核心讲解</h2>
+
+  <h3>是什么：AI 项目方案文档的 6 个必要段</h3>
+  <p>大白话——方案文档不是给一个人看的，是<strong>给三拨人看的</strong>：客户业务方看背景和验收，客户 IT 方看架构和风险，开发 leader 看数据方案和成本。三方视角都要照顾到，缺一段就有一方"看不下去 / 不认账"。</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 8%">段号</th>
+        <th style="width: 24%">段落名</th>
+        <th style="width: 30%">主要给谁看</th>
+        <th>核心要回答的问题</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>①</td><td><strong>需求背景与目标</strong></td><td>客户业务方 · 老板</td><td>为什么要做？做成什么样算成功？（量化指标）</td></tr>
+      <tr><td>②</td><td><strong>技术方案</strong>（架构图+组件选型）</td><td>客户 IT · 开发 leader</td><td>用什么架构？为什么不用其他架构？（承接 Day 2）</td></tr>
+      <tr><td>③</td><td><strong>数据方案</strong>（数据源+预处理+存储）</td><td>客户 IT · 数据合规</td><td>数据从哪来？怎么处理？存哪儿？合规吗？</td></tr>
+      <tr><td>④</td><td><strong>Token/成本估算</strong></td><td>客户采购 · 财务</td><td>一年花多少钱？三档规模分别多少？扩容成本？</td></tr>
+      <tr><td>⑤</td><td><strong>风险与替代方案</strong></td><td>客户 IT · 项目 PMO</td><td>可能翻车的点？翻车了怎么办？</td></tr>
+      <tr><td>⑥</td><td><strong>里程碑与验收</strong></td><td>客户 PMO · 开发 leader</td><td>什么时候交付什么？怎么算验收通过？</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>反直觉的地方：</strong>很多 PM 觉得写完 ①②③ 就够了，把 ④⑤ 一笔带过。<strong>恰恰是 ④⑤ 决定客户签不签合同</strong>——签合同的是采购和 PMO，他们看的就是账本和风险。</p>
+
+  <div class="mnemonic">
+    <div class="m-title">□ □ □ 方案六段口诀 □ □ □</div>
+    <div class="m-line">背景 · 方案 · 数据</div>
+    <div class="m-line">成本 · 风险 · 里程碑</div>
+    <div class="m-explain">六段齐 · 客户签 · 开发不挑刺 · 采购不砍价</div>
+  </div>
+
+  <h3>为什么：三个把方案搞崩的高频误区</h3>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 误区 1 · 只写 PPT 不写细节文档（"开发按 PPT 猜就翻车"型）</div>
+    <div>
+      <p>你给客户做了一份漂亮 PPT，标了架构图、写了亮点，客户签了合同。开发拿到 PPT 一看——"数据源到底哪几张表？预处理规则是什么？RAG 切片粒度多少？"你答不上来，开发按自己理解写代码，交付时和客户预期对不上，二次返工。</p>
+      <p><strong>PPT 和方案文档是两个物种。</strong>PPT 给客户高层看观感，方案文档给客户 IT + 开发看落地细节。签合同前必须有方案文档，PPT 只是它的浓缩视图。</p>
+      <p><strong>正确姿势：</strong>PPT ≤ 15 页做售前沟通，方案文档 15-40 页做交付依据。<em>方案文档一定要在合同附件里出现，否则出问题时你没抓手。</em></p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 误区 2 · Token 成本拍脑袋（"一年后账单出来客户想砍你"型）</div>
+    <div>
+      <p>方案里写"预计月度推理成本约 5000 元"——问依据，你说"感觉差不多"。上线三个月一算，实际是 3.8 万 / 月，是估算的 7 倍多。客户马上把责任推给你："当初你说 5000，现在为什么这么多？"</p>
+      <p>AI 成本翻倍不是意外，是常态——大家习惯低估的原因有三个：① 忘了算系统 prompt 和 few-shot 的固定开销（每次调用都在花）；② 忘了算 RAG 检索出来的上下文 token（可能比问题本身还长）；③ 忘了算失败重试（幻觉纠错、格式校验失败要重试）。</p>
+      <p><strong>正确姿势：</strong>用<em>「Token 估算公式」+ 「三档规模法」</em>（低 / 中 / 高日均调用量）算出三个数字给客户看。任何单一数字都是陷阱。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 误区 3 · 不写风险与替代方案（"问题发生时全责在你"型）</div>
+    <div>
+      <p>项目上线两周，模型效果不达预期，客户暴怒："方案里没提这个风险，那就是你能力问题，你自己扛。" 你打开方案文档，风险章节写着一句"技术风险可控" —— 完蛋了，这句是"你自己扛"的自证。</p>
+      <p>风险章节的作用不是显得你懂技术，是<strong>提前和客户建立"风险共担"的心理契约</strong>。写清楚"XX 场景可能准确率不达 90%，届时启用兜底策略 Y"—— 这句话上线后能救你的命。</p>
+      <p><strong>正确姿势：</strong>至少写 3 类风险（模型效果 / 成本超支 / 合规变动），每类都配替代方案。<em>风险不是坏话，是你的责任边界。</em></p>
+    </div>
+  </div>
+
+  <div class="box box-blue">
+    <div class="box-title">🧭 PM 行动指南：方案文档写完必过 3 个人</div>
+    <div>
+      <p><strong>P1 · 客户业务 leader</strong>——看①⑥。问 TA："你看完①，觉得我们真的懂你要什么吗？⑥ 的验收标准你能接受吗？"</p>
+      <p><strong>P2 · 客户 IT / 架构师</strong>——看②③⑤。问 TA："架构和数据方案里有没有你觉得不落地或者违反公司标准的？"</p>
+      <p><strong>P3 · 你自家开发 leader</strong>——看②③④⑥。问 TA："按这个方案，你能带团队交付吗？成本估算合理吗？里程碑给的时间够吗？"</p>
+      <p>三个人都点头 → 方案可以发出去；有任意一个人皱眉 → 改到 TA 点头再发。<em>合同前多改 3 版，胜过合同后返工 30 次。</em></p>
+    </div>
+  </div>
+
+  <h3>怎么用：Token 估算公式 + 成本估算 3 步法</h3>
+
+  <div class="steps">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>算清「单次调用 token」的构成</strong>——不是只算用户的问题！公式是：<code>单次输入 token = 系统 prompt + few-shot 示例 + 检索出的上下文（RAG 有的话）+ 用户当次问题</code>。单次输出 token = 模型给的回答长度。<em>前三项是每次都花的"固定开销"，别忘。</em>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>用「三档规模」估月度总量</strong>——低（试点期，100 单/天）、中（推广期，1000 单/天）、高（全量，10000 单/天）。<code>月度调用总量 = 单次 token × QPD（日均调用量）× 30 天 × (1 + 失败重试率)</code>。失败重试率经验值 10%-20%。<em>永远给三档，别只给一个数。</em>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>套价格得成本</strong>——<code>月度成本 = 月度输入 token × 输入单价 + 月度输出 token × 输出单价</code>。<strong>务必标注模型名和 API 版本</strong>（价格随版本变），并给两个方案对比：便宜模型 vs 强模型。<em>政企场景还要单独列一段私有化年租费用 vs 公有云按量的对比。</em>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>加上「扩展性说明」</strong>——写清楚从 100 单/天扩到 10000 单/天的：① 成本会不会线性上升（一般会，加上批量优惠可能次线性）；② 是否需要升级架构（比如加缓存、切换到更便宜的模型做初筛）；③ 客户有哪些自选省钱开关（缓存开 / 关、上下文压缩、模型分级）。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>私有化 vs 公有云对比</strong>——政企项目九成会问这个。私有化：一次性硬件 + 每年运维；公有云：按 token 计费。<strong>拐点通常在日均调用 5000-10000 之间</strong>（低于则公有云更便宜，高于则私有化摊薄成本更划算）。给客户算清拐点在哪里。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 板块 3：动手步骤 -->
+<div class="card">
+  <h2>🛠️ 三、动手步骤：三个政企方案过一遍</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>方案文档不是背模板背出来的，是写出来的。下面三个案例，第一个我带你把六段全写一遍（脚手架级示范），第二个你自己写并给出三档成本，第三个是一份"故意有坑"的方案，你挑出问题——这是训练审查视角的最好方法。</p>
+    </div>
+  </div>
+
+  <details class="case-block" open>
+    <summary>📌 案例 A · 智能员工问答助手（跟着写完整方案）</summary>
+    <div class="case-body">
+      <p><strong>项目背景</strong>：某集团总部人力资源部，员工 8000 人，年均政策类咨询 3 万次，HR 团队 5 人。</p>
+
+      <h5>① 需求背景与目标</h5>
+      <div class="box box-purple">
+        <div>
+          <p><strong>业务背景：</strong>HR 团队年均处理 3 万次政策咨询，其中 70% 是重复问题（差旅、请假、报销、股权、社保）。员工体验差（等回复 4-24 小时），HR 团队被消耗（每天 2 小时答重复问题）。</p>
+          <p><strong>业务目标：</strong>1）政策类问题 AI 直答，员工满意度 ≥ 80%；2）HR 团队从重复问答中解放 60% 时间；3）问答准确率 ≥ 85%（有出处引用）。</p>
+        </div>
+      </div>
+
+      <h5>② 技术方案（承接 Day 2 决策）</h5>
+      <div class="box box-purple">
+        <div>
+          <p><strong>架构：RAG</strong>（不用 Agent 也不用工作流，纯问答场景）</p>
+          <p><strong>组件选型：</strong>大模型选 A 家（性价比高，中文强）；向量库选 B（成熟稳定）；Embedding 选 C（支持中文长文本）。<em>都给出备选，客户 IT 有偏好可切换。</em></p>
+          <p><strong>数据流：</strong><code>[员工问] → [Embedding] → [向量库检索 Top5] → [LLM 生成含引用回答] → [记录审计日志]</code></p>
+          <p><strong>为什么不选 Agent：</strong>制度问答需要每句可查出处，RAG 天然带引用；Agent 有幻觉风险且合规不好解释。</p>
+        </div>
+      </div>
+
+      <h5>③ 数据方案</h5>
+      <div class="box box-purple">
+        <div>
+          <p><strong>数据源：</strong>集团制度库现有 236 份 PDF/Word 文件，共约 120 万字。</p>
+          <p><strong>预处理：</strong>PDF/Word 解析 → 按章节切片（500-800 字/片）→ 结构化元数据（制度编号、生效日期、适用范围）→ 生成 Embedding。</p>
+          <p><strong>存储：</strong>向量库部署在客户内网（政企合规要求），原文件同步存客户内部文档服务器，做增量更新（季度同步）。</p>
+          <p><strong>合规：</strong>数据不出内网，模型走客户已备案的私有化推理集群。</p>
+        </div>
+      </div>
+
+      <h5>④ Token / 成本估算</h5>
+      <div class="box box-purple">
+        <div>
+          <p><strong>单次调用 token 构成：</strong></p>
+          <ul style="margin-left: 20px;">
+            <li>系统 prompt：约 400 token（角色设定 + 输出格式规范）</li>
+            <li>few-shot 示例：约 500 token（2 个正确回答示例）</li>
+            <li>RAG 检索出的上下文：Top5 片段 × 约 600 token = 3000 token</li>
+            <li>用户当次问题：平均 50 token</li>
+            <li><strong>输入合计 ≈ 3950 token</strong></li>
+            <li>输出：平均 250 token</li>
+          </ul>
+          <p><strong>三档规模月度成本（假设输入 0.001 元 /1K token · 输出 0.002 元 /1K token · 失败重试率 15%）：</strong></p>
+          <table>
+            <thead><tr><th>规模</th><th>日均调用</th><th>月输入 token</th><th>月输出 token</th><th>月成本</th></tr></thead>
+            <tbody>
+              <tr><td>低（试点）</td><td>100</td><td>约 1360 万</td><td>约 86 万</td><td>约 <strong>15 元</strong></td></tr>
+              <tr><td>中（推广）</td><td>1000</td><td>约 1.36 亿</td><td>约 862 万</td><td>约 <strong>153 元</strong></td></tr>
+              <tr><td>高（全量）</td><td>3000（8000 员工按 40% 活跃）</td><td>约 4.08 亿</td><td>约 2586 万</td><td>约 <strong>460 元 / 月</strong></td></tr>
+            </tbody>
+          </table>
+          <p><strong>私有化 vs 公有云：</strong>本项目建议私有化推理（合规硬要求），一次性 GPU 服务器约 80 万，年运维 10 万，全量场景 3 年 TCO ≈ 110 万；公有云 3 年成本约 1.6 万——但公有云不满足数据不出内网要求，只能私有化。</p>
+        </div>
+      </div>
+
+      <h5>⑤ 风险与替代方案</h5>
+      <div class="box box-purple">
+        <div>
+          <p><strong>R1 · 冷门问题命中率低</strong>：制度库覆盖不到的问题（比如临时新政策），预计初期 10-15% 无法直答。<em>替代方案：兜底转人工，同时把未命中问题月度盘点补入知识库。</em></p>
+          <p><strong>R2 · 制度更新滞后</strong>：季度同步可能造成新政策 1-2 个月内答旧版。<em>替代方案：建立"制度变更加急同步"通道，重大变更 T+1 更新。</em></p>
+          <p><strong>R3 · 私有化模型能力天花板</strong>：私有化部署的模型可能比最新公有云版本落后半年。<em>替代方案：可选混合方案，敏感问题走私有化，一般问题走公有云 API。</em></p>
+        </div>
+      </div>
+
+      <h5>⑥ 里程碑与验收</h5>
+      <div class="box box-purple">
+        <div>
+          <p><strong>M1（第 4 周）</strong>：知识库导入 + 基础问答联调；<strong>验收：</strong>50 个真实问题准确率 ≥ 80%。</p>
+          <p><strong>M2（第 8 周）</strong>：内部试点上线（HR 部门自用）；<strong>验收：</strong>试点 2 周准确率 ≥ 85%，HR 满意度 ≥ 4/5。</p>
+          <p><strong>M3（第 12 周）</strong>：全员开放；<strong>验收：</strong>员工满意度 ≥ 80%，HR 重复问答时间下降 ≥ 60%。</p>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 B · 合同审核 Agent（自己写方案 + 三档成本）</summary>
+    <div class="case-body">
+      <p><strong>项目背景：</strong>某央企法务中心，每月处理 800 份采购合同，重点审 5 类风险条款。要求上线一个 AI 合同审核 Agent，法务预审通过率提升到 85%。</p>
+      <p style="color: var(--gray-500);">重点练：① 六段结构别漏；② Token 估算三档：100 单/天 / 1000 单/天 / 10000 单/天，注意 Agent 场景的多轮调用要算进去。</p>
+
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--primary); font-weight: 600;">查看参考答案</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <p><strong>关键考察点 1 · 架构选型（承接 Day 2）：</strong>工作流 + RAG（<em>不是 Agent</em>）。合同审核 SOP 清晰、需要可复盘、法务合规敏感 → 工作流更合适。若客户坚持"Agent"这个词，方案里写"我们内部实现叫工作流 + 局部 AI 节点，对客户展示为智能审核 Agent"，两边都不得罪。</p>
+          <p><strong>关键考察点 2 · Token 估算</strong>（假设单次审核平均 3 轮调用，因为要抽条款 → 查红线 → 打分）：</p>
+          <ul style="margin-left: 20px;">
+            <li>单次输入 token：单份合同平均 6000 字 ≈ 9000 token（合同原文）+ 系统 prompt 800 + RAG 上下文 2500 ≈ <strong>12300 token / 次</strong>；</li>
+            <li>单次输出 token：约 600 token；</li>
+            <li>3 轮调用相乘：输入约 37000 token / 份，输出约 1800 token / 份。</li>
+          </ul>
+          <table>
+            <thead><tr><th>规模</th><th>日均</th><th>月输入 token</th><th>月输出 token</th><th>月成本（同价）</th></tr></thead>
+            <tbody>
+              <tr><td>低</td><td>100 份/天</td><td>约 1.28 亿</td><td>约 621 万</td><td>约 <strong>140 元</strong></td></tr>
+              <tr><td>中</td><td>1000 份/天</td><td>约 12.8 亿</td><td>约 6210 万</td><td>约 <strong>1400 元</strong></td></tr>
+              <tr><td>高</td><td>10000 份/天</td><td>约 128 亿</td><td>约 6.2 亿</td><td>约 <strong>1.4 万 / 月</strong></td></tr>
+            </tbody>
+          </table>
+          <p><strong>关键考察点 3 · 风险章节别只写"技术风险可控"：</strong>要写"漏审风险（准确率 &lt; 100% 是常态，兜底策略是关键条款强制人工复核）"、"误判风险（AI 判有风险但实际无，法务效率下降）"、"合规审计（AI 判断需要留全链路日志备查）"。</p>
+          <p><strong>常见丢分点：</strong>1）没算 Agent/多轮调用的 token 倍数；2）RAG 上下文 token 忘了算；3）忘写私有化 vs 公有云对比；4）里程碑给的时间过于乐观（1 个月上线不现实，合规审批就占 3 周）。</p>
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 C · 找 5 个坑（挑错题）</summary>
+    <div class="case-body">
+      <p><strong>下面是一份"故意有坑"的方案摘要节选，请找出 5 个问题：</strong></p>
+      <div style="background: #fff; padding: 12px 14px; border-radius: 6px; border: 1px dashed var(--gray-300); font-size: 13.5px;">
+        <p><strong>【项目】</strong>某市医保局智能审核系统</p>
+        <p><strong>【方案】</strong>采用 Multi-Agent 架构，5 个 Agent 分工协作，全自动审核医保报销单，替代人工审核。</p>
+        <p><strong>【模型】</strong>使用最新最强大模型（未标注具体名称和版本）。</p>
+        <p><strong>【成本】</strong>预计月度推理成本约 8000 元。</p>
+        <p><strong>【风险】</strong>技术风险可控，团队经验丰富。</p>
+        <p><strong>【里程碑】</strong>第 4 周上线全量。</p>
+      </div>
+      <p style="color: var(--gray-500); margin-top: 10px;">试着列出你找到的坑，然后对答案。</p>
+
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--primary); font-weight: 600;">查看参考答案（5 个坑 + 改法）</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <p><strong>坑 1 · 政务合规踩雷：全自动审核 + 替代人工</strong>——医保是典型的"AI 只能辅助、不能决策"的强监管场景。改法：AI 做初筛提示 + 高置信度自动通过 + 中低置信度强制人工复核，明确责任在人。</p>
+          <p><strong>坑 2 · 架构过度：一上来就 Multi-Agent</strong>——单 Agent 还没跑通就上 5 个 Agent 分工，工程复杂度爆炸。改法：一期用工作流 + 局部 AI 节点，二期视复杂度决定是否升级到 Agent，Multi-Agent 至少三期以后。</p>
+          <p><strong>坑 3 · 模型选型不落地：只写"最新最强大模型"</strong>——没有具体模型名和 API 版本，价格算不出、开发选不了，客户 IT 认为不专业。改法：明确写模型名、版本、上下文窗口、单价，并给 2 个备选（一强一便宜）供客户选。</p>
+          <p><strong>坑 4 · 成本估算拍脑袋：只有 8000 元一个数字</strong>——没有 token 构成、没有三档规模、没有失败重试率、没有私有化对比。政务医保场景必须私有化，8000 元的公有云估算根本不适用。改法：按低/中/高三档给月度成本，标模型和价格版本，加上私有化 3 年 TCO 对比。</p>
+          <p><strong>坑 5 · 风险和里程碑都是废话：「风险可控 + 4 周上线」</strong>——政务医保项目合规审批就要 3-6 周，第 4 周上线不现实；风险章节没写内容等于没写。改法：里程碑至少 4 个（合规评审 → PoC → 试点 → 全量），总周期 20-24 周；风险至少写 3 类（模型效果、合规变动、成本超支）各配替代方案。</p>
+          <p><strong>额外加分点（找到算你厉害）：</strong>整份方案没提数据方案——医保数据涉及个人隐私，脱敏方案和权限管控必须单独一段。</p>
+        </div>
+      </details>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 4：速查卡 -->
+<div class="card">
+  <h2>📇 四、速查卡</h2>
+
+  <div class="cheatsheet">
+    <div class="cs-title">📄 方案文档 6 段模板（贴屏用）</div>
+    <table>
+      <thead><tr><th>段</th><th>必写内容</th><th>常见漏项（自检点）</th></tr></thead>
+      <tbody>
+        <tr><td>① 背景与目标</td><td>业务痛点 · 量化目标 · 成功标准</td><td>没有量化指标（"提升效率" 不算）</td></tr>
+        <tr><td>② 技术方案</td><td>架构图 · 组件选型 · 为什么不选其他</td><td>只写"用什么"不写"为什么"</td></tr>
+        <tr><td>③ 数据方案</td><td>数据源 · 预处理规则 · 存储 · 合规</td><td>忘了写合规和权限管控</td></tr>
+        <tr><td>④ Token / 成本</td><td>token 构成 · 三档规模 · 私有化对比</td><td>只给一个数字 / 忘算 few-shot 和 RAG 上下文</td></tr>
+        <tr><td>⑤ 风险与替代</td><td>3 类风险 · 每类配替代方案</td><td>写"风险可控"（约等于没写）</td></tr>
+        <tr><td>⑥ 里程碑与验收</td><td>3-5 个里程碑 · 每个有量化验收标准</td><td>时间过于乐观 / 验收无量化</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">💰 Token 估算速查（主流模型输入 / 输出参考单价，2024-2025 观测区间）</div>
+    <table>
+      <thead><tr><th>档位</th><th>典型模型定位</th><th>输入价（元 /1K token）</th><th>输出价（元 /1K token）</th><th>适用场景</th></tr></thead>
+      <tbody>
+        <tr><td>顶级</td><td>头部旗舰</td><td>0.03-0.08</td><td>0.06-0.15</td><td>复杂推理 / 长文档 / 高要求生成</td></tr>
+        <tr><td>主力</td><td>性价比款</td><td>0.001-0.005</td><td>0.002-0.010</td><td>大部分企业问答 / RAG / 抽取</td></tr>
+        <tr><td>轻量</td><td>快速小模型</td><td>0.0002-0.001</td><td>0.0005-0.002</td><td>意图识别 / 分类 / 关键词抽取</td></tr>
+        <tr><td>私有化</td><td>本地部署</td><td colspan="2" style="text-align:center;">按 GPU 服务器 + 运维摊薄</td><td>合规硬要求 / 高频调用摊薄成本</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size: 12px; color: var(--gray-500); margin-top: 8px;">⚠️ 写方案时务必标注具体模型名和 API 版本，价格随版本快速变化，本表仅作估算参考。</p>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">🔍 客户 / 开发 / 合规 三视角审查清单</div>
+    <table>
+      <thead><tr><th>视角</th><th>看什么段</th><th>会问什么问题</th></tr></thead>
+      <tbody>
+        <tr><td><strong>客户业务</strong></td><td>① ⑥</td><td>目标真是我的痛点吗？验收标准我能接受吗？</td></tr>
+        <tr><td><strong>客户 IT / 架构</strong></td><td>② ③ ⑤</td><td>架构选型合理吗？数据合规吗？出问题怎么办？</td></tr>
+        <tr><td><strong>客户采购 / 财务</strong></td><td>④</td><td>成本算得靠谱吗？扩容会不会失控？私有化划算吗？</td></tr>
+        <tr><td><strong>开发 leader</strong></td><td>② ③ ④ ⑥</td><td>能落地吗？时间够吗？成本估算合理吗？</td></tr>
+        <tr><td><strong>合规 / 审计</strong></td><td>③ ⑤</td><td>数据出不出内网？决策链有没有人工介入？日志能不能查？</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 板块 5：5 题小测验 -->
+<div class="card">
+  <h2>📝 五、5 题小测验</h2>
+  <p style="color: var(--gray-600); font-size: 14px;">先自己想 20 秒再点开答案。错项解析比正确答案更值钱，每个错项后面都藏着一次真实翻车。</p>
+
+  <details class="quiz-item">
+    <summary>Q1 · 客户采购问「你这份方案里，Token 估算的月度成本是怎么算出来的？」，最专业的回答是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. "按我们过往项目经验，差不多就这个数。"</li>
+        <li>B. "用户问题平均 50 token × 调用量 × 输入单价，输出同理。"</li>
+        <li>C. "单次输入 = 系统 prompt + few-shot + RAG 上下文 + 用户问题；月度 = 单次 × QPD × 30 × (1 + 重试率)；然后套模型单价，我在附录里给了三档规模。"</li>
+        <li>D. "AI 成本本来就难算，我们上线后按实际扣费即可。"</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：C</div>
+        <p>C 完整覆盖了三个关键点：<strong>单次 token 构成（不只是用户问题）+ 月度公式（含重试率）+ 三档规模</strong>。客户采购要的就是这个层次的答案，能让他给自家老板复述。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 是纯粹的拍脑袋</strong>——采购听完立刻警觉"这个 PM 不专业"，接下来一定会砍价。<strong>B 遗漏了系统 prompt / few-shot / RAG 上下文</strong>——这三项才是"每次都花的固定开销"，忽略它们的估算会低 3-5 倍，一年后就是账单翻车现场。<strong>D 是把责任推给客户</strong>——采购的核心工作就是提前定预算，你说"上线后按实际扣"等于拒绝配合，直接被踢出供应商名单。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q2 · 方案文档里的「风险与替代方案」章节，下面哪种写法最专业？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. "项目团队经验丰富，技术风险可控。"</li>
+        <li>B. "本项目无重大风险。"</li>
+        <li>C. "R1 · 模型准确率可能低于 90%——兜底：置信度低于阈值转人工。R2 · 数据涉隐私——兜底：全流程内网脱敏。R3 · 成本超支——兜底：启用缓存 + 上下文压缩。"</li>
+        <li>D. "所有风险由甲方承担。"</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：C</div>
+        <p>C 是标准 FDE 写法——<strong>3 类真实风险 + 每类配可执行的替代方案</strong>。风险章节的本质是"提前和客户建立风险共担契约"，写清楚了以后出问题你有话说，客户也能理解。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 是最典型的"没写"</strong>——"经验丰富、风险可控"是套话，出问题时是"你自己扛"的自证。<strong>B 是最危险的自证</strong>——"无风险"直接把责任兜住了，模型准确率一低客户马上找你算账。<strong>D 是把客户推走</strong>——政企客户看到"风险由甲方承担"当场撤方案，你连回旋余地都没有。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q3 · 一个 RAG 员工问答项目，日均调用 1000 次，单次输入 4000 token / 输出 250 token。假设输入 0.001 元 /1K token · 输出 0.002 元 /1K token · 失败重试率 15%。月度成本约多少？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 约 15 元</li>
+        <li>B. 约 150 元</li>
+        <li>C. 约 1500 元</li>
+        <li>D. 约 4500 元</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>计算过程：月输入 token = 4000 × 1000 × 30 × 1.15 = 1.38 亿；月输出 token = 250 × 1000 × 30 × 1.15 = 862.5 万。成本 = 138000 × 0.001 + 8625 × 0.002 ≈ 138 + 17 ≈ <strong>155 元</strong>。约 150 元档。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 少了一个量级</strong>——很可能忘了 × 30 天，或者把输入单价当作 0.0001 算了。<strong>C 多了一个量级</strong>——常见错误是把 token 数当成"元"直接乘，忘了 /1K 的换算。<strong>D 是把输入输出单价搞反</strong>——用 0.002 算输入、0.001 算输出反了；虽然只差 3 倍，但方向性错误说明公式没吃透。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q4 · 政企客户 IT 部说「你们方案里的私有化 vs 公有云对比，什么时候私有化划算？」，最合理的回答框架是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. "私有化肯定比公有云安全，建议直接私有化。"</li>
+        <li>B. "公有云按 token 付费，用多了就贵；私有化一次性投入 GPU + 运维，摊到 3 年 TCO，日均调用超过 5000-10000 次时私有化更划算——我们方案里给您画了拐点图。"</li>
+        <li>C. "公有云便宜，先用公有云。"</li>
+        <li>D. "私有化贵，别考虑。"</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>B 是最专业的回答——<strong>给出计算逻辑（TCO 摊薄）+ 拐点区间 + 承诺方案里配图</strong>。政企 IT 最吃这套"给我拐点，我自己判"的回答，因为他们不想被 PM 牵着走。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 错在把"安全"和"划算"混为一谈</strong>——安全 = 合规角度，划算 = 成本角度，两码事。而且"肯定"这种绝对话在客户 IT 面前会被追问到破。<strong>C 是懒惰答案</strong>——"先用公有云"没回答"什么时候私有化更划算"，等于没答。<strong>D 是主观拒绝</strong>——政企场景很多合规硬要求私有化，你直接说"别考虑"等于砍掉了自己的可选方案空间。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q5 · 综合题——客户业务方和客户 IT 方对方案争议：业务方要「4 周上线」，IT 方要「至少 12 周合规评审+PoC」，你作为 FDE 怎么处理里程碑章节？</summary>
+    <div class="quiz-body">
+      <p style="color: var(--gray-600); margin-bottom: 8px;">给出你的方案文档里程碑设计和沟通话术。</p>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 参考答案：分层里程碑 + 「早交付、晚全量」策略</div>
+        <p><strong>核心思路：</strong>把"上线"拆成三层——业务方要的"能看到"和 IT 方要的"能上生产"是两回事。给客户 IT 应有的合规和 PoC 时间，同时给业务方早期可见的价值节点。</p>
+        <p><strong>里程碑设计：</strong></p>
+        <ul style="margin-left: 20px;">
+          <li><strong>M1（第 3 周）</strong> · Demo 可看：内部沙箱环境跑通主流程，业务方可现场看效果。<em>验收：核心场景演示通过。</em></li>
+          <li><strong>M2（第 6 周）</strong> · 合规评审完成：IT 部提出的数据脱敏 / 权限 / 日志方案通过内部合规审。<em>验收：拿到合规部盖章。</em></li>
+          <li><strong>M3（第 10 周）</strong> · PoC 上线：选一个部门试点，真实用户跑 2 周。<em>验收：准确率 ≥ 目标值，用户满意度 ≥ 4/5。</em></li>
+          <li><strong>M4（第 14 周）</strong> · 全量上线：全公司开放。<em>验收：稳定性 SLA 达标 · 关键指标兑现。</em></li>
+        </ul>
+        <p><strong>对业务方话术：</strong>"我们 3 周就能给您看到 Demo，比 4 周还早——但要真正上生产得让 IT 合规评审跑完，否则数据一出问题就是一票否决。您先看 Demo 早点确认方向，我们边合规边优化。"</p>
+        <p><strong>对 IT 方话术：</strong>"合规评审的 6 周我们完全按您的流程走，PoC 阶段我们只在您指定范围内跑，全量上线一定在合规通过之后。"</p>
+        <p><strong>面试金句预埋：</strong><em>"AI 方案的里程碑不是一条直线，是一颗有分层的树——业务方的可见节点和 IT 方的合规节点要分开设计，早交付价值感、晚交付稳定性。"</em></p>
+      </div>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 6：面试金句 + 心得笔记 -->
+<div class="card">
+  <h2>💼 六、面试金句预埋</h2>
+
+  <div class="interview-quote">
+    <span class="iq-tag">文档双通视角</span>
+    "AI 项目方案文档必须<strong>一份文档过三关</strong>——客户业务方看背景和验收，客户 IT 看架构和合规，采购看成本。缺一段都会有一方不认账。我写方案会先在心里列这三拨人，六段谁看哪段，写完让三拨人各自审一遍。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">成本估算文化</span>
+    "Token 估算不是数学题，是<strong>采购谈判的筹码</strong>。永远给三档规模（低 / 中 / 高），标清模型和版本，算清系统 prompt 和 RAG 上下文这些'固定开销'——一年后账单不翻车的方案，第一版就已经把这些写死了。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">可演化的方案</span>
+    "好的 AI 方案要<strong>让客户自己看得懂扩容路径</strong>——从 100 单/天到 10000 单/天，成本怎么变、要不要升级架构、缓存怎么开。我把这三个变量做成开关列在方案里，客户就有掌控感，也就不会砍你的价。"
+  </div>
+
+  <h3>📓 心得笔记</h3>
+  <div class="box box-red">
+    <div class="box-title">⚠️ 今天最反直觉的 3 件事</div>
+    <div>
+      <p><strong>1.</strong> 决定签合同的不是①②③（漂亮部分），是④⑤（成本 + 风险）—— 客户的采购和 PMO 才是签字人，他们只看账本和责任。<em>（漂亮 PPT 不签合同，账本清晰才签合同。）</em></p>
+      <p><strong>2.</strong> Token 估算里最大的坑是「固定开销」——系统 prompt / few-shot / RAG 上下文这三项每次都花，忘算就估低 3-5 倍。<em>（用户问 50 token，你以为 50 token，其实每次都是 4000+。）</em></p>
+      <p><strong>3.</strong> 风险章节写"风险可控"等于给自己挖坑——写清 3 类真实风险 + 3 个可执行兜底方案，出问题时才是你的护身符。<em>（风险不是坏话，是责任边界。）</em></p>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  学习笔记 · AI 项目经理成长 · FDE v2 · Day 3<br>
+  下一站 → Day 4 客户沟通与预期管理（首次客户会议怎么开）
+</div>
+
+</div>
+</body>
+</html>

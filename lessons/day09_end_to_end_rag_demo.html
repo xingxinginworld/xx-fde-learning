@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FDE v2 · Day 9 · 端到端 RAG Demo（Day 4-8 综合练习）</title>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-bg: #eff6ff;
+  --blue-dark: #1e40af;
+  --orange: #ea580c;
+  --orange-bg: #fff7ed;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --green: #059669;
+  --green-bg: #ecfdf5;
+  --yellow: #d97706;
+  --yellow-bg: #fffbeb;
+  --purple: #7c3aed;
+  --purple-bg: #f5f3ff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-800: #1f2937;
+  --text: #1a1a2e;
+  --text-light: #6b7280;
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: #f0f4f8; color: var(--text); line-height: 1.8; font-size: 16px;
+}
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+.hero {
+  background: linear-gradient(135deg, #1e3a5f 0%, #1a56db 55%, #0d7377 100%);
+  color: #fff; border-radius: var(--radius); padding: 32px 30px 26px; margin-bottom: 20px;
+}
+.hero-badge { display: inline-block; background: rgba(255,255,255,0.18); padding: 4px 14px; border-radius: 20px; font-size: 12px; margin-bottom: 10px; }
+.hero h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; }
+.hero .subtitle { font-size: 14.5px; opacity: 0.92; margin-bottom: 14px; line-height: 1.7; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; opacity: 0.85; }
+.hero-back { font-size: 12px; margin-top: 10px; opacity: 0.75; }
+.hero-back a { color: #fff; text-decoration: underline; }
+
+.card { background: #fff; border-radius: var(--radius); padding: 26px 26px 22px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.card h2 { font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.card h3 { font-size: 17px; font-weight: 600; color: var(--gray-800); margin: 22px 0 10px; padding-left: 12px; border-left: 3px solid var(--primary); }
+.card h4 { font-size: 15px; font-weight: 600; margin: 14px 0 8px; color: var(--gray-800); }
+p { margin-bottom: 10px; }
+code { background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-size: 14px; font-family: "Cascadia Code", "Fira Code", Consolas, monospace; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-size: 14px; }
+th { background: var(--primary); color: #fff; padding: 9px 12px; text-align: left; font-weight: 600; font-size: 13px; }
+td { padding: 9px 12px; border-bottom: 1px solid var(--gray-200); vertical-align: top; }
+tr:nth-child(even) td { background: var(--gray-50); }
+
+.box { border-radius: 8px; padding: 14px 16px; margin: 14px 0; border-left: 4px solid; font-size: 14.5px; }
+.box-blue { background: var(--primary-bg); border-color: var(--primary); }
+.box-green { background: var(--green-bg); border-color: var(--green); }
+.box-yellow { background: var(--yellow-bg); border-color: var(--yellow); }
+.box-red { background: var(--red-bg); border-color: var(--red); }
+.box-purple { background: var(--purple-bg); border-color: var(--purple); }
+.box-orange { background: var(--orange-bg); border-color: var(--orange); }
+.box-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+
+.mentor { background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%); border-radius: 10px; padding: 16px 18px; margin: 14px 0; border: 1px solid #dbeafe; position: relative; }
+.mentor::before { content: '👨‍🏫'; position: absolute; top: -12px; left: 16px; background: #fff; padding: 0 6px; font-size: 20px; }
+.mentor .mentor-title { font-weight: 700; color: var(--blue-dark); font-size: 14px; margin-bottom: 6px; margin-top: 4px; }
+.mentor .mentor-body { font-size: 14.5px; color: var(--gray-800); line-height: 1.75; }
+.mentor .mentor-body p { margin-bottom: 8px; }
+
+.goal-list { list-style: none; padding: 0; }
+.goal-list li { padding: 8px 0 8px 32px; position: relative; font-size: 15px; }
+.goal-list li::before { content: '🎯'; position: absolute; left: 4px; top: 8px; font-size: 15px; }
+
+.mnemonic { background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 10px; padding: 14px 18px; margin: 14px 0; text-align: center; }
+.mnemonic .m-title { font-size: 12px; color: #92400e; margin-bottom: 6px; letter-spacing: 2px; }
+.mnemonic .m-line { font-size: 18px; font-weight: 700; color: #78350f; letter-spacing: 3px; }
+.mnemonic .m-explain { font-size: 13px; color: #92400e; margin-top: 6px; }
+
+.cheatsheet { border: 2px dashed var(--primary); border-radius: 10px; padding: 16px 18px; margin: 14px 0; background: #f0f9ff; }
+.cheatsheet .cs-title { font-weight: 700; color: var(--blue-dark); font-size: 15px; margin-bottom: 10px; }
+
+.steps { counter-reset: step; margin: 12px 0; }
+.step-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px dashed var(--gray-200); }
+.step-item:last-child { border-bottom: none; }
+.step-item .step-num { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--primary); color: #fff; text-align: center; line-height: 34px; font-weight: 700; }
+.step-item .step-body { flex: 1; }
+.step-item .step-body strong { color: var(--blue-dark); }
+
+.quiz-item { border: 1px solid var(--gray-200); border-radius: 8px; margin: 10px 0; overflow: hidden; }
+.quiz-item summary { background: var(--primary-bg); padding: 12px 14px; cursor: pointer; font-weight: 600; color: var(--primary); font-size: 14.5px; }
+.quiz-item[open] summary { border-bottom: 1px solid var(--gray-200); }
+.quiz-body { padding: 12px 16px; }
+.quiz-options { list-style: none; padding: 0; }
+.quiz-options li { padding: 5px 0; font-size: 14px; }
+.quiz-answer { background: var(--green-bg); border-left: 3px solid var(--green); padding: 10px 12px; margin-top: 10px; font-size: 14px; border-radius: 4px; }
+.quiz-answer .ans-title { font-weight: 700; color: var(--green); margin-bottom: 6px; }
+.wrong-analysis { background: var(--red-bg); border-left: 3px solid var(--red); padding: 10px 12px; margin-top: 8px; font-size: 13.5px; border-radius: 4px; }
+.wrong-analysis .wa-title { font-weight: 700; color: var(--red); margin-bottom: 4px; }
+
+.case-block { border: 1px solid var(--gray-200); border-radius: 8px; margin: 12px 0; overflow: hidden; }
+.case-block summary { background: linear-gradient(135deg, #ede9fe, #ddd6fe); padding: 12px 14px; cursor: pointer; font-weight: 600; color: #5b21b6; font-size: 14.5px; }
+.case-block .case-body { padding: 14px 16px; font-size: 14px; }
+.case-block .case-body h5 { color: var(--blue-dark); margin: 10px 0 6px; font-size: 14px; }
+
+.interview-quote { background: linear-gradient(135deg, #1e3a5f, #1a56db); color: #fff; border-radius: 10px; padding: 18px 20px; margin: 14px 0; font-size: 15px; font-style: italic; line-height: 1.8; position: relative; }
+.interview-quote::before { content: '💼'; position: absolute; top: -10px; left: 16px; background: #fff; padding: 2px 6px; border-radius: 12px; font-size: 16px; }
+.interview-quote .iq-tag { display: block; font-size: 11px; opacity: 0.8; margin-bottom: 6px; font-style: normal; letter-spacing: 1px; }
+
+.flow-diagram { background: linear-gradient(135deg, #f0f9ff, #eff6ff); border: 1px solid #dbeafe; border-radius: 10px; padding: 18px 16px; margin: 14px 0; text-align: center; font-size: 14px; }
+.flow-diagram .flow-row { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
+.flow-diagram .flow-node { background: #fff; border: 2px solid var(--primary); color: var(--blue-dark); padding: 8px 12px; border-radius: 6px; font-weight: 600; min-width: 90px; }
+.flow-diagram .flow-arrow { color: var(--primary); font-weight: 700; font-size: 18px; }
+.flow-diagram .flow-caption { font-size: 12px; color: var(--gray-500); margin-top: 8px; }
+
+.footer { text-align: center; color: var(--text-light); font-size: 12px; padding: 20px 0 36px; border-top: 1px solid var(--gray-200); margin-top: 16px; }
+
+@media (max-width: 640px) {
+  .container { padding: 12px; }
+  .hero { padding: 24px 18px 20px; }
+  .hero h1 { font-size: 20px; }
+  .card { padding: 20px 16px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="hero">
+  <div class="hero-badge">FDE v2 · Phase 2 · Day 9</div>
+  <h1>🚀 端到端 RAG Demo：你的第一次交付</h1>
+  <div class="subtitle">今天不学新东西。<strong>把 Day 4-8 五天学的组件组装成一个能给客户演示的 Demo</strong>——这是你 FDE 的第一次"端到端交付"。</div>
+  <div class="hero-meta">
+    <span>🧱 Phase 2 · RAG 与检索工程</span>
+    <span>⏱️ 预计 90-120 分钟（含跑代码）</span>
+    <span>🧭 补齐能力：③ 搭原型（综合练习）</span>
+  </div>
+  <div class="hero-back">FDE v2 学习路径 · <a href="./day00_fde_panorama_and_radar.html">← 回到 Day 0 起点校准</a> · <a href="./day08_embedding_and_retrieval_quality.html">上一站 Day 8</a></div>
+</div>
+
+<!-- 板块 1：今日目标 -->
+<div class="card">
+  <h2>🎯 一、今日目标</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>你已经学了 Day 4 API 调用、Day 5 结构化输出、Day 6 Function Calling、Day 7 文档预处理、Day 8 检索优化——五个组件，样样看着都能用，但 <strong>PM 转 FDE 的分水岭在于：能不能把它们串成一个"演示得起来"的东西</strong>。</p>
+      <p>今天不学新东西。你要做的是<em>把这五天的代码拼成一个 Streamlit 网页 Demo</em>——客户打开浏览器，输入问题，看到答案+引用出处，全程 30 秒内。做完这个 Demo，你就完成了 FDE 的第一次真正意义的"端到端交付"。</p>
+      <p>这个 Demo 是你面试时能带走的作品，也是你未来所有政企 RAG 项目的<strong>项目模板</strong>。</p>
+    </div>
+  </div>
+
+  <ul class="goal-list">
+    <li>说清 <strong>RAG 应用的完整链路</strong>：数据 · 索引 · 检索 · 生成 · 展示</li>
+    <li>把 Day 4-8 的组件<strong>组装成一个可运行的 Streamlit Demo</strong>——政府文件问答助手</li>
+    <li>识别 <strong>Demo 演示 3 大翻车模式</strong>：没 UI / 没测 Bad Case / 硬编码</li>
+    <li>掌握 <strong>Demo 演示前必过 5 关</strong>，进客户会议室前一遍过</li>
+    <li>拿到 <strong>Streamlit 组件速查卡 + Demo 翻车 Top 10 应对</strong>，从今天起你的 Demo 不再翻车</li>
+  </ul>
+</div>
+
+<!-- 板块 2：核心讲解 -->
+<div class="card">
+  <h2>📖 二、核心讲解</h2>
+
+  <h3>是什么：RAG 应用的完整链路</h3>
+
+  <div class="flow-diagram">
+    <div class="flow-row">
+      <div class="flow-node">① 数据管道<br><span style="font-size:12px;font-weight:400;color:var(--gray-500);">Day 7</span></div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-node">② 向量索引<br><span style="font-size:12px;font-weight:400;color:var(--gray-500);">Day 8</span></div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-node">③ 检索模块<br><span style="font-size:12px;font-weight:400;color:var(--gray-500);">Day 8</span></div>
+    </div>
+    <div class="flow-row">
+      <span class="flow-arrow">↓</span>
+    </div>
+    <div class="flow-row">
+      <div class="flow-node">⑤ Web UI<br><span style="font-size:12px;font-weight:400;color:var(--gray-500);">Streamlit</span></div>
+      <span class="flow-arrow">←</span>
+      <div class="flow-node">④ LLM 生成<br><span style="font-size:12px;font-weight:400;color:var(--gray-500);">Day 4/5/6</span></div>
+    </div>
+    <div class="flow-caption">五个组件 · 一条主流程 · 从 PDF 到浏览器答案</div>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th style="width: 15%">模块</th><th style="width: 35%">干什么</th><th>本 Demo 里对应哪几天的知识</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>① 数据管道</strong></td><td>PDF 读取 → 清洗 → 分块 → 加元数据 → 落盘 JSON</td><td>Day 7 全部</td></tr>
+      <tr><td><strong>② 向量索引</strong></td><td>chunk 批量 embedding → 存到 FAISS 或 Chroma 向量库</td><td>Day 8 · Embedding 选型</td></tr>
+      <tr><td><strong>③ 检索模块</strong></td><td>query → embedding → 向量检索 → 阈值过滤 → 重排 → Top-K</td><td>Day 8 · 5 个优化维度</td></tr>
+      <tr><td><strong>④ LLM 生成</strong></td><td>把 Top-K 分块拼进 prompt → 调百炼 API → 结构化输出（答案+引用）</td><td>Day 4 API + Day 5 结构化 + Day 6 Function Call（可选）</td></tr>
+      <tr><td><strong>⑤ Web UI</strong></td><td>输入框 + 对话历史 + 引用出处展示 + Loading 状态</td><td>Streamlit（今天新加）</td></tr>
+    </tbody>
+  </table>
+
+  <div class="mnemonic">
+    <div class="m-title">□ □ □ 端到端 RAG 口诀 □ □ □</div>
+    <div class="m-line">数据 · 索引 · 检索 · 生成 · 展示</div>
+    <div class="m-explain">五个模块缺一不可 · Demo 交付看能不能演示得起来</div>
+  </div>
+
+  <h3>为什么：PM 视角下的三个大坑</h3>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 1 · Demo 只有后端接口没有 UI（客户看不懂 curl）</div>
+    <div>
+      <p>技术同学最爱交付的方式："我给你一个 API，你 curl 一下就能看到效果。"——客户当场脸黑。</p>
+      <p>政企客户绝大多数是<strong>业务口</strong>——处长、科长、评标专家。他们看不懂 curl，看不懂 JSON，看不懂 Postman。你给他们一个能"输入问题按回车看答案"的网页，10 秒钟他就懂了 RAG 值不值得投。</p>
+      <p><strong>正确姿势：</strong>Streamlit 或 Gradio，<em>20-50 行代码</em>就能搭一个能演示的 UI。这一步不是可选，是必选。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 2 · 演示前不测试 Bad Case（现场翻车）</div>
+    <div>
+      <p>Demo 你自己测的问题都能答对——因为你只测你自己想过的。到了客户现场，评标专家一句<em>"你这个能不能答'如果两家投标价一样，谁中标'？"</em>——你的 RAG 检索不到具体条款，LLM 开始编，编出来一段跟法规相反的答案，客户当场脸变了。</p>
+      <p><strong>正确姿势：</strong>演示前<em>让 3 个不同角色（业务/合规/技术）</em>各出 5 个问题跑一遍，把答错的 Bad Case 都收集起来。演示时主动亮出："这个类型的问题我们暂时兜底转人工"——比翻车强 100 倍。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 3 · Demo 硬编码 Key / 路径 / 端口，换台电脑就跑不了</div>
+    <div>
+      <p>Demo 在你的开发机好好的——路径写死 <code>D:\project\data</code>、Key 写死代码里、端口写死 8501。到了客户现场用他们借的电脑，或者你用 U 盘拷过去，全炸。</p>
+      <p>更惨的：出差前 5 分钟才发现依赖没装全，pip 又要过 VPN，2 小时装不完。</p>
+      <p><strong>正确姿势：</strong>三条硬规矩——① Key 走环境变量 <code>os.getenv("DASHSCOPE_API_KEY")</code>；② 路径全部 <code>Path(__file__).parent</code> 相对；③ 出差前打包成 <code>requirements.txt + .env.template</code>，换机器 10 分钟能重跑。</p>
+    </div>
+  </div>
+
+  <div class="box box-blue">
+    <div class="box-title">🧭 PM 行动指南：Demo 演示前必过 5 关</div>
+    <div>
+      <p><strong>关 1 · 能启动</strong>：换台电脑 <code>pip install -r requirements.txt</code> + <code>streamlit run app.py</code>，10 分钟内能跑起来。</p>
+      <p><strong>关 2 · UI 能看</strong>：主流程按钮/输入框排版顺畅，Loading 有反馈，不是白屏等 20 秒。</p>
+      <p><strong>关 3 · 主流程通</strong>：至少 10 条高频问题（客户业务口出的）都能答对。</p>
+      <p><strong>关 4 · Bad Case 已知</strong>：知道自己 Demo 在哪些问题上会翻车，演示时主动说清并给兜底方案。</p>
+      <p><strong>关 5 · 换机器能跑</strong>：Key 环境变量、路径相对、依赖清单齐全。U 盘拷贝到新电脑能起来。</p>
+      <p style="color:var(--blue-dark);margin-top:8px;"><strong>5 关全过再进客户会议室。任意一关不过就是自找翻车。</strong></p>
+    </div>
+  </div>
+
+  <h3>怎么用：把前 5 天的组件组装的 4 步</h3>
+
+  <div class="steps">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>数据管道模块</strong>——把 Day 7 的预处理脚本封装成 <code>build_index.py</code>：读 PDF → 分块 → embedding → 存 FAISS。这是<em>离线一次性</em>跑的，不用每次启动都跑。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>检索模块</strong>——把 Day 8 的 5 个维度封装成 <code>retriever.py</code>：query → embedding → 向量粗筛 → 阈值 → 重排 → Top-K。返回带元数据的分块列表。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>LLM 模块</strong>——把 Day 4/5/6 的调用封装成 <code>generator.py</code>：把 Top-K 拼进 prompt → 调百炼 qwen-plus → 用 JSON 结构化输出（答案 + 引用页码 + 置信度）。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>Web UI</strong>——<code>app.py</code>，用 Streamlit。20-50 行代码，含输入框、消息历史、Loading 状态、引用出处展开框。启动一行：<code>streamlit run app.py</code>。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 板块 3：动手步骤 -->
+<div class="card">
+  <h2>🛠️ 三、动手步骤：政府文件问答助手（完整可运行）</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>下面是完整的 Demo 代码，分 4 个文件。你先跟着案例 A 敲一遍，跑通了给自己发个红包——你已经是能独立交付端到端 RAG Demo 的 FDE 了。案例 B 是把数据换成合同，案例 C 是演示翻车的诊断。</p>
+    </div>
+  </div>
+
+  <details class="case-block" open>
+    <summary>📌 案例 A · 政府文件问答助手（跟着做，4 段代码）</summary>
+    <div class="case-body">
+      <h5>项目结构</h5>
+<pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;">gov_rag_demo/
+├── .env                  <span style="color:#94a3b8"># DASHSCOPE_API_KEY=xxx  (不进 git)</span>
+├── requirements.txt      <span style="color:#94a3b8"># 依赖清单</span>
+├── data/                 <span style="color:#94a3b8"># 放 PDF 源文件</span>
+├── index/                <span style="color:#94a3b8"># FAISS 索引和 chunks.json</span>
+├── build_index.py        <span style="color:#94a3b8"># ① 离线：数据管道 + 索引</span>
+├── retriever.py          <span style="color:#94a3b8"># ② 在线：检索模块</span>
+├── generator.py          <span style="color:#94a3b8"># ③ 在线：LLM 生成</span>
+└── app.py                <span style="color:#94a3b8"># ④ 在线：Streamlit UI</span></pre>
+
+      <h5>Step 1 · requirements.txt</h5>
+<pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;">streamlit==1.31.0
+pdfplumber==0.10.3
+dashscope==1.14.1
+faiss-cpu==1.7.4
+numpy==1.26.4
+python-dotenv==1.0.0</pre>
+
+      <h5>Step 2 · build_index.py（离线跑一次）</h5>
+<pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;">import os, json, hashlib
+from pathlib import Path
+import pdfplumber, numpy as np, faiss
+from dashscope import TextEmbedding
+from dotenv import load_dotenv
+
+load_dotenv()
+BASE = Path(__file__).parent
+DATA_DIR = BASE / "data"
+INDEX_DIR = BASE / "index"
+INDEX_DIR.mkdir(exist_ok=True)
+
+def read_and_chunk(pdf_path, chunk_size=400, overlap=60):
+    <span style="color:#94a3b8">"""Day 7 的预处理：读 → 清 → 切 → 加元数据"""</span>
+    chunks = []
+    with pdfplumber.open(pdf_path) as pdf:
+        buffer = ""
+        for i, page in enumerate(pdf.pages, start=1):
+            text = (page.extract_text() or "").replace("\n\n", "\n")
+            buffer += text + "\n"
+            while len(buffer) &gt;= chunk_size:
+                cut = buffer.rfind("。", 0, chunk_size) + 1
+                if cut &lt; chunk_size // 2:
+                    cut = chunk_size
+                chunks.append({"text": buffer[:cut].strip(), "page": i,
+                              "source": pdf_path.name})
+                buffer = buffer[cut - overlap:]
+        if buffer.strip():
+            chunks.append({"text": buffer.strip(), "page": i, "source": pdf_path.name})
+    <span style="color:#94a3b8"># 加元数据</span>
+    for j, c in enumerate(chunks):
+        c["chunk_id"] = f"{pdf_path.stem}_{j:04d}"
+        c["hash"] = hashlib.md5(c["text"].encode()).hexdigest()[:10]
+    return chunks
+
+def embed_batch(texts, batch=25):
+    vecs = []
+    for i in range(0, len(texts), batch):
+        resp = TextEmbedding.call(model="text-embedding-v3", input=texts[i:i+batch])
+        vecs.extend([item["embedding"] for item in resp.output["embeddings"]])
+    return np.array(vecs, dtype="float32")
+
+if __name__ == "__main__":
+    all_chunks = []
+    for pdf in DATA_DIR.glob("*.pdf"):
+        print(f"处理 {pdf.name}...")
+        all_chunks.extend(read_and_chunk(pdf))
+    print(f"共 {len(all_chunks)} 分块")
+    <span style="color:#94a3b8"># embedding</span>
+    vectors = embed_batch([c["text"] for c in all_chunks])
+    <span style="color:#94a3b8"># 建 FAISS 索引（内积/余弦）</span>
+    faiss.normalize_L2(vectors)
+    index = faiss.IndexFlatIP(vectors.shape[1])
+    index.add(vectors)
+    faiss.write_index(index, str(INDEX_DIR / "vecs.faiss"))
+    json.dump(all_chunks, open(INDEX_DIR / "chunks.json", "w", encoding="utf-8"),
+              ensure_ascii=False, indent=2)
+    print("✅ 索引构建完成")</pre>
+
+      <h5>Step 3 · retriever.py（在线检索）</h5>
+<pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;">import json
+from pathlib import Path
+import faiss, numpy as np
+from dashscope import TextEmbedding, TextReRank
+
+BASE = Path(__file__).parent
+INDEX = faiss.read_index(str(BASE / "index" / "vecs.faiss"))
+CHUNKS = json.load(open(BASE / "index" / "chunks.json", encoding="utf-8"))
+
+def embed(text):
+    resp = TextEmbedding.call(model="text-embedding-v3", input=[text])
+    return np.array([resp.output["embeddings"][0]["embedding"]], dtype="float32")
+
+def retrieve(query, top_k=5, coarse_k=20, threshold=0.5):
+    <span style="color:#94a3b8">"""Day 8 的 5 维度：向量粗筛 → 阈值 → 重排 → Top-K"""</span>
+    q = embed(query)
+    faiss.normalize_L2(q)
+    scores, ids = INDEX.search(q, coarse_k)
+    <span style="color:#94a3b8"># 阈值过滤</span>
+    candidates = [(CHUNKS[i], float(s)) for i, s in zip(ids[0], scores[0]) if s &gt;= threshold]
+    if not candidates:
+        return []
+    <span style="color:#94a3b8"># 重排</span>
+    resp = TextReRank.call(
+        model="gte-rerank",
+        query=query,
+        documents=[c[0]["text"] for c in candidates],
+        top_n=top_k
+    )
+    return [candidates[r["index"]][0] for r in resp.output["results"]]</pre>
+
+      <h5>Step 4 · generator.py（LLM 生成）</h5>
+<pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;">import json
+from dashscope import Generation
+
+SYSTEM_PROMPT = """你是政府文件问答助手。基于用户提供的<参考资料>回答问题。
+硬规矩：
+1. 只用参考资料里的信息，不要编造
+2. 参考资料没写的，直接说"文档中未提及"
+3. 每个事实要标出处（来源文件+页码）
+4. 输出严格 JSON 格式"""
+
+def generate(query, contexts):
+    <span style="color:#94a3b8">"""Day 4 API + Day 5 结构化输出"""</span>
+    context_str = "\n\n".join(
+        f"[{i+1}] 来源：{c['source']} 第{c['page']}页\n{c['text']}"
+        for i, c in enumerate(contexts)
+    )
+    prompt = f"""&lt;参考资料&gt;
+{context_str}
+&lt;/参考资料&gt;
+
+用户问题：{query}
+
+请以 JSON 格式回答，字段：
+- answer: 直接回答
+- citations: 引用列表，每项含 source（文件名）和 page（页码）
+- confidence: 置信度 high/medium/low"""
+
+    resp = Generation.call(
+        model="qwen-plus",
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": prompt}
+        ],
+        result_format="message",
+        response_format={"type": "json_object"}
+    )
+    text = resp.output.choices[0].message.content
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        return {"answer": text, "citations": [], "confidence": "low"}</pre>
+
+      <h5>Step 5 · app.py（Streamlit UI · 只有 40 行）</h5>
+<pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;">import streamlit as st
+from dotenv import load_dotenv
+from retriever import retrieve
+from generator import generate
+
+load_dotenv()
+
+st.set_page_config(page_title="政府文件问答助手", page_icon="📜", layout="wide")
+st.title("📜 政府文件问答助手")
+st.caption("Powered by 阿里云百炼 · 基于 RAG 的政策文件检索问答系统 · Demo v1")
+
+<span style="color:#94a3b8"># 会话历史</span>
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+<span style="color:#94a3b8"># 展示历史消息</span>
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
+        if "citations" in msg:
+            with st.expander(f"📚 参考出处（{len(msg['citations'])} 条）"):
+                for c in msg["citations"]:
+                    st.write(f"- {c.get('source','')} · 第 {c.get('page','?')} 页")
+
+<span style="color:#94a3b8"># 输入框</span>
+if query := st.chat_input("请输入你的问题，例如：投标截止日期是什么时候？"):
+    st.session_state.messages.append({"role": "user", "content": query})
+    with st.chat_message("user"):
+        st.markdown(query)
+
+    with st.chat_message("assistant"):
+        with st.spinner("检索中..."):
+            contexts = retrieve(query, top_k=5)
+        if not contexts:
+            answer = "抱歉，知识库里没有找到相关内容，建议转人工咨询。"
+            st.warning(answer)
+            st.session_state.messages.append({"role": "assistant", "content": answer})
+        else:
+            with st.spinner("生成回答..."):
+                result = generate(query, contexts)
+            st.markdown(result["answer"])
+            with st.expander(f"📚 参考出处（{len(result['citations'])} 条）"):
+                for c in result["citations"]:
+                    st.write(f"- {c.get('source','')} · 第 {c.get('page','?')} 页")
+            st.caption(f"置信度：{result.get('confidence','?')}")
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": result["answer"],
+                "citations": result["citations"]
+            })</pre>
+
+      <h5>Step 6 · 启动 & 演示</h5>
+<pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;"><span style="color:#94a3b8"># 1. 装依赖</span>
+pip install -r requirements.txt
+
+<span style="color:#94a3b8"># 2. 配 Key（放到 .env 里）</span>
+echo "DASHSCOPE_API_KEY=sk-xxxxxxxxxxxxx" &gt; .env
+
+<span style="color:#94a3b8"># 3. 把 PDF 放到 data/ 下</span>
+<span style="color:#94a3b8"># 4. 离线建索引（一次性）</span>
+python build_index.py
+
+<span style="color:#94a3b8"># 5. 启动 Demo</span>
+streamlit run app.py
+<span style="color:#94a3b8"># 浏览器自动打开 http://localhost:8501</span></pre>
+
+      <p><strong>演示前 5 关自检</strong>：换台电脑装完能跑 ✓ / UI 排版顺 ✓ / 10 条业务问题都能答 ✓ / 3 个 Bad Case 已列 ✓ / U 盘拷贝可移植 ✓——全过再进客户会议室。</p>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 B · 改造成"合同问答助手"（自己练）</summary>
+    <div class="case-body">
+      <p><strong>需求：</strong>把上面 Demo 改成合同问答——用户上传合同 PDF，问"违约条款怎么规定的""付款周期多久"。</p>
+      <p style="color: var(--gray-500);">思考：哪些模块要改？哪些不用动？</p>
+
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--primary); font-weight: 600;">查看参考答案</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <p><strong>要改的：</strong></p>
+          <ul style="margin-left: 24px;">
+            <li><code>build_index.py</code> 的分块正则——从"第 X 章"改成"第 X 条"（合同的天然结构单位是"条"不是"章"）</li>
+            <li>元数据加 <code>party</code>（甲方 / 乙方 / 丙方）字段，用于按主体过滤</li>
+            <li><code>generator.py</code> 的 system prompt 加一句"如涉及金额、日期、责任主体，必须一字不改引用原文"——合同类问答对精确度要求更高</li>
+            <li><code>app.py</code> 加一个 <code>st.file_uploader</code> 让用户上传新合同，自动增量建索引</li>
+          </ul>
+          <p><strong>不用动的：</strong>retriever.py（Day 8 的 5 维度是通用的）、依赖清单、UI 主结构。</p>
+          <p><strong>PM 视角提醒：</strong>合同问答场景要多一个"免责声明"UI 元素——"本 AI 输出仅供参考，法律效力以合同原文和律师意见为准"。政企合规硬要求。</p>
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 C · Bug case：出差前电脑跑得好好的，客户现场部署 3 个报错，怎么诊断？（自己练）</summary>
+    <div class="case-body">
+      <p><strong>场景：</strong>你带笔记本到某单位某分公司做 Demo。客户借给你一台内网笔记本让你演示。运行 <code>streamlit run app.py</code> 后连爆 3 个错：</p>
+      <ul style="margin-left: 24px;">
+        <li><strong>报错 1</strong>：<code>FileNotFoundError: [Errno 2] No such file or directory: 'D:\\project\\gov_rag_demo\\data\\招标.pdf'</code></li>
+        <li><strong>报错 2</strong>：<code>ModuleNotFoundError: No module named 'faiss'</code></li>
+        <li><strong>报错 3</strong>：<code>OSError: [WinError 10048] 通常每个套接字地址...只能使用一次 (端口 8501)</code></li>
+      </ul>
+      <p style="color: var(--gray-500);">给出 3 层修复思路：紧急止血 / 现场兜底 / 未来防范。</p>
+
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--primary); font-weight: 600;">查看参考答案（3 层修复）</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <p><strong>报错 1 · 路径硬编码</strong></p>
+          <ul style="margin-left: 24px;">
+            <li><strong>止血</strong>：代码里 <code>D:\project\...</code> 全部改成 <code>Path(__file__).parent / "data"</code>。</li>
+            <li><strong>兜底</strong>：如果 <code>data/</code> 空，代码提示"请把 PDF 放到 data/ 下再启动"，别直接崩。</li>
+            <li><strong>防范</strong>：Demo 项目里永远不许出现绝对路径。写完 grep 一遍 <code>D:\</code>、<code>C:\</code>、<code>/Users/</code>。</li>
+          </ul>
+          <p><strong>报错 2 · 依赖没装全</strong></p>
+          <ul style="margin-left: 24px;">
+            <li><strong>止血</strong>：<code>pip install faiss-cpu</code> 补上。政企内网可能没外网，提前下好 <code>whl</code> 包带在 U 盘。</li>
+            <li><strong>兜底</strong>：<code>requirements.txt</code> 必须锁版本号（用 <code>==</code> 不用 <code>&gt;=</code>）。演示前一定跑 <code>pip install -r requirements.txt</code> 走一遍。</li>
+            <li><strong>防范</strong>：政企出差包必带——<code>requirements.txt</code>、<code>.env.template</code>、<code>packages/*.whl</code>（离线包）、Python 安装包本身。</li>
+          </ul>
+          <p><strong>报错 3 · 端口冲突</strong></p>
+          <ul style="margin-left: 24px;">
+            <li><strong>止血</strong>：<code>streamlit run app.py --server.port 8888</code>，换个端口。</li>
+            <li><strong>兜底</strong>：启动脚本里加逻辑，8501 被占就自动往上找空端口。</li>
+            <li><strong>防范</strong>：政企内网端口管制严——<em>提前跟客户 IT 确认可用端口</em>，别到现场才发现 8501 是他们的 OA 端口。</li>
+          </ul>
+          <p><strong>面试金句：</strong><em>"我做 Demo 演示的规矩是——出差前打包一份'可移植清单'：requirements 锁版本、路径全相对、Key 走环境变量、依赖离线包备份。现场部署翻车这种事，从来不该发生在正式 FDE 身上。"</em></p>
+        </div>
+      </details>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 4：速查卡 -->
+<div class="card">
+  <h2>📇 四、速查卡</h2>
+
+  <div class="cheatsheet">
+    <div class="cs-title">✅ Demo 演示 checklist（演示前 / 中 / 后各 5 条）</div>
+    <table>
+      <thead><tr><th style="width:20%">阶段</th><th>必查项</th></tr></thead>
+      <tbody>
+        <tr><td><strong>演示前</strong></td><td>① 换机器能跑（requirements + .env.template）② 10 条业务问答都能答对 ③ 3 个 Bad Case 已列 ④ UI 排版顺 ⑤ 备好离线包 U 盘</td></tr>
+        <tr><td><strong>演示中</strong></td><td>① 先讲一句"这是 Demo，覆盖 XX 场景" ② 主动亮 Bad Case 边界（"如果问 X 我们暂时兜底转人工"）③ 演示 3-5 个高频问题 ④ 让客户自己出题试 ⑤ 演示后立刻记下客户提到的新问题</td></tr>
+        <tr><td><strong>演示后</strong></td><td>① 邮件跟进"今天演示的 3 个 Bad Case + 下版计划" ② 把客户新问题加进测试集 ③ 复盘一遍哪些地方讲得不够清 ④ 备份当天演示视频/截图 ⑤ 记账"每次演示带走的一个新问题"</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">🧩 Streamlit 常用组件速查</div>
+    <table>
+      <thead><tr><th>组件</th><th>用途</th><th>典型代码</th></tr></thead>
+      <tbody>
+        <tr><td><code>st.title / st.caption</code></td><td>标题、副标题</td><td><code>st.title("政府文件问答助手")</code></td></tr>
+        <tr><td><code>st.chat_input</code></td><td>底部对话输入框</td><td><code>if q := st.chat_input("提问"):</code></td></tr>
+        <tr><td><code>st.chat_message</code></td><td>对话气泡</td><td><code>with st.chat_message("user"): ...</code></td></tr>
+        <tr><td><code>st.session_state</code></td><td>会话状态（存历史消息）</td><td><code>st.session_state.messages = []</code></td></tr>
+        <tr><td><code>st.spinner</code></td><td>Loading 动画</td><td><code>with st.spinner("检索中"): ...</code></td></tr>
+        <tr><td><code>st.expander</code></td><td>可折叠详情（放引用出处）</td><td><code>with st.expander("参考出处"): ...</code></td></tr>
+        <tr><td><code>st.file_uploader</code></td><td>文件上传</td><td><code>f = st.file_uploader("上传 PDF")</code></td></tr>
+        <tr><td><code>st.warning / st.error</code></td><td>提示 / 错误框</td><td><code>st.warning("知识库未命中")</code></td></tr>
+        <tr><td><code>st.sidebar</code></td><td>左侧边栏（放参数调节）</td><td><code>top_k = st.sidebar.slider("Top-K", 3, 10, 5)</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">🔥 常见 Demo 翻车原因 Top 10 及应对</div>
+    <ol style="margin-left: 24px;">
+      <li><strong>路径硬编码</strong> · 全部改 <code>Path(__file__).parent</code></li>
+      <li><strong>Key 写死代码</strong> · <code>.env</code> + <code>os.getenv</code></li>
+      <li><strong>依赖缺失</strong> · <code>requirements.txt</code> 锁版本、离线包备份</li>
+      <li><strong>端口占用</strong> · 提前问客户 IT，或加自动换端口逻辑</li>
+      <li><strong>网络不通</strong> · 内网测试时确认 API 域名能通（百炼是 dashscope.aliyuncs.com）</li>
+      <li><strong>Bad Case 现场翻车</strong> · 演示前 3 个角色出题各 5 条</li>
+      <li><strong>LLM 编造答案</strong> · Prompt 硬规矩 "没写就说没写"，加 confidence 字段</li>
+      <li><strong>检索超时</strong> · FAISS 用 IndexFlatIP 就够快；Reranker 加超时兜底</li>
+      <li><strong>中文字体乱码</strong> · Streamlit 默认支持，别自己指定 font-family</li>
+      <li><strong>Session 状态丢失</strong> · 所有历史进 <code>st.session_state</code>，别用全局变量</li>
+    </ol>
+  </div>
+</div>
+
+<!-- 板块 5：5 题测验 -->
+<div class="card">
+  <h2>📝 五、5 题小测验</h2>
+  <p style="color: var(--gray-600); font-size: 14px;">建议先自己想 20 秒再点开答案。答错也别慌——错项解析比正确答案更值钱。</p>
+
+  <details class="quiz-item">
+    <summary>Q1 · 客户会议室演示 Demo，只带一个 API + Postman 集合可以吗？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 可以，反正接口能通就行，客户想看细节我给他看 JSON</li>
+        <li>B. 可以，节省时间不用做 UI</li>
+        <li>C. 不可以，政企客户业务口看不懂 API 和 JSON，必须有网页 UI 才能让他理解</li>
+        <li>D. 视情况——技术客户可以，业务客户不行</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：C</div>
+        <p>政企客户 90% 场景决策方是业务口——处长、科长、评标专家。他们看不懂 API 也没兴趣看。Streamlit 20-50 行代码就能搭一个能演示的 UI，成本极低但直接决定客户对项目的观感。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 是典型 IT 思维</strong>——但你的客户不是 IT。<strong>B "节省时间"是伪节省</strong>——省了 30 分钟 UI，损失一个百万级项目。<strong>D 看似合理，实际不成立</strong>——政企场景决策链上一定有非技术的领导，永远按最保守的口径准备（做 UI）。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q2 · 关于 Demo 演示前的 5 关校验，下面哪一关最容易被忽视？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 能启动（换电脑能跑）</li>
+        <li>B. UI 能看（排版顺畅）</li>
+        <li>C. 主流程通（10 条问题能答）</li>
+        <li>D. Bad Case 已知（知道哪些会翻车）</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：D</div>
+        <p>Bad Case 是被最多人忽视、也最容易现场翻车的一关。前 3 关都是"能不能演示"，Bad Case 是"演示时会不会翻车"——需要主动请业务/合规/技术三个不同角色出题跑一遍，这个动作绝大多数团队不做。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A B C 都很重要</strong>，但都是"事前能自己发现"的问题。<strong>D 特殊在——你自己测的问题不会翻车（因为你只测你会的）</strong>，只有让第三方出题才能暴露真正的 Bad Case。演示时主动说清 Bad Case，比翻车强 100 倍。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q3 · <code>build_index.py</code> 应该在什么时候跑？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 每次启动 <code>streamlit run app.py</code> 时自动跑一遍</li>
+        <li>B. 用户每次提问时跑一遍</li>
+        <li>C. 离线一次性跑，之后只在数据更新时重跑</li>
+        <li>D. 每天定时跑一次</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：C</div>
+        <p>Embedding 建索引是重活——1000 分块可能要 2-5 分钟、消耗 API 配额。这一步天然是<strong>离线一次性</strong>的：数据没变就不用重跑。做到 <code>index/</code> 里落盘后，在线服务只读索引，冷启动秒开。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 每次启动重跑</strong>——启动要等 5 分钟，客户当场关掉。<strong>B 每次提问重跑</strong>——单次查询等 5 分钟，用户体验灾难。<strong>D 每天定时</strong>——数据没变的时候完全浪费；数据频繁更新的场景才需要。<em>正确做法是：建索引是"离线批处理"，检索是"在线毫秒响应"，这两条链路要分开设计。</em></p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q4 · 演示时客户临时问一个你没测过的问题，Demo 检不到，LLM 开始"编"，你现场应该怎么做？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 装作没看见，继续演示下一个问题</li>
+        <li>B. 主动指出"这个答案我们不确定"，并解释兜底方案</li>
+        <li>C. 现场改代码修 bug，让客户等</li>
+        <li>D. 结束演示，回去重做</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>最专业的做法是主动亮问题："这个类型的问题我们目前在知识库里覆盖度不够，正式版会加'置信度低自动转人工'的兜底。您刚提的这个我记下来，作为下版重点测试用例。"——把翻车变成"你有 Bad Case 意识 + 有下版计划"的信任建立机会。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 装作没看见</strong>——客户不是傻子，他会记住你在编。<strong>C 现场改代码</strong>——不专业、也解决不了。<strong>D 结束演示</strong>——一场演示 30 分钟没了，客户对你信心大跌。<em>Demo 的目的不是"零翻车"，是"翻车后依然显得靠谱"。</em></p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q5 · 综合题——把 Day 4-8 组件组装成端到端 Demo，你会在架构上做哪些"可移植性"设计？至少列 4 条。</summary>
+    <div class="quiz-body">
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 参考答案（至少 4 条）</div>
+        <ol style="margin-left: 24px;">
+          <li><strong>Key 走环境变量</strong>——所有 API Key 从 <code>.env</code> 读，代码里绝无明文。提交 <code>.env.template</code> 到 git，真实 <code>.env</code> gitignore。</li>
+          <li><strong>路径全相对</strong>——用 <code>Path(__file__).parent</code>，绝无 <code>D:\...</code>、<code>C:\...</code>、<code>/Users/...</code> 硬编码。</li>
+          <li><strong>依赖锁版本</strong>——<code>requirements.txt</code> 用 <code>==</code> 精确版本；提前下好离线 <code>.whl</code> 包塞 U 盘，应对政企内网。</li>
+          <li><strong>索引和源代码分离</strong>——<code>build_index.py</code> 离线跑；<code>index/</code> 目录里的 <code>vecs.faiss + chunks.json</code> 可以随代码打包也可以单独发布。</li>
+          <li><strong>参数外置</strong>——<code>top_k</code>、<code>threshold</code>、<code>chunk_size</code> 这类参数放 <code>config.yaml</code> 或 sidebar，客户想调不用改代码。</li>
+          <li><strong>网络失败兜底</strong>——API 调用加超时和 retry；检索空返回、LLM 报错都有清晰的 UI 提示，不白屏。</li>
+          <li><strong>启动脚本一行</strong>——README 给出 3 行命令：<code>pip install -r requirements.txt</code> → <code>python build_index.py</code> → <code>streamlit run app.py</code>。任何人 10 分钟能跑起来。</li>
+        </ol>
+        <p><strong>面试金句预埋：</strong><em>"Demo 的可移植性不是加分项，是 FDE 的基本功。我在客户现场部署翻车过一次之后，就形成了一个'可移植清单'——Key、路径、依赖、索引、参数、兜底、启动，7 条规矩，之后就再没在部署阶段翻过车。"</em></p>
+      </div>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 6：面试金句 + 心得笔记 -->
+<div class="card">
+  <h2>💼 六、面试金句预埋</h2>
+
+  <div class="interview-quote">
+    <span class="iq-tag">端到端思维</span>
+    "FDE 和后端工程师最大的区别是——<strong>他们交付 API，我交付一个能给客户演示的完整 Demo</strong>。数据管道、向量索引、检索、生成、UI，五个模块都是我的责任。哪一环卡住我都要能顶上。这不是全栈——是<em>端到端交付意识</em>。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">演示纪律</span>
+    "我做 Demo 演示有一套纪律：<strong>演示前必过 5 关</strong>——能启动、UI 能看、主流程通、Bad Case 已知、换机器能跑。5 关全过再进客户会议室。演示时主动亮 Bad Case 边界，比现场翻车强 100 倍。这个套路让我在某单位评标 Agent 项目里没有一次 Demo 翻车。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">可移植性</span>
+    "Demo 的可移植性，是新手 FDE 和资深 FDE 分水岭。<strong>Key 走环境变量、路径全相对、依赖锁版本、离线包备份</strong>——这几条不做，出差到客户现场用他们借的电脑一跑，全炸。我的每个 Demo 项目都有一份'可移植清单'，出差前 30 分钟能确认全通过。"
+  </div>
+
+  <h3>📓 心得笔记</h3>
+  <div class="box box-red">
+    <div class="box-title">⚠️ 今天最反直觉的 3 件事</div>
+    <div>
+      <p><strong>1.</strong> 让 Demo <em>能给业务客户看懂</em>，比让 Demo <em>技术上多牛</em> 重要 10 倍。<em>（20 行 Streamlit 值 100 行 API 文档。）</em></p>
+      <p><strong>2.</strong> 演示不是"零翻车"——是"<strong>翻车后依然显得靠谱</strong>"。主动亮 Bad Case，是信任建立的机会，不是弱点暴露。</p>
+      <p><strong>3.</strong> 客户现场部署翻车，<em>永远是 FDE 的锅</em>，不是"客户环境有问题"。可移植性是基本功。</p>
+    </div>
+  </div>
+
+  <div class="box box-green">
+    <div class="box-title">🎉 Phase 2 阶段总结</div>
+    <div>
+      <p>你已经走完了 FDE v2 的 Phase 2——从 Day 7 预处理，到 Day 8 检索优化，到今天 Day 9 端到端 Demo。你现在能<strong>独立交付一个可演示的 RAG 应用</strong>——这在半年前你自评 ③ 搭原型 = 2.6 分的时候，是不敢想的事。</p>
+      <p>把今天做的 Demo 好好保存——这是你以后每个政企 RAG 项目的<strong>起点模板</strong>，也是你面试时能带出去的作品。</p>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  学习笔记 · AI 项目经理成长 · FDE v2 · Day 9<br>
+  Phase 2 完结 · 下一站 → Day 10 Agent 与工作流编排
+</div>
+
+</div>
+</body>
+</html>

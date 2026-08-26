@@ -1,0 +1,14 @@
+# 密钥
+.env
+
+# 索引产物（可重新 build，不入库）
+index/vecs.faiss
+index/chunks.json
+
+# 原始文档（按需入库，默认忽略）
+data/*.pdf
+
+# Python
+__pycache__/
+*.pyc
+.venv/

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FDE 结营证书核验 · FDE 学习先锋小队</title>
+<style>
+  :root{--gold:#b8860b;--ink:#1a1a2e;--line:#c9a96a;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:#f4efe6;font-family:"Microsoft YaHei","PingFang SC",sans-serif;
+       display:flex;justify-content:center;min-height:100vh;padding:32px 16px;}
+  .wrap{width:560px;max-width:100%;}
+  h1{text-align:center;color:var(--ink);font-size:24px;letter-spacing:2px;}
+  .sub{text-align:center;color:#888;font-size:13px;margin-bottom:18px;}
+  .box{display:flex;gap:8px;}
+  input{flex:1;padding:12px 14px;border:2px solid var(--line);border-radius:8px;
+        font-size:15px;outline:none;}
+  input:focus{border-color:var(--gold);}
+  button{padding:0 22px;border:none;background:var(--gold);color:#fff;border-radius:8px;
+         font-size:15px;font-weight:700;cursor:pointer;}
+  button:hover{background:#a5740a;}
+  .result{margin-top:22px;}
+  .card{border:3px double var(--gold);border-radius:10px;background:#fffdf8;padding:22px;text-align:center;
+        box-shadow:0 8px 30px rgba(0,0,0,.12);position:relative;}
+  .card::before{content:"";position:absolute;inset:8px;border:1px solid var(--line);border-radius:6px;pointer-events:none;}
+  .ok{color:#2e7d32;font-weight:700;font-size:15px;margin-bottom:10px;}
+  .cid{font-size:22px;font-weight:800;color:var(--ink);}
+  .row{display:flex;justify-content:space-between;font-size:14px;color:#555;margin:8px 18px;
+       border-bottom:1px dashed #eee;padding-bottom:6px;}
+  .row b{color:var(--ink);}
+  .err{color:#c62828;font-weight:700;text-align:center;background:#ffeaea;padding:14px;border-radius:8px;}
+  .hint{color:#999;font-size:12px;text-align:center;margin-top:14px;line-height:1.7;}
+  .loading{text-align:center;color:#888;margin-top:20px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>结营证书核验</h1>
+  <div class="sub">FDE 学习先锋小队 · 输入证书编号在线验真</div>
+  <div class="box">
+    <input id="q" placeholder="例如 FDE-B-2026-00001" autocomplete="off" />
+    <button onclick="verify()">核验</button>
+  </div>
+  <div id="out" class="result"></div>
+  <div class="hint">
+    编号格式：FDE-B-YYYY-NNNNN（基础）/ FDE-I-YYYY-NNNNN（中级）<br/>
+    数据来源：本仓库公开注册表 registry.public.json
+  </div>
+</div>
+
+<script>
+const PUBLIC_REGISTRY = "registry.public.json";
+
+function row(label, val){
+  return `<div class="row"><span>${label}</span><b>${val}</b></div>`;
+}
+
+async function verify(){
+  const out = document.getElementById("out");
+  const id = document.getElementById("q").value.trim().toUpperCase();
+  if(!id){ out.innerHTML = `<div class="err">请输入证书编号</div>`; return; }
+  out.innerHTML = `<div class="loading">核验中…</div>`;
+  try{
+    const res = await fetch(PUBLIC_REGISTRY + "?t=" + Date.now());
+    if(!res.ok) throw new Error("注册表加载失败");
+    const list = await res.json();
+    const rec = list.find(r => r.id === id);
+    if(!rec){
+      out.innerHTML = `<div class="err">未找到该编号的证书<br/>请确认编号是否正确，或证书尚未签发</div>`;
+      return;
+    }
+    const tier = rec.tier_name || (rec.tier === "intermediate" ? "结营中级证书" : "结营基础证书");
+    const cap = rec.capstone_pass ? "已通过" : (rec.tier === "intermediate" ? "未通过" : "—");
+    out.innerHTML = `
+      <div class="card">
+        <div class="ok">✔ 证书真实有效</div>
+        <div class="cid">${rec.id}</div>
+        <div style="color:#b8860b;font-weight:700;margin:6px 0;">${tier}</div>
+        ${row("持证人", rec.name)}
+        ${row("发证日期", rec.date)}
+        ${row("测验成绩", rec.quiz_score + " 分")}
+        ${row("结营项目", cap)}
+        ${row("防伪 HASH", `<span style="font-size:11px;word-break:break-all;">${rec.hash}</span>`)}
+      </div>`;
+  }catch(e){
+    out.innerHTML = `<div class="err">核验失败：${e.message}<br/>请稍后重试，或确认页面部署在 GitHub Pages。</div>`;
+  }
+}
+
+// 支持 ?id= 直达核验
+window.addEventListener("DOMContentLoaded", () => {
+  const p = new URLSearchParams(location.search).get("id");
+  if(p){ document.getElementById("q").value = p.toUpperCase(); verify(); }
+});
+document.getElementById("q").addEventListener("keydown", e => { if(e.key === "Enter") verify(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FDE v2 · Day 17 · AI 项目专属验收标准 · Bad Case / 评估指标 / SLA</title>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-bg: #eff6ff;
+  --blue-dark: #1e40af;
+  --orange: #ea580c;
+  --orange-bg: #fff7ed;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --green: #059669;
+  --green-bg: #ecfdf5;
+  --yellow: #d97706;
+  --yellow-bg: #fffbeb;
+  --purple: #7c3aed;
+  --purple-bg: #f5f3ff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-800: #1f2937;
+  --text: #1a1a2e;
+  --text-light: #6b7280;
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: #f0f4f8; color: var(--text); line-height: 1.8; font-size: 16px;
+}
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+.hero {
+  background: linear-gradient(135deg, #064e3b 0%, #047857 55%, #059669 100%);
+  color: #fff; border-radius: var(--radius); padding: 32px 30px 26px; margin-bottom: 20px;
+}
+.hero-badge { display: inline-block; background: rgba(255,255,255,0.18); padding: 4px 14px; border-radius: 20px; font-size: 12px; margin-bottom: 10px; }
+.hero h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; }
+.hero .subtitle { font-size: 14.5px; opacity: 0.92; margin-bottom: 14px; line-height: 1.7; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; opacity: 0.85; }
+.hero-back { font-size: 12px; margin-top: 10px; opacity: 0.75; }
+.hero-back a { color: #fff; text-decoration: underline; }
+
+.card { background: #fff; border-radius: var(--radius); padding: 26px 26px 22px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.card h2 { font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.card h3 { font-size: 17px; font-weight: 600; color: var(--gray-800); margin: 22px 0 10px; padding-left: 12px; border-left: 3px solid var(--primary); }
+.card h4 { font-size: 15px; font-weight: 600; margin: 14px 0 8px; color: var(--gray-800); }
+p { margin-bottom: 10px; }
+code { background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-size: 14px; font-family: "Cascadia Code", "Fira Code", Consolas, monospace; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-size: 14px; }
+th { background: var(--primary); color: #fff; padding: 9px 12px; text-align: left; font-weight: 600; font-size: 13px; }
+td { padding: 9px 12px; border-bottom: 1px solid var(--gray-200); vertical-align: top; }
+tr:nth-child(even) td { background: var(--gray-50); }
+
+.box { border-radius: 8px; padding: 14px 16px; margin: 14px 0; border-left: 4px solid; font-size: 14.5px; }
+.box-blue { background: var(--primary-bg); border-color: var(--primary); }
+.box-green { background: var(--green-bg); border-color: var(--green); }
+.box-yellow { background: var(--yellow-bg); border-color: var(--yellow); }
+.box-red { background: var(--red-bg); border-color: var(--red); }
+.box-purple { background: var(--purple-bg); border-color: var(--purple); }
+.box-orange { background: var(--orange-bg); border-color: var(--orange); }
+.box-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+
+.mentor { background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%); border-radius: 10px; padding: 16px 18px; margin: 14px 0; border: 1px solid #dbeafe; position: relative; }
+.mentor::before { content: '👨‍🏫'; position: absolute; top: -12px; left: 16px; background: #fff; padding: 0 6px; font-size: 20px; }
+.mentor .mentor-title { font-weight: 700; color: var(--blue-dark); font-size: 14px; margin-bottom: 6px; margin-top: 4px; }
+.mentor .mentor-body { font-size: 14.5px; color: var(--gray-800); line-height: 1.75; }
+.mentor .mentor-body p { margin-bottom: 8px; }
+
+.goal-list { list-style: none; padding: 0; }
+.goal-list li { padding: 8px 0 8px 32px; position: relative; font-size: 15px; }
+.goal-list li::before { content: '🎯'; position: absolute; left: 4px; top: 8px; font-size: 15px; }
+
+.mnemonic { background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 10px; padding: 14px 18px; margin: 14px 0; text-align: center; }
+.mnemonic .m-title { font-size: 12px; color: #92400e; margin-bottom: 6px; letter-spacing: 2px; }
+.mnemonic .m-line { font-size: 18px; font-weight: 700; color: #78350f; letter-spacing: 3px; }
+.mnemonic .m-explain { font-size: 13px; color: #92400e; margin-top: 6px; }
+
+.cheatsheet { border: 2px dashed var(--primary); border-radius: 10px; padding: 16px 18px; margin: 14px 0; background: #f0f9ff; }
+.cheatsheet .cs-title { font-weight: 700; color: var(--blue-dark); font-size: 15px; margin-bottom: 10px; }
+
+.steps { counter-reset: step; margin: 12px 0; }
+.step-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px dashed var(--gray-200); }
+.step-item:last-child { border-bottom: none; }
+.step-item .step-num { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--primary); color: #fff; text-align: center; line-height: 34px; font-weight: 700; }
+.step-item .step-body { flex: 1; }
+.step-item .step-body strong { color: var(--blue-dark); }
+
+.quiz-item { border: 1px solid var(--gray-200); border-radius: 8px; margin: 10px 0; overflow: hidden; }
+.quiz-item summary { background: var(--primary-bg); padding: 12px 14px; cursor: pointer; font-weight: 600; color: var(--primary); font-size: 14.5px; }
+.quiz-item[open] summary { border-bottom: 1px solid var(--gray-200); }
+.quiz-body { padding: 12px 16px; }
+.quiz-options { list-style: none; padding: 0; }
+.quiz-options li { padding: 5px 0; font-size: 14px; }
+.quiz-answer { background: var(--green-bg); border-left: 3px solid var(--green); padding: 10px 12px; margin-top: 10px; font-size: 14px; border-radius: 4px; }
+.quiz-answer .ans-title { font-weight: 700; color: var(--green); margin-bottom: 6px; }
+.wrong-analysis { background: var(--red-bg); border-left: 3px solid var(--red); padding: 10px 12px; margin-top: 8px; font-size: 13.5px; border-radius: 4px; }
+.wrong-analysis .wa-title { font-weight: 700; color: var(--red); margin-bottom: 4px; }
+
+.case-block { border: 1px solid var(--gray-200); border-radius: 8px; margin: 12px 0; overflow: hidden; }
+.case-block summary { background: linear-gradient(135deg, #ede9fe, #ddd6fe); padding: 12px 14px; cursor: pointer; font-weight: 600; color: #5b21b6; font-size: 14.5px; }
+.case-block .case-body { padding: 14px 16px; font-size: 14px; }
+.case-block .case-body h5 { color: var(--blue-dark); margin: 10px 0 6px; font-size: 14px; }
+
+.interview-quote { background: linear-gradient(135deg, #1e3a5f, #1a56db); color: #fff; border-radius: 10px; padding: 18px 20px; margin: 14px 0; font-size: 15px; font-style: italic; line-height: 1.8; position: relative; }
+.interview-quote::before { content: '💼'; position: absolute; top: -10px; left: 16px; background: #fff; padding: 2px 6px; border-radius: 12px; font-size: 16px; }
+.interview-quote .iq-tag { display: block; font-size: 11px; opacity: 0.8; margin-bottom: 6px; font-style: normal; letter-spacing: 1px; }
+
+.footer { text-align: center; color: var(--text-light); font-size: 12px; padding: 20px 0 36px; border-top: 1px solid var(--gray-200); margin-top: 16px; }
+
+@media (max-width: 640px) {
+  .container { padding: 12px; }
+  .hero { padding: 24px 18px 20px; }
+  .hero h1 { font-size: 20px; }
+  .card { padding: 20px 16px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="hero">
+  <div class="hero-badge">FDE v2 · Phase 5 · Day 17</div>
+  <h1>✅ AI 项目专属验收标准</h1>
+  <div class="subtitle">传统软件验收看功能对不对，<strong>AI 项目验收看效果稳不稳</strong>——今天教你写出让客户签得下字、开发做得完的验收标准，别在最后一公里翻车。</div>
+  <div class="hero-meta">
+    <span>🎯 Phase 5 · 交付与结营</span>
+    <span>⏱️ 预计 70-80 分钟</span>
+    <span>🧭 补齐能力：⑤ 管交付（AI 差异化部分）</span>
+  </div>
+  <div class="hero-back">FDE v2 学习路径 · <a href="./day00_fde_panorama_and_radar.html">← 回到 Day 0 起点校准</a></div>
+</div>
+
+<!-- 板块 1：今日目标 -->
+<div class="card">
+  <h2>🎯 一、今日目标</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>你 ⑤ 管交付 4.6 分，是雷达图里最强的一块——PM 老本行 12 年经验不是白给的。今天不重复讲验收怎么写、怎么控节点，那些你比我熟。<strong>今天只讲 AI 项目跟传统项目不一样的那 30%</strong>——不确定性、评估指标、Bad Case 兜底、灰度节奏。</p>
+      <p>我见过太多老 PM 转做 AI 项目，前 70% 顺得飞起，最后 30% 栽在这里——因为他们把 AI 项目当传统软件项目验收：功能列表打勾就完事。结果客户上线一个月发现 AI 时对时错，你说"我们只保证功能实现不保证效果"，客户当场翻脸。这 30% 你必须补上。</p>
+    </div>
+  </div>
+
+  <ul class="goal-list">
+    <li>能说出 <strong>AI 项目 vs 传统软件验收的 5 大差异</strong> 并解释为什么</li>
+    <li>掌握 <strong>「功能·效果·性能·异常·灰度」五段验收模板</strong>，一份直接可交客户</li>
+    <li>会写"效果验收"里的 <strong>可执行指标</strong>——评测集样本量、准确率定义、置信区间</li>
+    <li>能给客户讲清楚 <strong>"AI 有不确定性，我们承诺的是可控范围"</strong> 的话术</li>
+  </ul>
+</div>
+
+<!-- 板块 2：核心讲解 -->
+<div class="card">
+  <h2>📖 二、核心讲解</h2>
+
+  <h3>是什么：AI 项目验收 vs 传统软件验收的 5 大差异</h3>
+  <table>
+    <thead>
+      <tr><th style="width:16%">维度</th><th style="width:38%">传统软件验收</th><th>AI 项目验收</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>确定性</strong></td><td>相同输入必然产生相同输出</td><td>相同输入可能有不同输出（温度、随机采样）</td></tr>
+      <tr><td><strong>指标类型</strong></td><td>功能实现 yes/no</td><td>准确率/召回率/F1 等区间指标</td></tr>
+      <tr><td><strong>Bad Case</strong></td><td>bug 修完 = 结束</td><td>Bad Case 永远存在，验收看"覆盖率+兜底"</td></tr>
+      <tr><td><strong>SLA 定义</strong></td><td>可用性、响应时间</td><td>加上"准确率下限 + 效果稳定性"</td></tr>
+      <tr><td><strong>上线节奏</strong></td><td>一次全量上线</td><td>灰度：5% → 20% → 50% → 100%，看效果推进</td></tr>
+    </tbody>
+  </table>
+  <p><strong>反直觉的地方：</strong>AI 项目"零 bug"是伪命题。真正要写进合同的是 <em>"Bad Case 出现时系统怎么反应"</em>，而不是"AI 不能错"。</p>
+
+  <div class="mnemonic">
+    <div class="m-title">□ □ □ 验收五段口诀 □ □ □</div>
+    <div class="m-line">功能 · 效果 · 性能 · 异常 · 灰度</div>
+    <div class="m-explain">五段验收 · 缺一段扯皮，全上齐客户放心签字</div>
+  </div>
+
+  <h3>为什么：老 PM 转 AI 项目最容易踩的三个坑</h3>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 1 · 用传统"功能列表打勾"验收——覆盖不了 AI 的不确定性</div>
+    <div>
+      <p>你以前的验收标准："支持 100 个用户并发查询"、"响应时间 &lt; 2 秒"、"支持导出 Excel"——都是 yes/no 型。但 AI 系统的核心价值是"回答问题准不准"，这个用 yes/no 说不清楚。功能都做完了，客户依然可能说"不好用"。</p>
+      <p><strong>正确姿势：</strong>把"AI 是不是准"翻译成<strong>可量化指标</strong>——"对客户提供的 200 条评测集，AI 回答准确率 ≥ 85%（人工标注为准）"。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 2 · 指标写"准确率 ≥ 90%"没定义评测集——扯皮神器</div>
+    <div>
+      <p>你的合同里写"准确率 ≥ 90%"，客户验收时随手挑 20 个问题问 AI，答对 15 个说你没达标（75%）。你说"这不公平"，客户说"合同就是这么写的"。</p>
+      <p>这不是虚构。<strong>没有确定评测集，"准确率 90%" 就是一句可以任意解读的话</strong>——挑难题准确率永远拉不上来，挑简单题永远打得高。</p>
+      <p><strong>正确姿势：</strong>评测集在合同签订前双方共同确认<strong>数量 + 来源 + 标注方法</strong>——例如"客户提供 200 条真实历史工单，双方各标一遍取一致部分，最终评测集不少于 150 条"。指标只在这个评测集上有效。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 3 · 没有 Bad Case 覆盖率承诺——Case 出来客户告你未穷尽</div>
+    <div>
+      <p>上线 3 个月后，客户送来一个"AI 把员工报销金额算错"的截图，说这是 P0 严重事故要索赔。你分析发现是一个非常边缘的场景（票据是手写发票 + 部分字段模糊 + 特殊币种），本来就不在你测试过的范围里。</p>
+      <p>但你怎么解释？<strong>如果你的验收标准里没有"Bad Case 分类 + 兜底策略"章节，客户就有理由认为"AI 应该对所有情况都负责"。</strong></p>
+      <p><strong>正确姿势：</strong>在验收标准的"异常验收"里明确列出 <em>Bad Case 类型（幻觉/漏检/误检/超时/格式崩溃）</em>、对应<em>兜底策略（转人工/默认响应/熔断）</em>、<em>目标覆盖率（如"90% 的 Bad Case 走兜底策略"）</em>。这样出错时你才有立场。</p>
+    </div>
+  </div>
+
+  <div class="box box-blue">
+    <div class="box-title">🧭 PM 行动指南：签字前必过 5 关</div>
+    <div>
+      <p><strong>Gate 1 · 评测集双方确认</strong>——数量、来源、标注方法、覆盖场景全在合同附件里。</p>
+      <p><strong>Gate 2 · SLA 定义清晰</strong>——准确率下限、响应时间 P95、可用性都有数字。</p>
+      <p><strong>Gate 3 · Bad Case 兜底方案</strong>——每类 Case 都有明确处置流程。</p>
+      <p><strong>Gate 4 · 灰度节奏</strong>——5% → 20% → 50% → 100% 每阶段停留天数与升级触发条件。</p>
+      <p><strong>Gate 5 · 变更权责</strong>——上线后调 prompt / 换模型 / 加规则的权限归属和流程。</p>
+    </div>
+  </div>
+
+  <h3>怎么用：AI 项目验收 4+1 段模板</h3>
+
+  <div class="steps">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>功能验收（跟传统项目一样）</strong>——功能清单 yes/no。"支持文件上传"、"支持多轮对话"、"支持导出 Excel"这些都属这一段。做完就行。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>效果验收（AI 项目专属，最难写）</strong>——三要素缺一不可：<em>① 评测集</em>（≥ N 条，来源+标注方法确认）+ <em>② 指标类型与阈值</em>（准确率/召回率/F1/BLEU 等，阈值明确）+ <em>③ 置信区间</em>（"95% 置信区间下界不低于 80%"防止小样本抽样偶然）。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>性能验收</strong>——P95 响应时间 ≤ N 秒 / QPS 承压 ≥ N / 连续 7 天无故障率 ≥ 99.5%。AI 项目要额外看<em>长尾延迟</em>（P99），因为大模型偶尔会有超长响应。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>异常验收</strong>——Bad Case 覆盖率 ≥ 90%（Bad Case 触发时有明确兜底策略）+ 熔断机制（错误率超阈值自动降级）+ 应急预案（AI 服务全挂时的备用方案，比如切规则引擎）。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">+1</div>
+      <div class="step-body">
+        <strong>灰度验收（隐藏第五段）</strong>——上线不是一次性，是灰度阶梯：5% 用户 (7 天) → 20% (7 天) → 50% (14 天) → 100%。每一阶段有升级条件（准确率不下降、投诉率 &lt; N%），未达标退回上一阶段。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 板块 3：动手步骤 -->
+<div class="card">
+  <h2>🛠️ 三、动手步骤</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>三个案例。第一个跟着抄，把一份完整验收标准写出来。后两个自己练——第三个是 Bug case，写坏一份验收标准让你找坑，最能考功底。</p>
+    </div>
+  </div>
+
+  <details class="case-block" open>
+    <summary>📌 案例 A · 「合同审核 Agent」完整验收标准（跟着做）</summary>
+    <div class="case-body">
+      <h5>项目背景</h5>
+      <p>为某集团法务部做一个 AI 合同审核助手：上传合同 PDF → AI 抽取关键条款 + 识别高风险条款 → 给法务提示。</p>
+
+      <h5>§1 功能验收</h5>
+      <ul style="margin-left:24px;">
+        <li>✅ 支持 PDF/Word/图片格式上传（单文件 ≤ 20MB）</li>
+        <li>✅ 支持 20 类关键字段抽取（甲乙方、金额、期限、付款条件、违约金等）</li>
+        <li>✅ 支持 8 类风险条款识别（免责范围过大、单方变更权、争议管辖异常等）</li>
+        <li>✅ 支持导出审核报告（PDF 格式 + 关键条款位置标注）</li>
+        <li>✅ 支持历史合同检索（关键词 + 标签）</li>
+      </ul>
+
+      <h5>§2 效果验收</h5>
+      <p><strong>评测集：</strong>客户提供 200 份真实合同（含 40 份高风险、160 份普通），双方各自标注后取一致部分，最终评测集不少于 150 份。评测集在合同附件 A 中锁定。</p>
+      <p><strong>指标：</strong></p>
+      <ul style="margin-left:24px;">
+        <li>关键字段抽取准确率 ≥ 88%（字段级 F1）</li>
+        <li>高风险条款召回率 ≥ 92%（宁可误报，不能漏报——法务确认的核心诉求）</li>
+        <li>高风险条款准确率 ≥ 75%（允许一定误报，法务复核可过滤）</li>
+      </ul>
+      <p><strong>置信区间：</strong>指标在评测集上的 95% 置信区间下界不低于阈值。</p>
+
+      <h5>§3 性能验收</h5>
+      <ul style="margin-left:24px;">
+        <li>P95 处理时间 ≤ 45 秒（一份 20 页合同）</li>
+        <li>P99 处理时间 ≤ 90 秒</li>
+        <li>并发承压 ≥ 10 个合同同时处理</li>
+        <li>连续 7×24 小时压力测试可用性 ≥ 99.5%</li>
+      </ul>
+
+      <h5>§4 异常验收</h5>
+      <table>
+        <tr><th>Bad Case 类型</th><th>兜底策略</th><th>覆盖率</th></tr>
+        <tr><td>幻觉（AI 编造条款）</td><td>输出时必须标注原文位置，无位置引用一律标红</td><td>100%</td></tr>
+        <tr><td>漏检（应识别未识别）</td><td>关键条款有二次规则引擎兜底</td><td>≥ 85%</td></tr>
+        <tr><td>误检（错报风险）</td><td>提示"低置信度"标签，法务人工复核</td><td>≥ 90%</td></tr>
+        <tr><td>超时</td><td>60 秒未返回自动降级为规则模式</td><td>100%</td></tr>
+        <tr><td>格式崩溃（PDF 解析失败）</td><td>自动切换 OCR 引擎，仍失败则返回明确错误提示</td><td>100%</td></tr>
+      </table>
+
+      <h5>§5 灰度验收</h5>
+      <ul style="margin-left:24px;">
+        <li>阶段 1：法务组 3 人试用 · 7 天 · 每天审 10 份合同 · 满意度调研</li>
+        <li>阶段 2：法务部 10 人 · 14 天 · 全流程走通 · 无 P0/P1 事故</li>
+        <li>阶段 3：全公司业务部门开放 · 4 周 · 准确率不下降 + 投诉率 &lt; 5%</li>
+        <li>触发回滚：任一阶段 P0 事故 / 准确率跌破阈值 5 个百分点 / 投诉率 &gt; 15%</li>
+      </ul>
+
+      <p style="background:var(--yellow-bg);padding:12px;border-radius:6px;">这份验收标准直接可以拷进项目合同附件。核心：<strong>每一条都有数字、有边界、有兜底</strong>。</p>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 B · 员工问答 Agent 验收标准（自己练）</summary>
+    <div class="case-body">
+      <p><strong>项目：</strong>公司内网员工问答机器人。回答制度类问题（年假、报销、社保、考勤等），知识库 300 篇。日活 2000 人。</p>
+      <p style="color: var(--gray-500);">按 4+1 段结构写下你的验收标准。特别思考：员工问答场景 vs 合同审核场景，验收阈值应该<strong>更高还是更低</strong>？为什么？</p>
+
+      <details style="margin-top:12px;">
+        <summary style="cursor:pointer;color:var(--primary);font-weight:600;">查看参考答案</summary>
+        <div style="padding:10px 14px;background:var(--gray-50);border-radius:6px;margin-top:8px;">
+          <p><strong>关键判断：</strong>员工问答场景验收阈值应该<em>比合同审核低一档</em>——因为错了成本低（员工可以追问 HR 复核），且规模大（日 2000 次，达 95% 精度成本极高，做不到）。</p>
+          <p><strong>指标建议：</strong></p>
+          <ul style="margin-left:24px;">
+            <li>评测集 300 题（覆盖 HR/IT/行政 6 大类，每类 50 题）</li>
+            <li>回答准确率 ≥ 80%（生成质量由人工评分 1-5 分，≥ 4 分算正确）</li>
+            <li>召回率 ≥ 90%（能找到相关知识片段的比例）</li>
+            <li>P95 响应 ≤ 5 秒</li>
+            <li>Bad Case 兜底：低置信度问题自动挂"转 HR"按钮 · 覆盖率 ≥ 95%</li>
+          </ul>
+          <p><strong>差异化重点：</strong>员工问答场景要额外定义 "未知问题识别率" —— AI 遇到知识库外的问题能明确说"我不知道"的比例 ≥ 90%。这防止 AI 硬编答案误导员工。</p>
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 Bug case · 挑出这份验收标准的 5 个坑（自己练）</summary>
+    <div class="case-body">
+      <p><strong>某乙方交付的合同附件《AI 客服系统验收标准》：</strong></p>
+      <div style="background:var(--gray-100);padding:12px;border-radius:6px;font-size:13px;">
+        <p>1. 系统支持文本对话；</p>
+        <p>2. 回答准确率 ≥ 95%；</p>
+        <p>3. 响应时间要快；</p>
+        <p>4. 系统稳定运行；</p>
+        <p>5. 支持 100 并发；</p>
+        <p>6. 上线一次性发布全量用户。</p>
+      </div>
+      <p style="color: var(--gray-500);">挑出 5 个坑，逐一说明<strong>为什么错</strong>和<strong>怎么改</strong>。</p>
+
+      <details style="margin-top:12px;">
+        <summary style="cursor:pointer;color:var(--primary);font-weight:600;">查看参考答案</summary>
+        <div style="padding:10px 14px;background:var(--gray-50);border-radius:6px;margin-top:8px;">
+          <p><strong>坑 1 · 准确率 95% 没定义评测集</strong>——上线后客户随手挑 20 题达标扯皮神器。<em>改：</em>"在客户提供的 300 题评测集上准确率 ≥ 85%，评测集见附件 A。"</p>
+          <p><strong>坑 2 · 准确率 95% 阈值定得太高</strong>——通用客服场景当前 SOTA 也做不到 95%，这是自杀条款。<em>改：</em>依据 Baseline 定阈值（如 85%）。</p>
+          <p><strong>坑 3 · "响应时间要快" 无量化</strong>——"快"是主观词。<em>改：</em>"P95 ≤ 3 秒 / P99 ≤ 6 秒。"</p>
+          <p><strong>坑 4 · "稳定运行" 无量化</strong>——一样。<em>改：</em>"7×24 连续运行可用性 ≥ 99.5%，故障恢复时间 &lt; 15 分钟。"</p>
+          <p><strong>坑 5 · 缺 Bad Case 兜底 + 缺灰度</strong>——AI 项目最致命的两个空白。<em>改：</em>加异常验收段（幻觉/漏检兜底策略）+ 灰度节奏（5% → 20% → 50% → 100%，每阶段停留 1-2 周）。</p>
+          <p><strong>面试金句：</strong><em>"验收标准最怕的不是要求高，是<strong>模糊</strong>。宁可写 80% 有边界，别写 95% 无定义。"</em></p>
+        </div>
+      </details>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 4：速查卡 -->
+<div class="card">
+  <h2>📇 四、速查卡</h2>
+
+  <div class="cheatsheet">
+    <div class="cs-title">📊 AI 项目 SLA 常见指标（含业界基准）</div>
+    <table>
+      <thead>
+        <tr><th>指标</th><th>定义</th><th>业界基准</th><th>写合同建议</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>准确率（Accuracy）</td><td>正确样本 / 总样本</td><td>分类场景 85-92%</td><td>问答类 80-85%</td></tr>
+        <tr><td>召回率（Recall）</td><td>正确识别正例 / 全部正例</td><td>风险识别 85-95%</td><td>风控类阈值要高</td></tr>
+        <tr><td>精确率（Precision）</td><td>正确识别 / 所有识别为正例</td><td>取决于是否可容忍误报</td><td>与召回率权衡</td></tr>
+        <tr><td>F1</td><td>精确率与召回率调和平均</td><td>综合场景 0.80-0.88</td><td>抽取类首选</td></tr>
+        <tr><td>P95 响应</td><td>95% 请求响应时间</td><td>问答 2-5 秒</td><td>文档处理 30-60 秒</td></tr>
+        <tr><td>P99 响应</td><td>99% 请求响应时间</td><td>P95 × 1.5-2</td><td>AI 长尾要看这个</td></tr>
+        <tr><td>可用性</td><td>正常服务时间 / 总时间</td><td>99.5%（一般）/ 99.9%（关键）</td><td>SaaS 类默认</td></tr>
+        <tr><td>Bad Case 兜底覆盖率</td><td>触发兜底策略的 Bad Case 占比</td><td>≥ 90%</td><td>必写进合同</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">🎭 Bad Case 分类模板（含兜底策略）</div>
+    <table>
+      <thead>
+        <tr><th>类型</th><th>典型表现</th><th>兜底策略</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>幻觉</strong></td><td>AI 编造不存在的条款/数据</td><td>输出强制引用原文位置 + 引用为空标红人工复核</td></tr>
+        <tr><td><strong>漏检</strong></td><td>应识别的关键信息没识别</td><td>规则引擎兜底 + 未命中知识库时明确告知"未找到"</td></tr>
+        <tr><td><strong>误检</strong></td><td>把正常内容错报为风险</td><td>低置信度标签 + 人工复核队列</td></tr>
+        <tr><td><strong>超时</strong></td><td>超过时限未响应</td><td>60 秒硬熔断 + 降级为简版模式或转人工</td></tr>
+        <tr><td><strong>格式崩溃</strong></td><td>输出 JSON 不合法 / 结构错乱</td><td>输出后做 schema 校验 + 重试 2 次 + 兜底默认结构</td></tr>
+        <tr><td><strong>敏感触发</strong></td><td>输出含合规风险词</td><td>内容审核过滤 + 返回预设合规话术</td></tr>
+        <tr><td><strong>用户误用</strong></td><td>用户问了域外问题</td><td>意图分类 + 域外问题礼貌拒答</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">💬 客户话术：让客户接受"AI 有不确定性"</div>
+    <ul style="margin-left:24px;">
+      <li>"AI 跟传统软件不一样——它不是 100% 正确，是<strong>可控范围内稳定</strong>。我们承诺的是这个可控范围，不是零错误。"</li>
+      <li>"我们不会写'准确率 100%'，那是不负责任。我们写<strong>准确率 ≥ 85% + Bad Case 90% 走兜底</strong>。剩下 5% 的边缘情况有明确处置流程。"</li>
+      <li>"评测集必须双方在合同签字前锁定，否则'准确率' 就是没有意义的数字。我们建议客户抽 200 条真实业务样本，双方各标一遍，取一致部分。"</li>
+      <li>"AI 项目上线不是发版本，是<strong>灰度</strong>——5%、20%、50%、100% 四步走。每一步都拿真实数据决定进不进。这样风险你我共担。"</li>
+      <li>"如果 AI 判断错了，责任在哪里？在我们提前定义的 Bad Case 分类里。分类之外的意外，我们双方一起复盘更新分类。这就是 AI 项目的动态验收。"</li>
+    </ul>
+  </div>
+</div>
+
+<!-- 板块 5：5 题小测验 -->
+<div class="card">
+  <h2>📝 五、5 题小测验</h2>
+  <p style="color: var(--gray-600); font-size: 14px;">建议先自己想 20 秒再点开答案。答错也别慌——错项解析比正确答案更值钱。</p>
+
+  <details class="quiz-item">
+    <summary>Q1 · 合同里写 "AI 回答准确率 ≥ 90%"，客户上线后随手挑 20 题说答对 15 个不达标。你最应该在合同里补什么？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 把阈值改成 75%</li>
+        <li>B. 明确"评测集"——数量、来源、标注方法、锁定时间</li>
+        <li>C. 加一句"最终解释权归乙方"</li>
+        <li>D. 让客户签"AI 无法保证准确率"免责声明</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>准确率数字本身不重要，<strong>评测集</strong>才重要。没有明确评测集，任何阈值都能被随手样本推翻。合同签字前双方共同锁定评测集是唯一正确解。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 改阈值治标不治本</strong>——评测集不定，75% 一样能被挑到不达标。<strong>C 是耍流氓</strong>，客户不会接受，且法律上无效。<strong>D 是过度反应</strong>——AI 项目当然可以承诺准确率，只是要有明确定义。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q2 · AI 项目验收的 5 段结构里，哪一段是<strong>传统软件验收里没有</strong>的核心增量？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 功能验收</li>
+        <li>B. 性能验收</li>
+        <li>C. 效果验收（评测集 + 指标 + 置信区间）</li>
+        <li>D. 灰度验收</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：C</div>
+        <p>效果验收是 AI 项目独有——用可量化的<em>准确率/召回率</em>去衡量 "AI 输出好不好"。传统软件项目没有这个维度（要么功能对要么错）。异常验收和灰度验收传统项目也有类似形态，只有效果验收是完全独有。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 功能验收在传统项目也有</strong>——形式基本一样。<strong>B 性能验收传统也有</strong>——只是 AI 额外看 P99。<strong>D 灰度在传统 SaaS 也有</strong>——AI 项目让它更重要，但不是独有。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q3 · AI 项目"性能验收"里，为什么 P99 响应时间比 P95 更值得关注？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. P99 就是 P95 的 2 倍，写一个就够了</li>
+        <li>B. 大模型偶尔有超长响应（长尾），P95 看不到，P99 才能约束</li>
+        <li>C. 客户只关注 P99</li>
+        <li>D. P99 是必写字段</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>大模型是概率生成，偶尔会产出很长的输出（比如把简短问题回成长答复）导致耗时暴涨。P95 = 3 秒可能对应 P99 = 20 秒，用户体验完全不同。AI 项目务必两个都写。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 完全错</strong>——P99 与 P95 的比值取决于长尾分布，可能 1.2 倍也可能 5 倍。<strong>C 不是客户关注度问题</strong>，是"长尾"技术特性问题。<strong>D 不是"必写"，是"AI 项目建议加"</strong>——传统 CRUD 项目 P99 可以省略。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q4 · 灰度节奏 "5% → 20% → 50% → 100%"，每一阶段"升级到下一阶段"的判定应该看什么？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 到期时间到了就升级</li>
+        <li>B. 老板拍板就升级</li>
+        <li>C. 准确率不下降 + 投诉率 &lt; 阈值 + 无 P0 事故</li>
+        <li>D. 客户主动要求就升级</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：C</div>
+        <p>灰度的目的是<strong>用真实数据验证</strong>——所以升级条件必须是<strong>数据驱动</strong>：准确率不下降（可能触发用户复杂问题导致下降）+ 投诉率可控 + 没有 P0 事故。三条 AND，缺一退回上阶段。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 时间到就升级是"计划驱动"</strong>，不管数据好坏，本末倒置。<strong>B 老板拍板是"权威驱动"</strong>，一次决策定生死，风险最大。<strong>D 客户主动要求</strong>——客户看不到全部数据，判断可能是错的（"用得挺好的"其实只是投诉没浮上来）。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q5 · 综合题——「合同审核 Agent」验收中，一份合同的"高风险条款召回率"应该定 80% 还是 92%？为什么？</summary>
+    <div class="quiz-body">
+      <p style="color: var(--gray-600); margin-bottom: 8px;">思考召回和精确率的权衡。</p>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 参考答案：<strong>92%（宁可误报，不能漏报）</strong></div>
+        <p><strong>核心逻辑：</strong>法务审合同的目标是"不漏关键风险"，漏掉一个高风险条款可能造成商业损失或法律责任。相比之下"误报"最多是法务多复核几条，成本可控。</p>
+        <p><strong>指标决策原则：</strong></p>
+        <ul style="margin-left:24px;">
+          <li>漏报后果严重（漏诊 / 漏审风险 / 漏检设备缺陷）→ <strong>召回率优先</strong>（≥ 90%），可以牺牲精确率</li>
+          <li>误报后果严重（错抓好人 / 错拦正常交易）→ <strong>精确率优先</strong>（≥ 90%），可以牺牲召回率</li>
+        </ul>
+        <p><strong>合同审核场景明显属第一类。</strong>合同上放 "召回率 ≥ 92% + 精确率 ≥ 75%"，允许一定误报但严守漏报。</p>
+        <p><strong>面试金句：</strong><em>"AI 项目指标不是越高越好，是<strong>贴场景权衡</strong>。同一个指标在漏报敏感和误报敏感的场景里，甚至方向相反。"</em></p>
+      </div>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 6：面试金句 + 心得笔记 -->
+<div class="card">
+  <h2>💼 六、面试金句预埋</h2>
+
+  <div class="interview-quote">
+    <span class="iq-tag">不确定性管理</span>
+    "AI 项目验收，最难的不是让 AI 变准，是<strong>让客户接受 AI 有不确定性但可控</strong>。我合同里从来不写'零错误'，写 <em>准确率 ≥ 85% + Bad Case 90% 走兜底</em>——把不确定性变成可管理的数字，客户才敢签字。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">评测集文化</span>
+    "'准确率 90%' 这句话没有评测集就是空话。我做 AI 项目第一件事是<strong>把评测集在合同签订前锁定</strong>——数量、来源、标注方法白纸黑字写清楚。这一条做好了，后面 80% 的扯皮就没了。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">灰度纪律</span>
+    "AI 项目上线我不接受一次性发布——一定要<strong>灰度 5% → 20% → 50% → 100%</strong>。每一阶段用真实数据决定进不进，不看时间不看权威。这个纪律救过我好几个项目——早期用户就把 Bad Case 都暴露出来，全量前该修的都修了。"
+  </div>
+
+  <h3>📓 心得笔记</h3>
+  <div class="box box-red">
+    <div class="box-title">⚠️ 今天最反直觉的 3 件事</div>
+    <div>
+      <p><strong>1.</strong> AI 项目"零错误"是伪命题——正确写法是"Bad Case 90% 走兜底"。</p>
+      <p><strong>2.</strong> 指标不是越严越好——"准确率 95%" 无评测集比 "准确率 80% + 明确评测集" 更容易翻车。</p>
+      <p><strong>3.</strong> 同一个指标（如召回率）在漏报敏感 vs 误报敏感场景里方向相反——阈值贴场景，不能套模板。</p>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  学习笔记 · AI 项目经理成长 · FDE v2 · Day 17<br>
+  下一站 → Day 18 结营 · 雷达图重测 + 未来 3 个月成长路径
+</div>
+
+</div>
+</body>
+</html>

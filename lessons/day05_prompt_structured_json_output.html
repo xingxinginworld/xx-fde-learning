@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FDE v2 · Day 5 · Prompt 让模型稳定输出结构化 JSON</title>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-bg: #eff6ff;
+  --blue-dark: #1e40af;
+  --orange: #ea580c;
+  --orange-bg: #fff7ed;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --green: #059669;
+  --green-bg: #ecfdf5;
+  --yellow: #d97706;
+  --yellow-bg: #fffbeb;
+  --purple: #7c3aed;
+  --purple-bg: #f5f3ff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-800: #1f2937;
+  --text: #1a1a2e;
+  --text-light: #6b7280;
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: #f0f4f8; color: var(--text); line-height: 1.8; font-size: 16px;
+}
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+.hero {
+  background: linear-gradient(135deg, #1e3a5f 0%, #1a56db 55%, #0d7377 100%);
+  color: #fff; border-radius: var(--radius); padding: 32px 30px 26px; margin-bottom: 20px;
+}
+.hero-badge { display: inline-block; background: rgba(255,255,255,0.18); padding: 4px 14px; border-radius: 20px; font-size: 12px; margin-bottom: 10px; }
+.hero h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; }
+.hero .subtitle { font-size: 14.5px; opacity: 0.92; margin-bottom: 14px; line-height: 1.7; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; opacity: 0.85; }
+.hero-back { font-size: 12px; margin-top: 10px; opacity: 0.75; }
+.hero-back a { color: #fff; text-decoration: underline; }
+
+.card { background: #fff; border-radius: var(--radius); padding: 26px 26px 22px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.card h2 { font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.card h3 { font-size: 17px; font-weight: 600; color: var(--gray-800); margin: 22px 0 10px; padding-left: 12px; border-left: 3px solid var(--primary); }
+.card h4 { font-size: 15px; font-weight: 600; margin: 14px 0 8px; color: var(--gray-800); }
+p { margin-bottom: 10px; }
+code { background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-size: 14px; font-family: "Cascadia Code", "Fira Code", Consolas, monospace; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-size: 14px; }
+th { background: var(--primary); color: #fff; padding: 9px 12px; text-align: left; font-weight: 600; font-size: 13px; }
+td { padding: 9px 12px; border-bottom: 1px solid var(--gray-200); vertical-align: top; }
+tr:nth-child(even) td { background: var(--gray-50); }
+
+.box { border-radius: 8px; padding: 14px 16px; margin: 14px 0; border-left: 4px solid; font-size: 14.5px; }
+.box-blue { background: var(--primary-bg); border-color: var(--primary); }
+.box-green { background: var(--green-bg); border-color: var(--green); }
+.box-yellow { background: var(--yellow-bg); border-color: var(--yellow); }
+.box-red { background: var(--red-bg); border-color: var(--red); }
+.box-purple { background: var(--purple-bg); border-color: var(--purple); }
+.box-orange { background: var(--orange-bg); border-color: var(--orange); }
+.box-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+
+.mentor { background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%); border-radius: 10px; padding: 16px 18px; margin: 14px 0; border: 1px solid #dbeafe; position: relative; }
+.mentor::before { content: '👨‍🏫'; position: absolute; top: -12px; left: 16px; background: #fff; padding: 0 6px; font-size: 20px; }
+.mentor .mentor-title { font-weight: 700; color: var(--blue-dark); font-size: 14px; margin-bottom: 6px; margin-top: 4px; }
+.mentor .mentor-body { font-size: 14.5px; color: var(--gray-800); line-height: 1.75; }
+.mentor .mentor-body p { margin-bottom: 8px; }
+
+.goal-list { list-style: none; padding: 0; }
+.goal-list li { padding: 8px 0 8px 32px; position: relative; font-size: 15px; }
+.goal-list li::before { content: '🎯'; position: absolute; left: 4px; top: 8px; font-size: 15px; }
+
+.mnemonic { background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 10px; padding: 14px 18px; margin: 14px 0; text-align: center; }
+.mnemonic .m-title { font-size: 12px; color: #92400e; margin-bottom: 6px; letter-spacing: 2px; }
+.mnemonic .m-line { font-size: 18px; font-weight: 700; color: #78350f; letter-spacing: 3px; }
+.mnemonic .m-explain { font-size: 13px; color: #92400e; margin-top: 6px; }
+
+.cheatsheet { border: 2px dashed var(--primary); border-radius: 10px; padding: 16px 18px; margin: 14px 0; background: #f0f9ff; }
+.cheatsheet .cs-title { font-weight: 700; color: var(--blue-dark); font-size: 15px; margin-bottom: 10px; }
+
+.steps { counter-reset: step; margin: 12px 0; }
+.step-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px dashed var(--gray-200); }
+.step-item:last-child { border-bottom: none; }
+.step-item .step-num { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--primary); color: #fff; text-align: center; line-height: 34px; font-weight: 700; }
+.step-item .step-body { flex: 1; }
+.step-item .step-body strong { color: var(--blue-dark); }
+
+.quiz-item { border: 1px solid var(--gray-200); border-radius: 8px; margin: 10px 0; overflow: hidden; }
+.quiz-item summary { background: var(--primary-bg); padding: 12px 14px; cursor: pointer; font-weight: 600; color: var(--primary); font-size: 14.5px; }
+.quiz-item[open] summary { border-bottom: 1px solid var(--gray-200); }
+.quiz-body { padding: 12px 16px; }
+.quiz-options { list-style: none; padding: 0; }
+.quiz-options li { padding: 5px 0; font-size: 14px; }
+.quiz-answer { background: var(--green-bg); border-left: 3px solid var(--green); padding: 10px 12px; margin-top: 10px; font-size: 14px; border-radius: 4px; }
+.quiz-answer .ans-title { font-weight: 700; color: var(--green); margin-bottom: 6px; }
+.wrong-analysis { background: var(--red-bg); border-left: 3px solid var(--red); padding: 10px 12px; margin-top: 8px; font-size: 13.5px; border-radius: 4px; }
+.wrong-analysis .wa-title { font-weight: 700; color: var(--red); margin-bottom: 4px; }
+
+.case-block { border: 1px solid var(--gray-200); border-radius: 8px; margin: 12px 0; overflow: hidden; }
+.case-block summary { background: linear-gradient(135deg, #ede9fe, #ddd6fe); padding: 12px 14px; cursor: pointer; font-weight: 600; color: #5b21b6; font-size: 14.5px; }
+.case-block .case-body { padding: 14px 16px; font-size: 14px; }
+.case-block .case-body h5 { color: var(--blue-dark); margin: 10px 0 6px; font-size: 14px; }
+
+.interview-quote { background: linear-gradient(135deg, #1e3a5f, #1a56db); color: #fff; border-radius: 10px; padding: 18px 20px; margin: 14px 0; font-size: 15px; font-style: italic; line-height: 1.8; position: relative; }
+.interview-quote::before { content: '💼'; position: absolute; top: -10px; left: 16px; background: #fff; padding: 2px 6px; border-radius: 12px; font-size: 16px; }
+.interview-quote .iq-tag { display: block; font-size: 11px; opacity: 0.8; margin-bottom: 6px; font-style: normal; letter-spacing: 1px; }
+
+.footer { text-align: center; color: var(--text-light); font-size: 12px; padding: 20px 0 36px; border-top: 1px solid var(--gray-200); margin-top: 16px; }
+
+@media (max-width: 640px) {
+  .container { padding: 12px; }
+  .hero { padding: 24px 18px 20px; }
+  .hero h1 { font-size: 20px; }
+  .card { padding: 20px 16px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="hero">
+  <div class="hero-badge">FDE v2 · Phase 2 · Day 5</div>
+  <h1>📐 Prompt 让模型稳定输出结构化 JSON</h1>
+  <div class="subtitle">让模型输出 JSON 你以为很简单，实际 <strong>80% 的 Agent 应用死在这一步</strong>——今天教你把 JSON 输出稳定到 99%。这一节学不透，后面所有工具调用、Agent 编排都会像纸糊的一样，一戳就漏。</div>
+  <div class="hero-meta">
+    <span>🎯 Phase 2 · 让 LLM 输出可用</span>
+    <span>⏱️ 预计 70-90 分钟</span>
+    <span>🧭 补齐能力：③ 搭原型（可用性关）</span>
+  </div>
+  <div class="hero-back">FDE v2 学习路径 · <a href="./day00_fde_panorama_and_radar.html">← 回到 Day 0 起点校准</a></div>
+</div>
+
+<!-- 板块 1：今日目标 -->
+<div class="card">
+  <h2>🎯 一、今日目标</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>昨天你跑通了第一个 API 调用，恭喜。但那时候模型输出的是"人话"——一段中文。<strong>今天要让模型输出"程序话"——一段 JSON</strong>。因为一旦你想把 LLM 塞进真实业务系统，你就得让后面的代码能拿到<strong>结构化的字段</strong>，而不是自然语言。</p>
+      <p>我见过太多 PM 的第一版 Agent Demo：Prompt 里写"请返回 JSON"，前 5 次都成功，第 6 次模型突然回一句"好的，我来为您生成 JSON："——程序直接崩了。<strong>稳定不是 90%，稳定是 99% 以上</strong>，差的那 1% 决定客户敢不敢真上线。</p>
+      <p>今天不学高深理论，只教你把 JSON 输出从 60% 稳定到 99% 的<strong>四段策略</strong>。</p>
+    </div>
+  </div>
+
+  <ul class="goal-list">
+    <li>分清 <strong>Prompt 引导 vs response_format 强制</strong> 两个流派的区别和适用场景</li>
+    <li>记住 <strong>「Schema · 示例 · 校验 · 兜底」</strong> 四段口诀</li>
+    <li>拿到 <strong>5 种常见错法</strong> 的诊断和修复清单</li>
+    <li>会写一份 <strong>「三层防线」的稳定 JSON Prompt 模板</strong>，直接可套用</li>
+    <li>掌握 <strong>Pydantic 校验兜底</strong>——就算模型抽风，程序也不崩</li>
+  </ul>
+</div>
+
+<!-- 板块 2：核心讲解 -->
+<div class="card">
+  <h2>📖 二、核心讲解</h2>
+
+  <h3>是什么：让 LLM 稳定输出 JSON 的两个流派</h3>
+  <p>大白话——现在业界让模型吐 JSON 有两条路：</p>
+
+  <table>
+    <thead>
+      <tr><th style="width: 22%">流派</th><th style="width: 30%">核心做法</th><th>一句话对比</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>① Prompt 引导</strong></td><td>在 Prompt 里"说服"模型输出 JSON：给 Schema、给示例、加强调</td><td>通用、灵活，任何模型都能用；但稳定性靠 Prompt 功力</td></tr>
+      <tr><td><strong>② response_format 强制</strong></td><td>API 参数 <code>response_format={"type":"json_object"}</code>，平台层面强制</td><td>稳定性接近 100%，但只有部分模型支持（qwen-plus 及以上、GPT-4o 等）</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>实战建议：两个一起上。</strong>Prompt 里把 Schema 和示例写清楚，同时开启 <code>response_format</code>。这是把稳定性从 90% 提到 99% 的关键。</p>
+
+  <div class="mnemonic">
+    <div class="m-title">□ □ □ 稳定 JSON 四段口诀 □ □ □</div>
+    <div class="m-line">Schema · 示例 · 校验 · 兜底</div>
+    <div class="m-explain">写清结构 · 给个样本 · 代码验证 · 崩了不塌房</div>
+  </div>
+
+  <h3>为什么：JSON 输出的三个大坑</h3>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 1 · 只写"请返回 JSON"就期待稳定</div>
+    <div>
+      <p>你写 "请返回 JSON 格式" 的 Prompt，跑 100 次可能 60 次是干净的 JSON，剩下 40 次长这样：</p>
+      <pre style="background:#1e293b;color:#e2e8f0;padding:12px 14px;border-radius:6px;font-size:12.5px;line-height:1.6;">好的，根据您的合同文本，我为您生成 JSON：
+
+```json
+{"甲方": "XX 公司", ...}
+```
+
+希望对您有帮助，如有问题请随时联系。</pre>
+      <p>模型天生爱"包装解释"——礼貌习惯、Markdown 代码块、前后寒暄。你的 <code>json.loads()</code> 直接崩。</p>
+      <p><strong>正确姿势：</strong>Prompt 结尾加一句<strong>"只输出 JSON，不要 markdown 代码块，不要任何解释文字"</strong>，再配 few-shot 示例，稳定性立刻从 60% 到 90%。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 2 · Schema 写得太复杂，模型直接崩</div>
+    <div>
+      <p>见过一个案例——PM 让模型输出这样的结构：</p>
+      <pre style="background:#1e293b;color:#e2e8f0;padding:12px 14px;border-radius:6px;font-size:12.5px;line-height:1.6;">{
+  "合同": {
+    "主体": {
+      "甲方": {"公司": {"名称": "", "统一社会信用代码": ""},
+              "法人": {"姓名": "", "身份证": ""}},
+      "乙方": {同样嵌套 4 层}
+    }
+  }
+}</pre>
+      <p>4 层嵌套 + 20 多个字段，模型每次输出都有 5-8 处结构错乱：括号不匹配、字段拼错、类型混乱。模型不是不能干，是<strong>你给它挖了太深的坑</strong>。</p>
+      <p><strong>正确姿势：</strong>Schema 尽量<strong>扁平化到 2 层以内</strong>；复杂结构<strong>拆成多次调用</strong>（先抽 outline，再单独调用生成 detail）。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 3 · 没有代码校验兜底，拿到就用</div>
+    <div>
+      <p>模型 100 次里终究会有 1-2 次抽风——比如把金额 "800万" 输出成字符串而不是数字，把日期 "2025-01-15" 输出成 "2025年1月15日"。你后面的代码<code>result["金额"] + 100</code> 或 <code>datetime.parse()</code> 直接抛异常。</p>
+      <p>生产环境的核心原则：<strong>永远不要相信 LLM 的输出直接可用</strong>。校验 + 兜底是标配。</p>
+      <p><strong>正确姿势：</strong>用 Pydantic 定义数据模型（自带类型校验、必填、枚举、范围），拿到 LLM 输出先 <code>Model.parse_raw()</code>，失败就重试或走人工兜底。</p>
+    </div>
+  </div>
+
+  <div class="box box-blue">
+    <div class="box-title">🧭 PM 行动指南：JSON 稳定 4 段策略（缺一不可）</div>
+    <div>
+      <p><strong>段 1 · 明确 Schema</strong>：在 Prompt 里画出目标 JSON 的字段、类型、必填与否，写成一段 skeleton。</p>
+      <p><strong>段 2 · 提供示例</strong>：给 1-2 个 few-shot 完整示例，模型看着葫芦画瓢，稳定性大幅提升。</p>
+      <p><strong>段 3 · response_format 强制</strong>：API 层面开 <code>{"type":"json_object"}</code>——模型的输出必是合法 JSON。</p>
+      <p><strong>段 4 · 代码兜底</strong>：Pydantic 校验类型、重试机制、失败降级到人工。<em>四段全上，稳定性 99%+。</em></p>
+    </div>
+  </div>
+
+  <h3>怎么用：5 种常见错法的诊断与修复</h3>
+
+  <div class="box box-yellow">
+    <div class="box-title">❌ 错法 1 · 模型多返回一段解释文字</div>
+    <div>
+      <p><strong>症状：</strong>"好的，为您生成如下 JSON：<code>{...}</code>希望有帮助。"</p>
+      <p><strong>修复：</strong>
+        <br>① Prompt 末尾加狠话：<em>"只输出 JSON 对象本身，不要 markdown 代码块（```），不要任何前置说明或后置总结，第一个字符必须是 <code>{</code>。"</em>
+        <br>② 加 2 个 few-shot 示例（用 user/assistant 对话）——模型模仿力比记忆力强。
+      </p>
+    </div>
+  </div>
+
+  <div class="box box-yellow">
+    <div class="box-title">❌ 错法 2 · 引号、结构错乱（JSON parse 失败）</div>
+    <div>
+      <p><strong>症状：</strong>模型输出 <code>{"name": "张三", "age": 30,}</code>（多余逗号）或 <code>{'name': '张三'}</code>（单引号）。</p>
+      <p><strong>修复：</strong>
+        <br>① 上 <code>response_format={"type":"json_object"}</code>——阿里云百炼 qwen-plus 及以上支持，几乎解决所有语法问题。
+        <br>② 代码层 <code>try/except</code> 兜底，parse 失败就重试或让模型 self-correct。
+      </p>
+    </div>
+  </div>
+
+  <div class="box box-yellow">
+    <div class="box-title">❌ 错法 3 · 嵌套结构频繁崩</div>
+    <div>
+      <p><strong>症状：</strong>3-4 层嵌套的 Schema，每次输出都有字段位置错、层级错。</p>
+      <p><strong>修复：</strong>
+        <br>① Schema 分层设计——先让模型输出 outline（如"包含哪几节"），再对每一节单独调用生成 detail。
+        <br>② 扁平化——把 <code>合同.主体.甲方.公司.名称</code> 展开成 <code>甲方公司名称</code>，一层解决。
+      </p>
+    </div>
+  </div>
+
+  <div class="box box-yellow">
+    <div class="box-title">❌ 错法 4 · 数值/字符串类型混乱</div>
+    <div>
+      <p><strong>症状：</strong>金额 <code>"800万"</code> 而不是 <code>8000000</code>；日期 <code>"2025年1月15日"</code> 而不是 <code>"2025-01-15"</code>。</p>
+      <p><strong>修复：</strong>
+        <br>① Prompt 里明确类型：<em>"金额字段必须是数字（人民币元），签约日期字段格式必须是 YYYY-MM-DD"</em>。
+        <br>② 用 Pydantic 定义类型（<code>amount: int</code>、<code>sign_date: date</code>），parse 失败自动触发重试。
+      </p>
+    </div>
+  </div>
+
+  <div class="box box-yellow">
+    <div class="box-title">❌ 错法 5 · 长文本被截断，JSON 不闭合</div>
+    <div>
+      <p><strong>症状：</strong>输出最后一行是 <code>"key_terms": ["条款 1", "条款 2</code>——模型没说完就断了。</p>
+      <p><strong>修复：</strong>
+        <br>① 检查 <code>finish_reason</code>——是 <code>length</code> 就调大 <code>max_tokens</code>（1500 → 3000）。
+        <br>② 如果 JSON 天然大，改成"多次调用分段返回"（先返回字段列表，再一次一个字段填内容）。
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- 板块 3：动手步骤 -->
+<div class="card">
+  <h2>🛠️ 三、动手步骤：把"合同抽取"从 60% 迭代到 99%</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>下面这个案例是我在某国企法务合同分析项目里的真实迭代过程——三版 Prompt，失败率从 40% 降到 &lt;1%。你跟着走一遍，会对"Prompt 工程"这四个字有截然不同的理解。</p>
+    </div>
+  </div>
+
+  <details class="case-block" open>
+    <summary>📌 案例 A · 跟做：合同抽取 Prompt 三版迭代</summary>
+    <div class="case-body">
+      <h5>需求</h5>
+      <p>输入政企合同全文，输出结构化 JSON：<code>{甲方, 乙方, 合同金额, 签约日期, 履约期限}</code>。</p>
+
+      <h5>v1 · 最朴素版本（失败率 40%）</h5>
+      <pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;">SYSTEM_V1 = "你是合同分析助手，请从合同中抽取关键信息，以 JSON 格式返回。"
+
+# 常见失败：
+# 1. 加 markdown 代码块："```json\n{...}\n```"
+# 2. 前面加解释："好的，为您抽取如下："
+# 3. 金额是字符串 "800 万元" 不是数字
+# 4. 日期格式不统一：有的 "2025-01-15"，有的 "2025年1月15日"</pre>
+
+      <h5>v2 · 加 Schema + few-shot（失败率 15%）</h5>
+      <pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;">SYSTEM_V2 = """你是合同信息抽取助手。
+
+【输出 Schema】
+{
+  "party_a": "string, 甲方全称",
+  "party_b": "string, 乙方全称",
+  "amount_cny": "number, 合同金额（人民币元，纯数字）",
+  "sign_date": "string, 签约日期，格式 YYYY-MM-DD",
+  "duration_months": "number, 履约期限（月数）"
+}
+
+【示例】
+输入: 甲方 A 公司与乙方 B 公司于 2024 年 3 月 5 日签订采购合同，
+      金额人民币叁佰万元整（3,000,000），履约期 12 个月。
+输出: {"party_a":"A 公司","party_b":"B 公司","amount_cny":3000000,
+       "sign_date":"2024-03-05","duration_months":12}
+
+【硬约束】
+- 只输出 JSON 对象本身，第一个字符必须是 {
+- 不要 markdown 代码块（不要 ```json）
+- 不要任何前置说明或后置总结
+- 字段缺失填 null，绝不编造"""
+
+# 剩余失败：偶尔仍加解释文字；嵌套字段有时错位</pre>
+
+      <h5>v3 · 三层防线全上（失败率 &lt;1%）</h5>
+      <pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;"># contract_extractor_v3.py
+import os, json
+from datetime import date
+from typing import Optional
+from dotenv import load_dotenv
+from openai import OpenAI
+from pydantic import BaseModel, Field, ValidationError
+
+load_dotenv()
+client = OpenAI(
+    api_key=os.getenv("DASHSCOPE_API_KEY"),
+    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+)
+
+# 【防线 1 · Pydantic Schema】定义严格的数据契约
+class ContractInfo(BaseModel):
+    party_a: str = Field(description="甲方全称")
+    party_b: str = Field(description="乙方全称")
+    amount_cny: Optional[int] = Field(description="金额（元），未找到填 null")
+    sign_date: Optional[date] = Field(description="签约日期 YYYY-MM-DD")
+    duration_months: Optional[int] = Field(description="履约期（月），未找到填 null")
+
+SYSTEM = """你是合同信息抽取助手。严格按 Schema 抽取，未找到的字段填 null，绝不编造。
+
+【Schema】
+""" + json.dumps(ContractInfo.model_json_schema(), ensure_ascii=False, indent=2) + """
+
+【硬约束】
+- 只输出 JSON 对象；第一个字符必须是 {
+- 金额必须是纯数字（元），如"800 万"→ 8000000
+- 日期必须是 YYYY-MM-DD 格式
+- 不要 markdown、不要解释"""
+
+def extract(contract_text: str, max_retry: int = 2) -> Optional[ContractInfo]:
+    """抽取 + 校验 + 重试"""
+    for attempt in range(max_retry + 1):
+        try:
+            resp = client.chat.completions.create(
+                model="qwen-plus",
+                messages=[
+                    {"role": "system", "content": SYSTEM},
+                    {"role": "user", "content": contract_text},
+                ],
+                temperature=0.1,     # 【关键】抽取任务用最低温
+                # 【防线 2 · response_format 强制 JSON】
+                response_format={"type": "json_object"},
+            )
+            raw = resp.choices[0].message.content
+
+            # 【防线 3 · Pydantic 校验兜底】
+            return ContractInfo.model_validate_json(raw)
+
+        except ValidationError as e:
+            print(f"[第 {attempt+1} 次校验失败] {e.errors()[:1]}")
+            if attempt == max_retry:
+                # 校验彻底失败：降级到人工
+                return None
+        except json.JSONDecodeError as e:
+            print(f"[第 {attempt+1} 次 JSON parse 失败] {e}")
+            if attempt == max_retry:
+                return None
+    return None
+
+if __name__ == "__main__":
+    sample = open("contract.txt", encoding="utf-8").read()
+    info = extract(sample)
+    if info:
+        print(info.model_dump_json(indent=2, ensure_ascii=False))
+    else:
+        print("⚠️ 抽取失败，请人工复核")</pre>
+
+      <h5>效果对比</h5>
+      <table>
+        <thead><tr><th>版本</th><th>关键策略</th><th>失败率</th></tr></thead>
+        <tbody>
+          <tr><td>v1</td><td>只写"请返回 JSON"</td><td><span style="color:var(--red)">40%</span></td></tr>
+          <tr><td>v2</td><td>+ Schema + few-shot + 硬约束</td><td><span style="color:var(--yellow)">15%</span></td></tr>
+          <tr><td>v3</td><td>+ response_format + Pydantic + 重试</td><td><span style="color:var(--green)">&lt;1%</span></td></tr>
+        </tbody>
+      </table>
+
+      <div class="box box-green">
+        <div class="box-title">✅ v3 的三层防线</div>
+        <div>
+          <p><strong>模型层</strong>：Prompt 里 Schema + few-shot + 硬约束</p>
+          <p><strong>平台层</strong>：<code>response_format={"type":"json_object"}</code></p>
+          <p><strong>代码层</strong>：Pydantic 校验 + 重试 + 人工兜底</p>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 B · 自练 1：从会议纪要抽取决议 / 责任人 / deadline</summary>
+    <div class="case-body">
+      <p><strong>需求：</strong>政企常见——一段 300-500 字的会议纪要，抽取所有"决议事项"，每条包含 <em>内容、责任人、deadline、优先级(高/中/低)</em>。</p>
+
+      <p><strong>提示：</strong></p>
+      <ol style="margin-left: 24px;">
+        <li>Schema 是"列表 + 对象"（<code>{"decisions": [{...}, {...}]}</code>），别嵌太深；</li>
+        <li>用 Pydantic <code>Literal["高","中","低"]</code> 强制枚举；</li>
+        <li>责任人可能是"张总"这样的模糊称呼——Prompt 里说清楚"按原文保留，不要脑补真名"；</li>
+        <li>deadline 强制 <code>YYYY-MM-DD</code>；模型看到"下周三"要转成具体日期还是保留原文？——你决定，Prompt 里写清楚。</li>
+      </ol>
+
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--primary); font-weight: 600;">查看参考实现</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;">from typing import List, Literal, Optional
+from pydantic import BaseModel
+
+class Decision(BaseModel):
+    content: str                                # 决议内容
+    owner: str                                  # 责任人（原文保留）
+    deadline: Optional[str]                     # 保留原文表述，如"下周三"、"2025-06-30"
+    priority: Literal["高", "中", "低"]         # 强制枚举
+
+class MeetingResult(BaseModel):
+    decisions: List[Decision]
+
+SYSTEM = """你是会议纪要分析助手。
+从纪要中抽取所有决议事项，每条包含：内容、责任人、deadline、优先级。
+- 责任人按原文保留（如"张总"），不要脑补真名
+- deadline 保留原文表述
+- priority 只能是"高"/"中"/"低"，根据紧急程度和影响面判断
+- 无决议时返回 {"decisions": []}
+- 只输出 JSON 对象"""</pre>
+          <p><strong>关键点：</strong>用 <code>Literal</code> 卡死枚举值，模型只能选 3 个之一；空结果显式返回 <code>[]</code> 而不是空对象。</p>
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 C · 自练 2：Bug case——诊断失败的 Prompt</summary>
+    <div class="case-body">
+      <p><strong>场景：</strong>某同事写了一个员工请假单抽取器，反馈"100 次里 20 次会崩，客户炸了"。他的 Prompt 长这样：</p>
+      <pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;">SYSTEM = """请从请假申请中抽取信息，返回 JSON：
+{
+  "员工姓名": "",
+  "请假类型": "",
+  "开始时间": "",
+  "结束时间": "",
+  "天数": "",
+  "原因": ""
+}
+返回 JSON 就行。"""
+
+# 他的代码：
+resp = client.chat.completions.create(model="qwen-plus", messages=[...])
+result = json.loads(resp.choices[0].message.content)
+print(result["天数"] + 1)   # ← 这里经常崩</pre>
+
+      <p><strong>请你诊断：3 层问题分别是什么？怎么修？</strong></p>
+
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--primary); font-weight: 600;">查看参考答案</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <p><strong>问题 1 · 模型层</strong>：Prompt 没说"只输出 JSON、不要 markdown、不要解释"，模型经常包一层 ```json 或加解释文字 → <code>json.loads()</code> 挂。<em>修复：加硬约束 + few-shot。</em></p>
+          <p><strong>问题 2 · Schema 层</strong>：所有字段都是空字符串 <code>""</code>——模型不知道类型是啥。"天数" 有时是 <code>3</code>（数字）有时是 <code>"3天"</code>（字符串），后面 <code>+1</code> 直接崩。<em>修复：Schema 明确类型，"天数" 标注 <code>number</code>；上 Pydantic <code>days: float</code>。</em></p>
+          <p><strong>问题 3 · 代码层</strong>：没有 try/except、没有 response_format、没有重试。20% 失败率里有很大一块是本可以自动恢复的。<em>修复：加 <code>response_format={"type":"json_object"}</code>、Pydantic 校验、失败重试 2 次、彻底失败降级到人工。</em></p>
+          <p><strong>合计修复后：</strong>失败率从 20% 降到 &lt;1%。这就是"三层防线"的完整威力。</p>
+        </div>
+      </details>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 4：速查卡 -->
+<div class="card">
+  <h2>📇 四、速查卡</h2>
+
+  <div class="cheatsheet">
+    <div class="cs-title">📋 稳定 JSON Prompt 模板（直接套用）</div>
+    <pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:12.5px;line-height:1.7;">你是 {角色}。请从输入中抽取信息，严格按 Schema 返回 JSON。
+
+【Schema】
+{
+  "field_1": "类型（说明）",
+  "field_2": "类型（说明，枚举: A/B/C）",
+  ...
+}
+
+【示例】
+输入: {示例输入}
+输出: {对应的完整 JSON}
+
+【硬约束】
+- 只输出 JSON 对象本身，第一个字符必须是 {
+- 不要 markdown 代码块（不要 ```json）
+- 不要任何前置或后置解释文字
+- 字段类型严格匹配：数字就是数字，日期是 YYYY-MM-DD
+- 未找到的字段填 null，绝不编造
+- 枚举字段只能从给定选项中选</pre>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">✅ JSON 校验清单（Pydantic 常用）</div>
+    <table>
+      <thead><tr><th>约束类型</th><th>Pydantic 写法</th><th>用于</th></tr></thead>
+      <tbody>
+        <tr><td>类型</td><td><code>amount: int / date / float</code></td><td>金额、日期、数量</td></tr>
+        <tr><td>必填</td><td><code>name: str</code>（无默认值）</td><td>甲方、乙方等硬字段</td></tr>
+        <tr><td>可选</td><td><code>note: Optional[str] = None</code></td><td>备注、脚注</td></tr>
+        <tr><td>枚举</td><td><code>priority: Literal["高","中","低"]</code></td><td>优先级、状态、分类</td></tr>
+        <tr><td>范围</td><td><code>days: int = Field(ge=0, le=365)</code></td><td>请假天数、评分</td></tr>
+        <tr><td>正则</td><td><code>phone: str = Field(pattern=r"^1\\d{10}$")</code></td><td>手机号、身份证</td></tr>
+        <tr><td>列表</td><td><code>tags: List[str]</code></td><td>关键条款、标签</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">🔥 JSON 输出常见错误 Top 8 及一句话修复</div>
+    <table>
+      <thead><tr><th>错误</th><th>一句话修复</th></tr></thead>
+      <tbody>
+        <tr><td>包 markdown 代码块 ```json</td><td>Prompt 加"不要 markdown 代码块"</td></tr>
+        <tr><td>前后加解释文字</td><td>Prompt 加"第一个字符必须是 {"</td></tr>
+        <tr><td>单引号 / 尾随逗号</td><td>开 <code>response_format={"type":"json_object"}</code></td></tr>
+        <tr><td>字段类型混乱（数字变字符串）</td><td>Schema 标类型 + Pydantic 强校验</td></tr>
+        <tr><td>日期格式不统一</td><td>Prompt 强调 YYYY-MM-DD + Pydantic <code>date</code></td></tr>
+        <tr><td>嵌套层级错乱</td><td>扁平化 Schema，或拆多次调用</td></tr>
+        <tr><td>输出被截断，JSON 不闭合</td><td>调大 max_tokens + 检查 finish_reason</td></tr>
+        <tr><td>模型编造字段</td><td>Prompt 加"未找到填 null，绝不编造"</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 板块 5：5 题测验 -->
+<div class="card">
+  <h2>📝 五、5 题小测验</h2>
+  <p style="color: var(--gray-600); font-size: 14px;">建议先想 30 秒再翻答案。错项解析才是这一节的核心资产。</p>
+
+  <details class="quiz-item">
+    <summary>Q1 · 你的 JSON 输出经常被模型包一层 ```json\n{...}\n``` markdown，最合理的一线修复是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 让开发同学在代码里用正则清洗</li>
+        <li>B. Prompt 里加"只输出 JSON 对象本身，不要 markdown 代码块，第一个字符必须是 {"，并开启 response_format</li>
+        <li>C. 换个更贵的模型（qwen-max 就不会犯这种低级错）</li>
+        <li>D. 忽略这个问题，反正代码总能跑通</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>这是标准的"模型层+平台层"双管齐下：Prompt 明说不要 markdown + response_format 强制 JSON。这是 FDE 面对稳定性问题的第一反应——<strong>在信息源头治理，而不是在数据流末端擦屁股</strong>。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 是"补救思维"</strong>——正则清洗只能兜底，不能替代源头治理，模型下次换个错法你还得再写正则。<strong>C 错在把问题甩给成本</strong>——qwen-max 更贵但同样会犯 markdown 包装的错，不是模型档次问题。<strong>D 是不专业</strong>——生产环境 5% 的失败率乘以每天 10000 次调用就是每天 500 次崩溃。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q2 · 稳定 JSON 四段口诀是什么？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 温度 · 长度 · 重试 · 缓存</li>
+        <li>B. Schema · 示例 · 校验 · 兜底</li>
+        <li>C. 输入 · 输出 · 校验 · 部署</li>
+        <li>D. Prompt · 模型 · 参数 · 结果</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>Schema 定结构 → 示例给样本 → 校验守类型 → 兜底防崩塌。这四段对应了"模型看得懂"、"模型学得会"、"代码验得住"、"崩了不塌房"四个维度。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 混淆了参数调优和结构化输出</strong>——温度、重试是通用技术，不是 JSON 稳定的专属方法。<strong>C 太笼统</strong>——"输入·输出"不是可执行的策略，只是流程节点。<strong>D 是四大要素而非四段方法论</strong>——每个 LLM 应用都有这四要素，不专门解决 JSON 稳定问题。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q3 · 你的合同抽取器要求"金额必须是数字（元）"，但模型偶尔返回 "800万"，最合适的修复姿势？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. Prompt 里加"金额必须转成纯数字（元），如'800万'→8000000"，同时用 Pydantic <code>amount: int</code> 校验</li>
+        <li>B. 只加 Prompt 说明就够了，Pydantic 太重</li>
+        <li>C. 在业务代码里写一堆 if-else 把"800万"转成 8000000</li>
+        <li>D. 换更强的模型 qwen-max</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：A</div>
+        <p>这就是<strong>三层防线</strong>的典型体现——Prompt 说清楚（模型层）+ Pydantic 强类型（代码层）双重保险。Prompt 让模型 90% 时候做对，Pydantic 让剩下 10% 抽风的输出自动触发重试或降级。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>B 少了兜底</strong>——模型永远有几率抽风，没 Pydantic 校验意味着抽风的输出会直接流入下游业务，崩得更远。<strong>C 是把 LLM 稳定性问题转嫁给业务代码</strong>——每接入一个新格式就要改代码，维护地狱。<strong>D 是花钱解决勤奋</strong>——qwen-max 也会犯这种错，问题在于没建校验兜底体系。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q4 · 下列哪个 Schema 设计最容易让模型崩？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 扁平的 5 个字段：<code>{party_a, party_b, amount, date, duration}</code></li>
+        <li>B. 一层列表：<code>{decisions: [{content, owner, deadline}, ...]}</code></li>
+        <li>C. 4 层嵌套：<code>{合同:{主体:{甲方:{公司:{名称,代码}}}}}</code></li>
+        <li>D. 带枚举：<code>{priority: "高"|"中"|"低"}</code></li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：C</div>
+        <p>嵌套 4 层是模型的噩梦——括号平衡、字段位置、层级顺序，每一次输出都有多个可能出错的点。<strong>经验值：Schema 尽量扁平化到 2 层以内，超过就拆多次调用</strong>。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 是最稳定的形态</strong>——扁平结构，模型正确率最高。<strong>B 一层列表模型完全能搞定</strong>——few-shot 一次示例即可稳定。<strong>D 枚举反而提升稳定性</strong>——限定选项后模型不会瞎写，Pydantic Literal 还能校验。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q5 · 综合题——生产环境 Agent 一天调用 10 万次，JSON 稳定率要求 99.9%，你怎么设计？</summary>
+    <div class="quiz-body">
+      <p style="color: var(--gray-600); margin-bottom: 8px;">简答题，写出你的四段策略。</p>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 参考答案</div>
+        <p><strong>段 1 · 模型层</strong>：Prompt 里完整 Schema + 2-3 个 few-shot + 硬约束（不要 markdown / 只输出 JSON / 字段类型强调 / 未知填 null 不编造）。</p>
+        <p><strong>段 2 · 平台层</strong>：<code>response_format={"type":"json_object"}</code>；<code>temperature=0.1</code>；<code>max_tokens</code> 留 30% 冗余；每次检查 <code>finish_reason</code>。</p>
+        <p><strong>段 3 · 代码层</strong>：Pydantic 严格模型定义（类型/必填/枚举/范围/正则）；parse 失败自动重试 2 次（第二次可把"上次错在哪"塞回 Prompt 让 self-correct）；仍失败降级到人工队列。</p>
+        <p><strong>段 4 · 可观测层</strong>：把每次 JSON 校验失败、finish_reason=length、重试次数都打到监控——<strong>PM 视角看板必备</strong>。JSON 稳定率是生产 Agent 的核心 KPI。</p>
+        <p><strong>面试金句预埋：</strong><em>"稳定 JSON 从来不是一层能解决的问题——模型层 + 平台层 + 代码层 + 可观测层，一层都不能少。"</em></p>
+      </div>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 6：面试金句 + 心得笔记 -->
+<div class="card">
+  <h2>💼 六、面试金句预埋</h2>
+
+  <div class="interview-quote">
+    <span class="iq-tag">稳定性至上 · 三层防线</span>
+    "让 LLM 稳定输出 JSON 从来不是一层能解决的问题。我的做法是<strong>三层防线</strong>——模型层 Prompt 写清 Schema 和 few-shot，平台层用 response_format 强制，代码层用 Pydantic 校验兜底加重试。三层全上，稳定率从 60% 干到 99% 以上。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">Schema 优先 · 契约思维</span>
+    "我把 LLM 的输出当成<strong>接口契约</strong>来管——Schema 就是 API 定义。字段类型、必填、枚举、范围都要写死，模型只是这个契约的一个实现方。契约稳了，业务代码就稳，客户才敢真上线。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">代码兜底文化 · 永远不信任 LLM</span>
+    "我给团队立的规矩——<strong>永远不要相信 LLM 的输出直接可用</strong>。哪怕它 999 次都对，那第 1000 次抽风就能让整个系统崩。Pydantic 校验、失败重试、人工降级是标配。这不是不信任 AI，这是工程负责。"
+  </div>
+
+  <h3>📓 心得笔记</h3>
+  <div class="box box-red">
+    <div class="box-title">⚠️ 今天最反直觉的 3 件事</div>
+    <div>
+      <p><strong>1.</strong> "请返回 JSON"这五个字的稳定率只有 60%——<strong>Prompt 工程从这里才真正开始</strong>。<em>（PM 常见误区：以为写清楚就够了，其实模型比你想的会走神。）</em></p>
+      <p><strong>2.</strong> Schema 不是越详细越好——<strong>层级超过 2 层就要拆</strong>。<em>（工程直觉：模型和你一样，看深度嵌套的东西也会晕。）</em></p>
+      <p><strong>3.</strong> 生产环境不看单次成功率，看的是 <strong>99.9% 稳定率下的 P99 延迟</strong>。<em>（管理直觉：从"能跑"到"能生产"之间的差距，就是一个 FDE 的价值。）</em></p>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  学习笔记 · AI 项目经理成长 · FDE v2 · Day 5<br>
+  上一站 ← Day 4 · 下一站 → Day 6 Function Calling 让模型调工具
+</div>
+
+</div>
+</body>
+</html>

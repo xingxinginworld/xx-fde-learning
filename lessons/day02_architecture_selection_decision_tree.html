@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FDE v2 · Day 2 · 架构选型决策树</title>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-bg: #eff6ff;
+  --blue-dark: #1e40af;
+  --orange: #ea580c;
+  --orange-bg: #fff7ed;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --green: #059669;
+  --green-bg: #ecfdf5;
+  --yellow: #d97706;
+  --yellow-bg: #fffbeb;
+  --purple: #7c3aed;
+  --purple-bg: #f5f3ff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-800: #1f2937;
+  --text: #1a1a2e;
+  --text-light: #6b7280;
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: #f0f4f8; color: var(--text); line-height: 1.8; font-size: 16px;
+}
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+.hero {
+  background: linear-gradient(135deg, #1e3a5f 0%, #1a56db 55%, #0d7377 100%);
+  color: #fff; border-radius: var(--radius); padding: 32px 30px 26px; margin-bottom: 20px;
+}
+.hero-badge { display: inline-block; background: rgba(255,255,255,0.18); padding: 4px 14px; border-radius: 20px; font-size: 12px; margin-bottom: 10px; }
+.hero h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; }
+.hero .subtitle { font-size: 14.5px; opacity: 0.92; margin-bottom: 14px; line-height: 1.7; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; opacity: 0.85; }
+.hero-back { font-size: 12px; margin-top: 10px; opacity: 0.75; }
+.hero-back a { color: #fff; text-decoration: underline; }
+
+.card { background: #fff; border-radius: var(--radius); padding: 26px 26px 22px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.card h2 { font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.card h3 { font-size: 17px; font-weight: 600; color: var(--gray-800); margin: 22px 0 10px; padding-left: 12px; border-left: 3px solid var(--primary); }
+.card h4 { font-size: 15px; font-weight: 600; margin: 14px 0 8px; color: var(--gray-800); }
+p { margin-bottom: 10px; }
+code { background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-size: 14px; font-family: "Cascadia Code", "Fira Code", Consolas, monospace; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-size: 14px; }
+th { background: var(--primary); color: #fff; padding: 9px 12px; text-align: left; font-weight: 600; font-size: 13px; }
+td { padding: 9px 12px; border-bottom: 1px solid var(--gray-200); vertical-align: top; }
+tr:nth-child(even) td { background: var(--gray-50); }
+
+.box { border-radius: 8px; padding: 14px 16px; margin: 14px 0; border-left: 4px solid; font-size: 14.5px; }
+.box-blue { background: var(--primary-bg); border-color: var(--primary); }
+.box-green { background: var(--green-bg); border-color: var(--green); }
+.box-yellow { background: var(--yellow-bg); border-color: var(--yellow); }
+.box-red { background: var(--red-bg); border-color: var(--red); }
+.box-purple { background: var(--purple-bg); border-color: var(--purple); }
+.box-orange { background: var(--orange-bg); border-color: var(--orange); }
+.box-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+
+/* 导师说 */
+.mentor { background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%); border-radius: 10px; padding: 16px 18px; margin: 14px 0; border: 1px solid #dbeafe; position: relative; }
+.mentor::before { content: '👨‍🏫'; position: absolute; top: -12px; left: 16px; background: #fff; padding: 0 6px; font-size: 20px; }
+.mentor .mentor-title { font-weight: 700; color: var(--blue-dark); font-size: 14px; margin-bottom: 6px; margin-top: 4px; }
+.mentor .mentor-body { font-size: 14.5px; color: var(--gray-800); line-height: 1.75; }
+.mentor .mentor-body p { margin-bottom: 8px; }
+
+/* 目标清单 */
+.goal-list { list-style: none; padding: 0; }
+.goal-list li { padding: 8px 0 8px 32px; position: relative; font-size: 15px; }
+.goal-list li::before { content: '🎯'; position: absolute; left: 4px; top: 8px; font-size: 15px; }
+
+/* 口诀卡 */
+.mnemonic { background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 10px; padding: 14px 18px; margin: 14px 0; text-align: center; }
+.mnemonic .m-title { font-size: 12px; color: #92400e; margin-bottom: 6px; letter-spacing: 2px; }
+.mnemonic .m-line { font-size: 18px; font-weight: 700; color: #78350f; letter-spacing: 3px; }
+.mnemonic .m-explain { font-size: 13px; color: #92400e; margin-top: 6px; }
+
+/* 速查卡 */
+.cheatsheet { border: 2px dashed var(--primary); border-radius: 10px; padding: 16px 18px; margin: 14px 0; background: #f0f9ff; }
+.cheatsheet .cs-title { font-weight: 700; color: var(--blue-dark); font-size: 15px; margin-bottom: 10px; }
+
+/* 步骤 */
+.steps { counter-reset: step; margin: 12px 0; }
+.step-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px dashed var(--gray-200); }
+.step-item:last-child { border-bottom: none; }
+.step-item .step-num { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--primary); color: #fff; text-align: center; line-height: 34px; font-weight: 700; }
+.step-item .step-body { flex: 1; }
+.step-item .step-body strong { color: var(--blue-dark); }
+
+/* 测验 */
+.quiz-item { border: 1px solid var(--gray-200); border-radius: 8px; margin: 10px 0; overflow: hidden; }
+.quiz-item summary { background: var(--primary-bg); padding: 12px 14px; cursor: pointer; font-weight: 600; color: var(--primary); font-size: 14.5px; }
+.quiz-item[open] summary { border-bottom: 1px solid var(--gray-200); }
+.quiz-body { padding: 12px 16px; }
+.quiz-options { list-style: none; padding: 0; }
+.quiz-options li { padding: 5px 0; font-size: 14px; }
+.quiz-answer { background: var(--green-bg); border-left: 3px solid var(--green); padding: 10px 12px; margin-top: 10px; font-size: 14px; border-radius: 4px; }
+.quiz-answer .ans-title { font-weight: 700; color: var(--green); margin-bottom: 6px; }
+.wrong-analysis { background: var(--red-bg); border-left: 3px solid var(--red); padding: 10px 12px; margin-top: 8px; font-size: 13.5px; border-radius: 4px; }
+.wrong-analysis .wa-title { font-weight: 700; color: var(--red); margin-bottom: 4px; }
+
+/* 案例块 */
+.case-block { border: 1px solid var(--gray-200); border-radius: 8px; margin: 12px 0; overflow: hidden; }
+.case-block summary { background: linear-gradient(135deg, #ede9fe, #ddd6fe); padding: 12px 14px; cursor: pointer; font-weight: 600; color: #5b21b6; font-size: 14.5px; }
+.case-block .case-body { padding: 14px 16px; font-size: 14px; }
+.case-block .case-body h5 { color: var(--blue-dark); margin: 10px 0 6px; font-size: 14px; }
+
+/* 面试金句 */
+.interview-quote { background: linear-gradient(135deg, #1e3a5f, #1a56db); color: #fff; border-radius: 10px; padding: 18px 20px; margin: 14px 0; font-size: 15px; font-style: italic; line-height: 1.8; position: relative; }
+.interview-quote::before { content: '💼'; position: absolute; top: -10px; left: 16px; background: #fff; padding: 2px 6px; border-radius: 12px; font-size: 16px; }
+.interview-quote .iq-tag { display: block; font-size: 11px; opacity: 0.8; margin-bottom: 6px; font-style: normal; letter-spacing: 1px; }
+
+.footer { text-align: center; color: var(--text-light); font-size: 12px; padding: 20px 0 36px; border-top: 1px solid var(--gray-200); margin-top: 16px; }
+
+@media (max-width: 640px) {
+  .container { padding: 12px; }
+  .hero { padding: 24px 18px 20px; }
+  .hero h1 { font-size: 20px; }
+  .card { padding: 20px 16px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="hero">
+  <div class="hero-badge">FDE v2 · Phase 1 · Day 2</div>
+  <h1>🧭 架构选型决策树</h1>
+  <div class="subtitle">客户说要 AI 助手 → 你要选<strong>工作流、RAG、Agent 还是 Multi-Agent</strong>？<strong>选错一步，代码写得再好也白搭</strong>。今天不学怎么搭，只学怎么选——一张决策树 + 三个真实政企场景，选完你敢在客户面前拍板。</div>
+  <div class="hero-meta">
+    <span>🎯 Phase 1 · 需求到方案</span>
+    <span>⏱️ 预计 65-75 分钟</span>
+    <span>🧭 补齐能力：② 会翻译（2.4 → 3.5）</span>
+  </div>
+  <div class="hero-back">FDE v2 学习路径 · <a href="./day00_fde_panorama_and_radar.html">← 回到 Day 0 起点校准</a> · <a href="./day01_ai_fit_and_requirement_breakdown.html">← Day 1 AI 适配判断</a></div>
+</div>
+
+<!-- 板块 1：今日目标 -->
+<div class="card">
+  <h2>🎯 一、今日目标</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>Day 1 你学会了判断"该不该做"，今天要跨到下一步——<strong>该怎么做</strong>。这是 FDE 和普通 PM 最锋利的分水岭：普通 PM 写"我们采用 AI 大模型技术方案"就交差了，FDE 得敢说"这场景应该用 RAG + 工作流，不该用 Agent，因为……"。</p>
+      <p>你的雷达图里 ② 会翻译 = 2.4，弱点就在这。<strong>翻译不是把中文翻成技术黑话，是把客户模糊的"我要 AI"翻成"我要哪一种 AI 架构"</strong>。今天这 70 分钟就补这个。</p>
+      <p>选架构最反直觉的一点：<strong>越牛的架构不等于越好</strong>。政企场景里，能用工作流搞定的坚决别上 Agent——一个稳定可控的工作流，永远比一个"看起来智能但每次结果都飘"的 Agent 值钱。</p>
+    </div>
+  </div>
+
+  <ul class="goal-list">
+    <li>说清 <strong>工作流 / RAG / Agent / Multi-Agent 四种架构</strong> 各自的定位、成本、适用边界</li>
+    <li>掌握 <strong>「五问决策树」</strong>，5 分钟把一个模糊 AI 需求映射到具体架构</li>
+    <li>识别 <strong>3 个高频架构选型陷阱</strong>，遇到会本能刹车</li>
+    <li>能在客户面前说出 <strong>「我为什么选 X 不选 Y」</strong> 的完整技术论证</li>
+  </ul>
+</div>
+
+<!-- 板块 2：核心讲解 -->
+<div class="card">
+  <h2>📖 二、核心讲解</h2>
+
+  <h3>是什么：四种主流 AI 架构，一句话说清</h3>
+  <p>先别急着背概念——你只要记住一件事：<strong>四种架构解决的是"AI 什么时候动脑、动多少脑"的问题</strong>。工作流几乎不让 AI 动脑；Multi-Agent 是让好几个 AI 各自动脑还得会开会。中间的复杂度和成本，可以差 10 倍。</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 15%">架构</th>
+        <th style="width: 26%">一句话定义</th>
+        <th style="width: 14%">复杂度</th>
+        <th style="width: 14%">相对成本</th>
+        <th>典型示例（政企场景）</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>工作流<br>Workflow</strong></td>
+        <td>预定义好的固定步骤，AI 只在某几个节点里做局部智能（抽取 / 分类 / 改写）</td>
+        <td>低 ★</td>
+        <td>1 倍</td>
+        <td>合同关键字段抽取 → 查风险库 → 出审阅报告</td>
+      </tr>
+      <tr>
+        <td><strong>RAG<br>检索增强</strong></td>
+        <td>先从知识库检索相关片段，再让 LLM 基于这些片段有依据地生成答案</td>
+        <td>低-中 ★★</td>
+        <td>1.5 倍</td>
+        <td>员工制度问答、政策文件查询、产品手册助手</td>
+      </tr>
+      <tr>
+        <td><strong>Agent<br>智能体</strong></td>
+        <td>模型自主决策"下一步调哪个工具、传什么参数"，可多轮循环直到完成任务</td>
+        <td>中-高 ★★★★</td>
+        <td>3-5 倍</td>
+        <td>物资评标辅助（查 ERP + 查历史标 + 打分 + 生成建议）</td>
+      </tr>
+      <tr>
+        <td><strong>Multi-Agent<br>多智能体</strong></td>
+        <td>多个 Agent 分工协作，各自扮演不同角色，通过消息 / 编排完成一个大任务</td>
+        <td>高 ★★★★★</td>
+        <td>5-10 倍</td>
+        <td>投标全流程（招标解读 Agent + 方案撰写 Agent + 报价评审 Agent + 合规审查 Agent）</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>反直觉的地方：</strong>你以为"更智能 = 更好"，实际上政企客户 90% 的场景，<strong>工作流 + RAG 就打完了</strong>。Agent 是给"步骤真的定不下来"的场景准备的，Multi-Agent 更是稀有——一个人搞得定的活别硬拆成三个人开会。</p>
+
+  <div class="mnemonic">
+    <div class="m-title">□ □ □ 架构选型口诀 □ □ □</div>
+    <div class="m-line">步骤定 → 工作流</div>
+    <div class="m-line">找答案 → RAG</div>
+    <div class="m-line">要决策 → Agent</div>
+    <div class="m-line">要分工 → 多 Agent</div>
+    <div class="m-explain">四把钥匙对四种锁 · 选错一把整栋楼白装修</div>
+  </div>
+
+  <h3>为什么：三个把项目搞崩的高频陷阱</h3>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 陷阱 1 · 简单场景硬上 Agent（"AI 秀肌肉"型翻车）</div>
+    <div>
+      <p>客户要一个"智能报销助手"，你觉得工作流不够酷，硬做了个 Agent——让它自主决定"先查预算表还是先查发票 OCR"。结果同一张报销单跑两次给出不同结论，客户一测就发现，直接叫停。</p>
+      <p>Agent 的核心特征是 <strong>「自主决策 = 输出不稳定」</strong>。政企场景最怕输出不稳定——审计和合规部一句"上次这么判、这次那么判"你就没法回答。</p>
+      <p><strong>正确姿势：</strong>步骤能定的坚决用工作流。Agent 的自主性只留给"步骤真的没法预先定死"的场景。<em>成本对比：一样一个报销场景，Agent 方案月推理成本是工作流的 5 倍，效果反而更飘。</em></p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 陷阱 2 · 复杂场景用工作流硬撑（灵活性透支）</div>
+    <div>
+      <p>物资评标辅助——涉及 ERP 供应商查询、历史投标数据、评分规则、多轮补充问询。你把它做成 20 个节点的工作流，写死了流程。上线三个月，客户说"这次品类不一样，评标规则也变了"——你发现每加一个品类就要改 5 个节点，一年下来工作流像意大利面。</p>
+      <p><strong>怎么判断"该升级到 Agent"？</strong>看两个信号：① 分支超过 3 层且分支条件在业务上真的多变；② 需求变更每次都要动核心流程逻辑。这两个信号出现，说明工作流的"预定义"假设已经不成立了。</p>
+      <p><strong>正确姿势：</strong>核心决策交给 Agent，工具（查 ERP、查历史标）保持稳定接口。Agent 层做"调用编排"，工具层做"稳定执行"——变化和稳定分层。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 陷阱 3 · 把 RAG 和 Agent 当成对立选项</div>
+    <div>
+      <p>面试或客户答辩里最容易翻的坑——被问"你为什么选 RAG 不选 Agent"，慌了直接回答"因为 RAG 简单"。错。<strong>RAG 是知识来源的解法，Agent 是决策架构的解法，两者根本不在同一维度</strong>。一个 Agent 可以内嵌 RAG（Agent 决定"要不要查、查什么"），一个工作流的某个节点也可以用 RAG。</p>
+      <p>正确的对立关系是：<strong>工作流 vs Agent（决策方式对立）</strong>、<strong>RAG vs 微调 vs 提示工程（知识来源对立）</strong>。混用这两组，客户一眼看穿你没搞懂。</p>
+      <p><strong>正确姿势：</strong>回答时分两层——"知识层我们用 RAG，因为知识频繁更新不适合微调；架构层我们用工作流，因为审批步骤确定。" 这才是 FDE 的表达。</p>
+    </div>
+  </div>
+
+  <div class="box box-blue">
+    <div class="box-title">🧭 PM 行动指南：选架构前必须先答的 3 个问题</div>
+    <div>
+      <p><strong>Q1 · 步骤固定吗？</strong>——如果 80% 的场景走同一条主流程，工作流足够；分支 &gt; 3 层且难穷举，才考虑 Agent。</p>
+      <p><strong>Q2 · 需要外部知识吗？</strong>——需要引用大量文档 / 政策 / 手册 → RAG；只用模型内置常识 → 不用 RAG。（这个问题独立于架构选型，任何架构都可能挂 RAG）</p>
+      <p><strong>Q3 · 需要多步决策 & 工具调用吗？</strong>——需要"先查 A，看结果再决定查不查 B"这种动态编排 → Agent；一条直线走到底 → 工作流。</p>
+      <p>三问答完，架构基本就落地了。<em>写在方案首页的架构选型段，本质就是把这 3 个问题的答案写清楚。</em></p>
+    </div>
+  </div>
+
+  <h3>怎么用：五步决策树，5 分钟落地一个架构</h3>
+
+  <div class="steps">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>第一问 · 是不是问答类需求？</strong>——"我要一个能回答 XX 问题的助手" → 主干走 RAG。如果是"我要一个能干 XX 事情的助手" → 走后续问题。<em>问答 vs 办事，第一刀分开。</em>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>第二问 · 主流程有没有 SOP？</strong>——客户能画出流程图 / 有明文 SOP，答"能" → 工作流打底。答"能画出主干但异常路径多" → 工作流 + 少量 AI 节点。答"每次都不一样" → Agent 候选。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>第三问 · 需不需要调多个外部系统 / 工具？</strong>——不需要 → 工作流 / RAG。需要且工具调用顺序<em>可以预定</em> → 工作流串联。需要且顺序<em>依赖上一步的结果</em> → Agent。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>第四问 · 一个 Agent 装得下吗？</strong>——如果 Agent 的 prompt 已经超过 3000 字、要它扮演 3 种以上角色、决策路径超过 8 步 → 拆成 Multi-Agent。否则单 Agent 优先。<em>Multi-Agent 是最后手段，不是默认选项。</em>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>第五问 · 演化路径想清楚了吗？</strong>——政企项目要考虑二期、三期。工作流 → Agent 的升级路径要提前留（把 AI 节点封装成工具）；不要一步跳到 Multi-Agent 再回头砍。<em>方案文档里写清"为什么现在选 X，未来什么条件升级到 Y"。</em>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 板块 3：动手步骤 -->
+<div class="card">
+  <h2>🛠️ 三、动手步骤：三个政企场景过决策树</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>选架构不是 PPT 上写几行字就完了。你要在客户会议上，被业务和 IT 双向盘问的时候，撑得住每一问。下面三个案例都是政企常见的——第一个我带你走完，后两个自己练，练完再对参考答案。</p>
+      <p>练的时候刻意用 <strong>「五问决策树」</strong> 记笔记：每一问的答案是什么、依据是什么、有没有反例。这个记录本身就是你未来方案文档架构章节的初稿。</p>
+    </div>
+  </div>
+
+  <details class="case-block" open>
+    <summary>📌 案例 A · 政企合同智能审阅助手（跟着做）</summary>
+    <div class="case-body">
+      <h5>客户原话</h5>
+      <p>"我们法务每天要审 30 份合同，最花时间的是找关键条款——付款条件、违约金、免责范围——然后对比我们公司的合规红线。我要一个 AI 帮法务预审，重点条款和风险点先给圈出来。"</p>
+
+      <h5>Step 1 · 是问答类吗？</h5>
+      <p>不是。是"办事"——从合同里抽东西、对比、生成报告。<strong>排除纯 RAG 主干。</strong></p>
+
+      <h5>Step 2 · 主流程有 SOP 吗？</h5>
+      <p>有。法务已经有清晰的审阅 SOP：解析合同 → 抽关键条款 → 对比红线库 → 标风险等级 → 出报告。<strong>工作流打底候选。</strong></p>
+
+      <h5>Step 3 · 要不要调多系统？</h5>
+      <p>要——合规红线库（企业内网）+ 历史合同库（可选）。但调用顺序完全可预定，不需要动态决策。<strong>工作流串联即可。</strong></p>
+
+      <h5>Step 4 · 需不需要 RAG？</h5>
+      <p>需要。合规红线库是频繁更新的知识（法务季度更新条款），非常适合挂 RAG。<strong>工作流 + RAG 混合。</strong></p>
+
+      <h5>Step 5 · 演化路径</h5>
+      <p>一期工作流 + RAG 落地；二期若客户要"审阅后自动起草修改建议 → 发邮件给对方"，再考虑把审阅结果输出到一个轻量 Agent 做后续动作编排。</p>
+
+      <h5>结论 & 架构图（文字版）</h5>
+      <div class="box box-green">
+        <div class="box-title">✅ 最终架构：工作流 + RAG</div>
+        <div>
+          <p><code>[合同上传] → [OCR/解析] → [LLM 抽条款] → [RAG 检索红线库] → [LLM 打风险等级] → [模板化报告输出]</code></p>
+          <p>AI 只在"抽条款"和"打风险等级"两个节点里发挥智能，其他都是确定性代码。稳定、可解释、成本低。</p>
+        </div>
+      </div>
+
+      <h5>对客户话术</h5>
+      <p>"审阅流程本身已经很清晰，我们把它做成工作流；红线库频繁更新，我们挂 RAG 让 AI 每次都读最新版本。<strong>不上 Agent，是因为 Agent 输出会飘，法务审阅要求可解释、可复盘</strong>。"</p>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 B · 员工政策问答助手（自己练）</summary>
+    <div class="case-body">
+      <p><strong>客户原话：</strong>"我们集团制度文件有 200 多份，员工问到差旅、请假、报销、股权激励，HR 天天当搜索引擎用。做一个 AI 助手让员工自己问。"</p>
+      <p style="color: var(--gray-500);">试着走一遍五问，重点想清楚：<em>为什么不该上 Agent</em>。</p>
+
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--primary); font-weight: 600;">查看参考答案</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <p><strong>结论：纯 RAG。不上 Agent。</strong></p>
+          <p><strong>五问走查：</strong></p>
+          <ul style="margin-left: 20px;">
+            <li>Q1 · 问答类吗？—— 100% 是。</li>
+            <li>Q2 · 有 SOP 吗？—— 无所谓，不涉及流程。</li>
+            <li>Q3 · 要调外部系统吗？—— 不需要，就是查制度库。</li>
+            <li>Q4 · 一个 Agent 装得下吗？—— 根本不需要 Agent。</li>
+            <li>Q5 · 演化？—— 若二期要"结合员工个人信息答'我还剩几天年假'"，才加一个查 HR 系统的工具，那时再考虑轻量 Agent。</li>
+          </ul>
+          <p><strong>为什么不上 Agent（关键论证）：</strong>Agent 的价值在"动态决策工具调用"，这里根本没有多工具、没有决策分支。硬上 Agent 只会：① 成本上升 3-5 倍；② 有一定概率不去检索直接拿模型内部知识瞎答（幻觉风险陡增）；③ 客户合规团队会问"AI 决策依据是什么"你答不上来。</p>
+          <p><strong>对客户话术：</strong>"这个场景我们建议用 RAG 而非 Agent——制度问答需要每一句都有出处可查，RAG 天然带引用；Agent 反而可能不查文档直接编答案。"</p>
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 C · 某单位物资评标辅助（自己练 · 难度 ★★★★）</summary>
+    <div class="case-body">
+      <p><strong>客户原话：</strong>"评标专家每次评一个大品类要看 40+ 家投标供应商，涉及资质核验、历史业绩查询、报价合理性、技术方案打分。我要一个 AI 助手，能像一个初级评标员一样帮我预打分、找疑点、生成初评报告。"</p>
+      <p style="color: var(--gray-500);">试着走一遍五问，重点想清楚：<em>什么条件下从 Agent 升级到 Multi-Agent</em>。</p>
+
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--primary); font-weight: 600;">查看参考答案</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <p><strong>结论：一期用 Agent + RAG；二期视复杂度升级到 Multi-Agent。</strong></p>
+          <p><strong>五问走查：</strong></p>
+          <ul style="margin-left: 20px;">
+            <li>Q1 · 问答类？—— 不是，是"打分 + 生成报告"，办事型。</li>
+            <li>Q2 · 有 SOP？—— 主干有（资质→业绩→报价→技术），但每个环节的具体检查项和权重按品类变化，SOP 覆盖率约 60%。</li>
+            <li>Q3 · 要调多系统？—— 要。至少 3 个：ERP 供应商库、历史评标数据库、企业信用外部 API。而且顺序有依赖——先看资质通不通过，通过再查业绩；报价合理性要参考历史中标价（前一步的输出决定后一步查什么）。<strong>这是典型的 Agent 场景</strong>。</li>
+            <li>Q4 · 单 Agent 装得下？—— 一期够。四类检查融在一个 prompt 里，大约 2000-2500 字，还没爆。</li>
+            <li>Q5 · 演化路径？—— 二期如果客户要"每类检查生成独立子报告 + 各角色专家复核意见"，此时单 Agent 的 prompt 会爆到 4000 字以上，就该拆成 Multi-Agent（资质 Agent、业绩 Agent、报价 Agent、技术 Agent + 一个总协调 Agent）。</li>
+          </ul>
+          <p><strong>什么时候必须升级到 Multi-Agent（三个信号）：</strong></p>
+          <ul style="margin-left: 20px;">
+            <li>① 单 Agent 的 prompt &gt; 3500 字，且再加内容会稀释指令跟随；</li>
+            <li>② 不同角色需要不同的知识库 / 工具权限（比如资质 Agent 能访问工商数据，报价 Agent 能访问历史标价，权限要隔离）；</li>
+            <li>③ 有明确的"多轮讨论/交叉复核"业务需求（比如两个 Agent 意见不一致要出仲裁流程）。</li>
+          </ul>
+          <p><strong>反直觉提醒：</strong>Multi-Agent 不是"更牛"，是"更复杂、更难调、更贵"。一期能用单 Agent 跑通的，坚决不要一步跳 Multi-Agent——你会花 3 倍时间调 Agent 间的通信协议，业务价值反而没上去。</p>
+          <p><strong>对客户话术：</strong>"一期我们用一个统一的评标 Agent + RAG（挂业务规则库和历史标价库）跑通主流程；等您专家提出'不同品类要不同角色分工'的时候，我们升级到 Multi-Agent，这个升级路径我们在方案里给您画出来了。"</p>
+        </div>
+      </details>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 4：速查卡 -->
+<div class="card">
+  <h2>📇 四、速查卡</h2>
+
+  <div class="cheatsheet">
+    <div class="cs-title">🗂️ 四种架构对照表（贴屏用）</div>
+    <table>
+      <thead>
+        <tr>
+          <th>架构</th>
+          <th>选它的信号</th>
+          <th>不选它的信号</th>
+          <th>典型翻车</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>工作流</strong></td>
+          <td>主流程 SOP 清晰 · 步骤 ≤ 15 · 分支 ≤ 3 层</td>
+          <td>需求高频变、每次流程都不一样</td>
+          <td>硬撑复杂业务，节点越加越乱</td>
+        </tr>
+        <tr>
+          <td><strong>RAG</strong></td>
+          <td>知识频繁更新 · 需要出处可查 · 问答为主</td>
+          <td>知识稳定且量小（写进 prompt 更省）</td>
+          <td>切片粒度错，检索命中率跳水</td>
+        </tr>
+        <tr>
+          <td><strong>Agent</strong></td>
+          <td>多工具调用 · 顺序动态 · SOP 覆盖 &lt; 70%</td>
+          <td>简单直线任务 · 客户要 100% 稳定输出</td>
+          <td>该稳定的场景硬上，被合规叫停</td>
+        </tr>
+        <tr>
+          <td><strong>Multi-Agent</strong></td>
+          <td>单 Agent prompt 爆 · 角色权限要隔离 · 有多方复核</td>
+          <td>一期项目 · 单 Agent 未验证前</td>
+          <td>过早引入，工程复杂度失控</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">🌳 五问决策树（文字版流程图）</div>
+    <div style="font-family: 'Cascadia Code', Consolas, monospace; font-size: 13px; background: #fff; padding: 12px 14px; border-radius: 6px; line-height: 1.9; white-space: pre-wrap;">Q1 · 问答类需求？
+ ├─ 是 → 主干 = <strong>RAG</strong>（问 Q3 决定要不要外挂工作流 / Agent）
+ └─ 否 → 进 Q2
+
+Q2 · 主流程有 SOP？
+ ├─ 全有 SOP → 主干 = <strong>工作流</strong>
+ ├─ 主干有但异常多 → 主干 = <strong>工作流 + AI 节点</strong>
+ └─ SOP 覆盖 &lt; 70% → 进 Q3
+
+Q3 · 工具调用顺序是否动态？
+ ├─ 顺序可预定 → 回到 <strong>工作流</strong> 串联
+ └─ 顺序依赖上一步输出 → 主干 = <strong>Agent</strong> → 进 Q4
+
+Q4 · 单 Agent 装得下（prompt &lt; 3500 字 / 角色 &lt; 3 类）？
+ ├─ 装得下 → <strong>单 Agent</strong>（收工）
+ └─ 装不下 → 主干 = <strong>Multi-Agent</strong> → 进 Q5
+
+Q5 · 演化路径？
+ └─ 在方案里写清楚：为什么现在选 X，什么条件下升级到 Y</div>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">💬 客户面前 / 面试现场的架构追问金句</div>
+    <ul style="margin-left: 24px;">
+      <li>"你这个架构选 Agent，Agent 的输出稳定性怎么保证？给合规怎么解释？"</li>
+      <li>"如果一期用工作流，二期客户要加动态决策，升级到 Agent 的成本是多少？"</li>
+      <li>"RAG 和 Agent 不是一个维度的东西，你的知识层和决策层分别怎么设计？"</li>
+      <li>"为什么这个场景不用 Multi-Agent？——因为一个 Agent 都还没跑通，多 Agent 更难调。"</li>
+      <li>"这个 Agent 里最容易失败的一步是哪一步？失败了兜底方案是什么？"</li>
+    </ul>
+  </div>
+</div>
+
+<!-- 板块 5：5 题小测验 -->
+<div class="card">
+  <h2>📝 五、5 题小测验</h2>
+  <p style="color: var(--gray-600); font-size: 14px;">先自己想 20 秒再点开。错项解析比正确答案更值钱——每一个错项后面都藏着一次真实的翻车。</p>
+
+  <details class="quiz-item">
+    <summary>Q1 · 「工作流」和「Agent」最本质的区别是什么？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 工作流用 Python 写，Agent 用大模型写</li>
+        <li>B. 工作流步骤和顺序预先定死，Agent 由模型在运行时决定下一步</li>
+        <li>C. 工作流没有 AI，Agent 才有 AI</li>
+        <li>D. 工作流便宜，Agent 贵</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>本质是"决策发生的时机"——工作流的决策是<strong>开发时</strong>做的（写代码时定好流程），Agent 的决策是<strong>运行时</strong>做的（模型看到中间结果动态决定下一步）。这个本质差异决定了工作流稳定、Agent 灵活但不稳定。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 错在实现语言维度</strong>——两种架构都可能用 Python 加大模型 API 实现，语言不是本质区别。<strong>C 错在"工作流没有 AI"</strong>——工作流的节点里完全可以包含 AI 调用（比如工作流的第 3 个节点让 LLM 抽字段），只是不由 AI 决策流程走向。<strong>D 错在只看到了表象</strong>——成本是结果不是本质原因，Agent 贵是因为要多轮循环调用，而多轮循环是"运行时决策"的必然结果，抓不到根源就答不好客户追问。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q2 · 客户说「我要一个 AI 助手回答员工的政策问题，涉及 300 份内部制度文件」——最合适的主干架构是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. Multi-Agent（分政策类、报销类、假期类 Agent 各一个）</li>
+        <li>B. Agent（让 Agent 自主决定查哪份文件）</li>
+        <li>C. RAG（把 300 份文件切片索引，检索后 LLM 生成）</li>
+        <li>D. 微调（把 300 份文件微调进模型里）</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：C</div>
+        <p>问答类需求 + 需要引用大量文档 + 需要出处可查 → RAG 是教科书答案。这是决策树 Q1 就能直接落地的场景，不需要走到 Q2 之后。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 错在过度分工</strong>——Multi-Agent 是最后手段，一个 RAG 一次检索就搞定的事情，硬拆成 3 个 Agent 会引入协调复杂度和成本，收益却几乎为零。<strong>B 错在把 RAG 和 Agent 混了</strong>——查文档这件事根本不需要"决策架构"，Agent 反而可能不去检索直接编答案（幻觉风险）。<strong>D 错在最贵最不合适</strong>——制度文件季度更新，每次更新都要重新微调；而且 300 份文件微调后无法追溯出处，合规团队不会认可。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q3 · 「五问决策树」的正确顺序是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 有 SOP 吗 → 问答类吗 → 工具调用动态吗 → 单 Agent 装得下吗 → 演化路径</li>
+        <li>B. 问答类吗 → 有 SOP 吗 → 工具调用动态吗 → 单 Agent 装得下吗 → 演化路径</li>
+        <li>C. 工具调用动态吗 → 问答类吗 → 有 SOP 吗 → 单 Agent 装得下吗 → 演化路径</li>
+        <li>D. 问答类吗 → 工具调用动态吗 → 有 SOP 吗 → 演化路径 → 单 Agent 装得下吗</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>顺序背后有筛选粒度的因果：<strong>先切"问答 vs 办事"（Q1 一刀切走一半场景到 RAG）</strong> → 再切"有没有 SOP"（Q2 决定工作流还是 Agent 大方向） → 再看"工具调用是否动态"（Q3 决定要不要 Agent） → 再看"单 Agent 装不装得下"（Q4 决定单 Agent 还是 Multi） → 最后写演化（Q5 交代给客户看）。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 错在把 Q2 提前</strong>——"有没有 SOP" 只对办事类需求有意义，纯问答类根本没 SOP 概念，先问这个会走弯路。<strong>C 错得更远</strong>——工具调用是个偏底层的问题，需求类型都没定就问工具，判断没锚点。<strong>D 错在把演化路径提前到"单 Agent 装得下吗"之前</strong>——演化路径必须基于"当下选了什么"再谈，Q4 都没答就没得演化。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q4 · 政企客户对「AI 输出稳定性」要求极高的场景（例如财务、审计、合规），你应该优先避开的架构是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 工作流</li>
+        <li>B. RAG</li>
+        <li>C. Agent</li>
+        <li>D. 传统规则引擎</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：C</div>
+        <p>Agent 的核心特征是"运行时自主决策"——同一个输入两次跑可能走不同路径，输出不完全一致。这在需要"可复盘、可解释、审计口径统一"的政企场景是致命弱点。合规部一句"上次这么判、这次那么判"你就说不清。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 错在方向反了</strong>——工作流是稳定性最高的架构（步骤和顺序都写死），正是这类场景的首选。<strong>B 错在把 RAG 当决策架构</strong>——RAG 只是知识来源，本身不影响决策稳定性，一个跑在工作流里的 RAG 是稳定的。<strong>D 错得最离谱</strong>——传统规则引擎稳定性 100%（if-else 输入相同结果必然相同），压根不该避开，反倒是这类场景的兜底方案。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q5 · 综合题——客户说「我要一个招投标全流程助手，从招标公告分析、方案撰写、报价评审到合规审查全都能干」，请给出架构选型和理由。</summary>
+    <div class="quiz-body">
+      <p style="color: var(--gray-600); margin-bottom: 8px;">用五问决策树走一遍，写下你的判断。</p>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 参考答案：Multi-Agent + RAG（且分阶段落地）</div>
+        <p><strong>Q1 · 问答类？</strong> 不是。是端到端"办事"，包含多个大环节。</p>
+        <p><strong>Q2 · 有 SOP？</strong> 主干有（分析 → 撰写 → 报价 → 合规），但每个环节内部 SOP 覆盖不同——招标公告分析比较模板化（工作流可覆盖），方案撰写高度依赖上一步的分析结论（需要动态决策）。</p>
+        <p><strong>Q3 · 工具调用动态？</strong> 是。报价评审要参考"该客户历史中标价 + 竞对最近报价 + 成本模型"，具体查哪些依赖前面环节的分析结果。</p>
+        <p><strong>Q4 · 单 Agent 装得下？</strong> <strong>装不下</strong>。四个环节各自有：① 独立的知识库（政策库、方案模板库、历史标价库、合规红线库）；② 不同的权限（比如报价数据只能给内部授权用户）；③ 不同的输出格式（分析报告 / 方案文档 / 报价表 / 合规意见）。单 Agent 的 prompt 至少 5000 字以上，超过阈值。</p>
+        <p><strong>Q5 · 演化路径</strong>：一期先做「招标公告分析 + 方案撰写」两个 Agent（Multi-Agent 最小可行组合）；二期加"报价评审 Agent"；三期加"合规审查 Agent"。给客户画清楚三期路线图。</p>
+        <p><strong>结论：</strong>Multi-Agent（4 个专业 Agent + 1 个协调 Agent）+ RAG（挂 4 类知识库）。每个 Agent 内部可能还是工作流 + RAG 的组合——<em>Multi-Agent 是最外层的编排架构，不是取代其他架构</em>。</p>
+        <p><strong>面试金句预埋：</strong><em>"Multi-Agent 是政企场景的稀有选择——只有当单 Agent 承载不了业务分工、且不同角色需要知识和权限隔离时才用。多数客户不需要，需要的时候要敢用、也要敢分阶段推。"</em></p>
+      </div>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 6：面试金句 + 心得笔记 -->
+<div class="card">
+  <h2>💼 六、面试金句预埋</h2>
+
+  <div class="interview-quote">
+    <span class="iq-tag">架构选型思维</span>
+    "架构选型的第一原则是<strong>够用就好</strong>。工作流能搞定的坚决不上 Agent，单 Agent 能搞定的坚决不上 Multi-Agent。政企客户要的不是最炫的架构，是<strong>能上线、能验收、能被审计</strong>的架构。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">成本 & 稳定性意识</span>
+    "Agent 的自主决策等价于输出不稳定。这在演示场景是加分项，在生产场景可能是致命弱点。我给客户设计架构时，<strong>永远先问一句：这个场景能接受两次结果不完全一样吗</strong>？不能接受，Agent 就不是首选。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">可演化性视角</span>
+    "好的 AI 架构方案要写演化路径——<strong>现在为什么选 X，未来什么条件下升级到 Y</strong>。政企项目都是分期建设，一期方案里就把二期、三期的架构升级点标出来，是 FDE 给客户最实在的专业感。"
+  </div>
+
+  <h3>📓 心得笔记</h3>
+  <div class="box box-red">
+    <div class="box-title">⚠️ 今天最反直觉的 3 件事</div>
+    <div>
+      <p><strong>1.</strong> 「越智能的架构 = 越好」是错觉——越智能的架构 = 越贵 + 越不稳定 + 越难解释。政企场景下，稳定性 &gt; 智能性。<em>（工作流不是"low"，是"稳"。）</em></p>
+      <p><strong>2.</strong> RAG 和 Agent 不在同一维度——RAG 是知识来源，Agent 是决策架构。一个 Agent 可以内嵌 RAG，一个工作流的节点也可以用 RAG。把它们当对立选项，就是没搞懂。<em>（架构分层：知识层、决策层、执行层，各选各的。）</em></p>
+      <p><strong>3.</strong> Multi-Agent 是「最后手段」不是「顶级选择」——一期能用单 Agent 跑通的，坚决不用 Multi-Agent。多智能体调通的时间是单智能体的 3 倍。<em>（越复杂的架构，客户越难验收。）</em></p>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  学习笔记 · AI 项目经理成长 · FDE v2 · Day 2<br>
+  下一站 → Day 3 技术方案文档 + Token/成本估算实操
+</div>
+
+</div>
+</body>
+</html>

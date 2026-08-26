@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FDE 学习先锋小队 · 99 题知识测验</title>
+<style>
+  :root{--gold:#b8860b;--ink:#1a1a2e;--line:#c9a96a;--ok:#2e7d32;--bad:#c62828;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:#f4efe6;font-family:"Microsoft YaHei","PingFang SC",sans-serif;
+       display:flex;justify-content:center;min-height:100vh;padding:24px 14px;color:var(--ink);}
+  .wrap{width:680px;max-width:100%;}
+  h1{text-align:center;font-size:22px;letter-spacing:1px;margin:8px 0 2px;}
+  .sub{text-align:center;color:#888;font-size:13px;margin-bottom:14px;}
+  .bar{height:8px;background:#e6ddc8;border-radius:6px;overflow:hidden;margin:10px 0;}
+  .bar>i{display:block;height:100%;background:var(--gold);width:0;transition:width .25s;}
+  .meta{display:flex;justify-content:space-between;font-size:13px;color:#777;margin-bottom:12px;}
+  .card{background:#fffdf8;border:2px solid var(--line);border-radius:12px;padding:22px;
+        box-shadow:0 8px 28px rgba(0,0,0,.1);}
+  .lesson{color:var(--gold);font-size:13px;font-weight:700;margin-bottom:6px;}
+  .q{font-size:17px;line-height:1.6;margin-bottom:16px;}
+  .opt{display:block;width:100%;text-align:left;padding:13px 16px;margin:8px 0;border:1.5px solid #ddd;
+       border-radius:10px;background:#fff;cursor:pointer;font-size:15px;transition:.15s;}
+  .opt:hover{border-color:var(--gold);}
+  .opt.sel{border-color:var(--gold);background:#fdf6e3;font-weight:700;}
+  .nav{display:flex;justify-content:space-between;margin-top:18px;}
+  button{padding:11px 22px;border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer;}
+  .prev{background:#eee;color:#555;}
+  .next{background:var(--gold);color:#fff;}
+  .next:disabled{opacity:.4;cursor:not-allowed;}
+  .result{border:3px double var(--gold);border-radius:12px;text-align:center;padding:26px;}
+  .result .big{font-size:46px;font-weight:800;color:var(--gold);}
+  .result .verdict{font-size:18px;font-weight:700;margin:6px 0 14px;}
+  .pass{color:var(--ok);} .fail{color:var(--bad);}
+  .rrow{display:flex;justify-content:space-between;font-size:14px;color:#555;
+        border-bottom:1px dashed #eee;padding:7px 16px;}
+  .rrow b{color:var(--ink);}
+  .fp{font-size:11px;color:#999;word-break:break-all;margin:12px 16px 0;text-align:left;}
+  .acts{margin-top:18px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+  .ghost{background:#fff;border:1.5px solid var(--gold);color:var(--gold);}
+  .start{text-align:center;}
+  .start p{color:#666;line-height:1.8;font-size:14px;}
+  .hidden{display:none;}
+  .note{font-size:12px;color:#aaa;text-align:center;margin-top:16px;line-height:1.7;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>FDE 学习先锋小队 · 知识测验</h1>
+  <div class="sub">99 题 · 覆盖 Day00–Day18 · 通过线 ≥ 80 分（答对 ≥ 80 题）</div>
+
+  <div id="start" class="card start">
+    <p>
+      这是「FDE 学习先锋小队」的结营测验。<br/>
+      题目随机抽取、选项乱序，请独立作答。<br/>
+      完成后的成绩卡可在 9.9 学习群内截图提交，<br/>
+      通过即发放带编号的结营证书（GitHub 在线可查）。
+    </p>
+    <button class="next" onclick="startQuiz()">开始测验</button>
+  </div>
+
+  <div id="quiz" class="hidden">
+    <div class="bar"><i id="prog"></i></div>
+    <div class="meta"><span id="pinfo"></span><span id="sinfo"></span></div>
+    <div class="card">
+      <div class="lesson" id="lesson"></div>
+      <div class="q" id="qtext"></div>
+      <div id="opts"></div>
+      <div class="nav">
+        <button class="prev" id="btnPrev" onclick="prev()">上一题</button>
+        <button class="next" id="btnNext" onclick="next()">下一题</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="result" class="hidden">
+    <div class="card result">
+      <div class="big" id="rscore">0</div>
+      <div class="verdict" id="rverdict"></div>
+      <div class="rrow"><span>答对题数</span><b id="rcorrect">0 / 99</b></div>
+      <div class="rrow"><span>折合百分制</span><b id="rpercent">0</b></div>
+      <div class="rrow"><span>用时</span><b id="rtime">—</b></div>
+      <div class="rrow"><span>防伪指纹</span><b id="rhash" style="font-size:11px;word-break:break-all;"></b></div>
+      <div class="acts">
+        <button class="ghost" onclick="shareResult()">生成成绩存证链接</button>
+        <button class="ghost" onclick="location.reload()">重新测验</button>
+      </div>
+    </div>
+    <div class="note">
+      成绩卡请截图发到 9.9 学习群；群主核对指纹与用时后，<br/>
+      将为你签发带编号结营证书，证书可在 GitHub Pages 验证页在线核验。
+    </div>
+  </div>
+</div>
+
+<script src="questions.js"></script>
+<script>
+// ── 纯 JS sha256（无外部依赖，离线可用）─────────────
+function sha256(ascii){
+  function rightRotate(value, amount){ return (value>>>amount)|(value<<(32-amount)); }
+  var mathPow=Math.pow, maxWord=mathPow(2,32), lengthProperty='length';
+  var i, j, result='', words=[], asciiBitLength=ascii[lengthProperty]*8;
+  var hash=sha256.h=sha256.h||[], k=sha256.k=sha256.k||[], primeCounter=k[lengthProperty];
+  var isComposite={};
+  for(var candidate=2; primeCounter<64; candidate++){
+    if(!isComposite[candidate]){
+      for(i=0;i<313;i+=candidate){ isComposite[i]=candidate; }
+      hash[primeCounter]=(mathPow(candidate,.5)*maxWord)|0;
+      k[primeCounter++]=(mathPow(candidate,1/3)*maxWord)|0;
+    }
+  }
+  ascii+='\x80';
+  while(ascii[lengthProperty]%64-56) ascii+='\x00';
+  for(i=0;i<ascii[lengthProperty];i++){
+    j=ascii.charCodeAt(i);
+    if(j>>8) return;
+    words[i>>2]|=j<<((3-i)%4)*8;
+  }
+  words[words[lengthProperty]]=((asciiBitLength/maxWord)|0);
+  words[words[lengthProperty]]=(asciiBitLength);
+  for(j=0;j<words[lengthProperty];){
+    var w=words.slice(j,j+=16), oldHash=hash, hash=hash.slice(0,8);
+    for(i=0;i<64;i++){
+      var w15=w[i-15], w2=w[i-2];
+      var a=hash[0], e=hash[4];
+      var temp1=hash[7]
+        + (rightRotate(e,6)^rightRotate(e,11)^rightRotate(e,25))
+        + ((e&hash[5])^((~e)&hash[6]))
+        + k[i]
+        + (w[i]=(i<16)?w[i]:(w[i-16]+(rightRotate(w15,7)^rightRotate(w15,18)^(w15>>>3))+w[i-7]+(rightRotate(w2,17)^rightRotate(w2,19)^(w2>>>10)))|0);
+      var temp2=(rightRotate(a,2)^rightRotate(a,13)^rightRotate(a,22))+((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));
+      hash=[(temp1+temp2)|0].concat(hash);
+      hash[4]=(hash[4]+temp1)|0;
+    }
+    for(i=0;i<8;i++){ hash[i]=(hash[i]+oldHash[i])|0; }
+  }
+  for(i=0;i<8;i++){ for(j=3;j+1;j--){ var b=(hash[i]>>(j*8))&255; result+=((b<16)?0:'')+b.toString(16); } }
+  return result.slice(0,16);
+}
+
+// ── 状态 ──────────────────────────────────────────────
+let Q=[], answers=[], cur=0, t0=0;
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function startQuiz(){
+  t0=Date.now();
+  Q=shuffle(window.QUESTIONS.map(x=>({...x,opts:shuffle(x.options.map((t,i)=>({t,i})))})).slice(0,99));
+  answers=new Array(99).fill(null);
+  cur=0;
+  document.getElementById("start").classList.add("hidden");
+  document.getElementById("result").classList.add("hidden");
+  document.getElementById("quiz").classList.remove("hidden");
+  render();
+}
+
+function render(){
+  const item=Q[cur];
+  document.getElementById("lesson").textContent=item.lesson;
+  document.getElementById("qtext").textContent=`${cur+1}. ${item.q}`;
+  const box=document.getElementById("opts");
+  box.innerHTML="";
+  item.opts.forEach(o=>{
+    const b=document.createElement("button");
+    b.className="opt"+(answers[cur]===o.i?" sel":"");
+    b.textContent=o.t;
+    b.onclick=()=>{answers[cur]=o.i;render();};
+    box.appendChild(b);
+  });
+  document.getElementById("prog").style.width=((cur+1)/99*100)+"%";
+  document.getElementById("pinfo").textContent=`第 ${cur+1} / 99 题`;
+  const left=answers.filter(a=>a!==null).length;
+  document.getElementById("sinfo").textContent=`已答 ${left} 题`;
+  document.getElementById("btnPrev").disabled=cur===0;
+  document.getElementById("btnNext").textContent=cur===98?"交卷":"下一题";
+}
+
+function prev(){if(cur>0){cur--;render();}}
+function next(){
+  if(cur<98){cur++;render();}
+  else finish();
+}
+
+function finish(){
+  let correct=0;
+  answers.forEach((a,i)=>{ if(a===Q[i].answer) correct++; });
+  const pct=Math.round(correct/99*100);
+  const dur=Math.round((Date.now()-t0)/1000);
+  const mm=String(Math.floor(dur/60)).padStart(2,"0"), ss=String(dur%60).padStart(2,"0");
+  const fp=sha256(answers.join(",")+"|"+dur+"|"+"fde-learning");
+  const pass=correct>=80;
+
+  document.getElementById("rscore").textContent=pct;
+  const v=document.getElementById("rverdict");
+  v.textContent=pass?"✔ 通过 · 具备结营基础证书资格":"✘ 未通过 · 再接再厉";
+  v.className="verdict "+(pass?"pass":"fail");
+  document.getElementById("rcorrect").textContent=`${correct} / 99`;
+  document.getElementById("rpercent").textContent=pct;
+  document.getElementById("rtime").textContent=`${mm}:${ss}`;
+  document.getElementById("rhash").textContent=fp;
+
+  document.getElementById("quiz").classList.add("hidden");
+  document.getElementById("result").classList.remove("hidden");
+
+  sessionStorage.setItem("fde_result",JSON.stringify({correct,pct,dur:mm+":"+ss,fp,pass}));
+}
+
+function shareResult(){
+  const r=JSON.parse(sessionStorage.getItem("fde_result")||"{}");
+  const url=`result.html?score=${r.pct}&correct=${r.correct}&time=${encodeURIComponent(r.dur)}&hash=${r.fp}&pass=${r.pass}`;
+  window.open(url,"_blank");
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FDE v2 · Day 6 · Function Calling 让模型调工具</title>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-bg: #eff6ff;
+  --blue-dark: #1e40af;
+  --orange: #ea580c;
+  --orange-bg: #fff7ed;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --green: #059669;
+  --green-bg: #ecfdf5;
+  --yellow: #d97706;
+  --yellow-bg: #fffbeb;
+  --purple: #7c3aed;
+  --purple-bg: #f5f3ff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-800: #1f2937;
+  --text: #1a1a2e;
+  --text-light: #6b7280;
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: #f0f4f8; color: var(--text); line-height: 1.8; font-size: 16px;
+}
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+.hero {
+  background: linear-gradient(135deg, #1e3a5f 0%, #1a56db 55%, #0d7377 100%);
+  color: #fff; border-radius: var(--radius); padding: 32px 30px 26px; margin-bottom: 20px;
+}
+.hero-badge { display: inline-block; background: rgba(255,255,255,0.18); padding: 4px 14px; border-radius: 20px; font-size: 12px; margin-bottom: 10px; }
+.hero h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; }
+.hero .subtitle { font-size: 14.5px; opacity: 0.92; margin-bottom: 14px; line-height: 1.7; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; opacity: 0.85; }
+.hero-back { font-size: 12px; margin-top: 10px; opacity: 0.75; }
+.hero-back a { color: #fff; text-decoration: underline; }
+
+.card { background: #fff; border-radius: var(--radius); padding: 26px 26px 22px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.card h2 { font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.card h3 { font-size: 17px; font-weight: 600; color: var(--gray-800); margin: 22px 0 10px; padding-left: 12px; border-left: 3px solid var(--primary); }
+.card h4 { font-size: 15px; font-weight: 600; margin: 14px 0 8px; color: var(--gray-800); }
+p { margin-bottom: 10px; }
+code { background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-size: 14px; font-family: "Cascadia Code", "Fira Code", Consolas, monospace; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-size: 14px; }
+th { background: var(--primary); color: #fff; padding: 9px 12px; text-align: left; font-weight: 600; font-size: 13px; }
+td { padding: 9px 12px; border-bottom: 1px solid var(--gray-200); vertical-align: top; }
+tr:nth-child(even) td { background: var(--gray-50); }
+
+.box { border-radius: 8px; padding: 14px 16px; margin: 14px 0; border-left: 4px solid; font-size: 14.5px; }
+.box-blue { background: var(--primary-bg); border-color: var(--primary); }
+.box-green { background: var(--green-bg); border-color: var(--green); }
+.box-yellow { background: var(--yellow-bg); border-color: var(--yellow); }
+.box-red { background: var(--red-bg); border-color: var(--red); }
+.box-purple { background: var(--purple-bg); border-color: var(--purple); }
+.box-orange { background: var(--orange-bg); border-color: var(--orange); }
+.box-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+
+.mentor { background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%); border-radius: 10px; padding: 16px 18px; margin: 14px 0; border: 1px solid #dbeafe; position: relative; }
+.mentor::before { content: '👨‍🏫'; position: absolute; top: -12px; left: 16px; background: #fff; padding: 0 6px; font-size: 20px; }
+.mentor .mentor-title { font-weight: 700; color: var(--blue-dark); font-size: 14px; margin-bottom: 6px; margin-top: 4px; }
+.mentor .mentor-body { font-size: 14.5px; color: var(--gray-800); line-height: 1.75; }
+.mentor .mentor-body p { margin-bottom: 8px; }
+
+.goal-list { list-style: none; padding: 0; }
+.goal-list li { padding: 8px 0 8px 32px; position: relative; font-size: 15px; }
+.goal-list li::before { content: '🎯'; position: absolute; left: 4px; top: 8px; font-size: 15px; }
+
+.mnemonic { background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 10px; padding: 14px 18px; margin: 14px 0; text-align: center; }
+.mnemonic .m-title { font-size: 12px; color: #92400e; margin-bottom: 6px; letter-spacing: 2px; }
+.mnemonic .m-line { font-size: 18px; font-weight: 700; color: #78350f; letter-spacing: 3px; }
+.mnemonic .m-explain { font-size: 13px; color: #92400e; margin-top: 6px; }
+
+.cheatsheet { border: 2px dashed var(--primary); border-radius: 10px; padding: 16px 18px; margin: 14px 0; background: #f0f9ff; }
+.cheatsheet .cs-title { font-weight: 700; color: var(--blue-dark); font-size: 15px; margin-bottom: 10px; }
+
+.steps { counter-reset: step; margin: 12px 0; }
+.step-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px dashed var(--gray-200); }
+.step-item:last-child { border-bottom: none; }
+.step-item .step-num { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--primary); color: #fff; text-align: center; line-height: 34px; font-weight: 700; }
+.step-item .step-body { flex: 1; }
+.step-item .step-body strong { color: var(--blue-dark); }
+
+.quiz-item { border: 1px solid var(--gray-200); border-radius: 8px; margin: 10px 0; overflow: hidden; }
+.quiz-item summary { background: var(--primary-bg); padding: 12px 14px; cursor: pointer; font-weight: 600; color: var(--primary); font-size: 14.5px; }
+.quiz-item[open] summary { border-bottom: 1px solid var(--gray-200); }
+.quiz-body { padding: 12px 16px; }
+.quiz-options { list-style: none; padding: 0; }
+.quiz-options li { padding: 5px 0; font-size: 14px; }
+.quiz-answer { background: var(--green-bg); border-left: 3px solid var(--green); padding: 10px 12px; margin-top: 10px; font-size: 14px; border-radius: 4px; }
+.quiz-answer .ans-title { font-weight: 700; color: var(--green); margin-bottom: 6px; }
+.wrong-analysis { background: var(--red-bg); border-left: 3px solid var(--red); padding: 10px 12px; margin-top: 8px; font-size: 13.5px; border-radius: 4px; }
+.wrong-analysis .wa-title { font-weight: 700; color: var(--red); margin-bottom: 4px; }
+
+.case-block { border: 1px solid var(--gray-200); border-radius: 8px; margin: 12px 0; overflow: hidden; }
+.case-block summary { background: linear-gradient(135deg, #ede9fe, #ddd6fe); padding: 12px 14px; cursor: pointer; font-weight: 600; color: #5b21b6; font-size: 14.5px; }
+.case-block .case-body { padding: 14px 16px; font-size: 14px; }
+.case-block .case-body h5 { color: var(--blue-dark); margin: 10px 0 6px; font-size: 14px; }
+
+.interview-quote { background: linear-gradient(135deg, #1e3a5f, #1a56db); color: #fff; border-radius: 10px; padding: 18px 20px; margin: 14px 0; font-size: 15px; font-style: italic; line-height: 1.8; position: relative; }
+.interview-quote::before { content: '💼'; position: absolute; top: -10px; left: 16px; background: #fff; padding: 2px 6px; border-radius: 12px; font-size: 16px; }
+.interview-quote .iq-tag { display: block; font-size: 11px; opacity: 0.8; margin-bottom: 6px; font-style: normal; letter-spacing: 1px; }
+
+.flow-diagram { background: #f8fafc; border: 1px dashed var(--gray-300); border-radius: 8px; padding: 14px 16px; margin: 12px 0; font-family: "Cascadia Code", Consolas, monospace; font-size: 13px; line-height: 1.9; color: var(--gray-800); white-space: pre; overflow-x: auto; }
+
+.footer { text-align: center; color: var(--text-light); font-size: 12px; padding: 20px 0 36px; border-top: 1px solid var(--gray-200); margin-top: 16px; }
+
+@media (max-width: 640px) {
+  .container { padding: 12px; }
+  .hero { padding: 24px 18px 20px; }
+  .hero h1 { font-size: 20px; }
+  .card { padding: 20px 16px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="hero">
+  <div class="hero-badge">FDE v2 · Phase 2 · Day 6</div>
+  <h1>🔧 Function Calling 让模型调工具</h1>
+  <div class="subtitle">Function Calling 是 <strong>从"模型只会说"到"模型会干活"</strong> 的分水岭——今天让你的模型学会自己调工具。学会这一节，你手里的 LLM 从"聊天机器人"变成"能查数据库、能调 API、能真正做事"的 Agent 雏形。</div>
+  <div class="hero-meta">
+    <span>🎯 Phase 2 · Agent 骨架</span>
+    <span>⏱️ 预计 80-90 分钟</span>
+    <span>🧭 补齐能力：③ 搭原型（Agent 雏形）</span>
+  </div>
+  <div class="hero-back">FDE v2 学习路径 · <a href="./day00_fde_panorama_and_radar.html">← 回到 Day 0 起点校准</a></div>
+</div>
+
+<!-- 板块 1：今日目标 -->
+<div class="card">
+  <h2>🎯 一、今日目标</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>前两天你会让模型输出中文、输出 JSON——但模型能干的事都在<strong>它自己的脑子里</strong>。它不知道今天日期、不知道你公司数据库里有啥、不能帮你发邮件、不能查供应商黑名单。</p>
+      <p>Function Calling 就是<strong>让模型伸出手</strong>的机制——你把"工具"（一个 Python 函数）注册给它，它需要时会主动"申请调用"，你的代码执行完把结果回填给它，它综合结果再回答用户。</p>
+      <p>今天最关键的一个认知：<strong>Function Calling 不是模型执行代码</strong>。模型只输出"我想调用哪个函数、传什么参数"的意图 JSON，真正执行还是你的代码干。搞清这一点，后面所有 Agent 编排都水到渠成。</p>
+    </div>
+  </div>
+
+  <ul class="goal-list">
+    <li>搞清 Function Calling 的 <strong>5 环工作机制</strong>——画得出流程图</li>
+    <li>记住 <strong>「定义 · 意图 · 执行 · 回填 · 总结」</strong> 五段口诀</li>
+    <li>会写一份 <strong>规范的 tool schema</strong>（name / description / parameters）</li>
+    <li>能把 <strong>"物资评标 Agent"</strong> 加两个工具，完整跑通</li>
+    <li>会诊断 <strong>"模型明明该调工具却没调"</strong> 的 3 类典型原因</li>
+  </ul>
+</div>
+
+<!-- 板块 2：核心讲解 -->
+<div class="card">
+  <h2>📖 二、核心讲解</h2>
+
+  <h3>是什么：Function Calling 的 5 环工作机制</h3>
+  <p>大白话——你先告诉模型"我这儿有几把工具，各自能干啥"，模型自己判断啥时候需要哪把。它把"想调用工具的意图"以 JSON 输出，你的代码接过来<strong>真去执行</strong>，把结果<strong>再喂回</strong>模型，模型看着结果给用户最终答案。</p>
+
+  <div class="flow-diagram">
+① 用户提问                    ② 模型判断
+"某供应商的黑名单状态？"  ─▶  "我需要工具 query_blacklist"
+                                    │
+                                    ▼
+                              ③ 输出意图 JSON
+                        {"tool":"query_blacklist","args":{"id":"S001"}}
+                                    │
+                                    ▼
+                              ④ 你的代码执行
+                              (查 MySQL / 调 API / 走缓存)
+                                    │
+                                    ▼
+                              ⑤ 结果回填 → 模型
+                        {"in_blacklist": true, "reason": "..."}
+                                    │
+                                    ▼
+                              ⑥ 模型综合输出
+                              "该供应商在黑名单中，原因：..."
+  </div>
+
+  <p><strong>关键认知</strong>——模型<strong>不执行</strong>任何代码。它只是"决策 + 组装参数"，执行永远在你的宿主环境里。这一点也是 Function Calling 相对"直接给模型代码执行权"最重要的<strong>安全边界</strong>。</p>
+
+  <table>
+    <thead>
+      <tr><th style="width: 18%">环节</th><th style="width: 30%">谁在干</th><th>PM 视角要盯什么</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>① 定义</strong></td><td>你（FDE）</td><td>tool schema 写不写得清，直接决定模型能不能识别用哪个工具</td></tr>
+      <tr><td><strong>② 意图</strong></td><td>模型</td><td>模型输出 <code>tool_calls</code>，包含 name 和 arguments</td></tr>
+      <tr><td><strong>③ 执行</strong></td><td>你（代码）</td><td>参数校验、异常兜底、超时保护、审计日志</td></tr>
+      <tr><td><strong>④ 回填</strong></td><td>你（代码）</td><td>结果以 <code>{"role":"tool", "tool_call_id":..., "content":...}</code> 塞回 messages</td></tr>
+      <tr><td><strong>⑤ 总结</strong></td><td>模型</td><td>看到 tool 结果后再生成给用户的答案</td></tr>
+    </tbody>
+  </table>
+
+  <div class="mnemonic">
+    <div class="m-title">□ □ □ Function Calling 五段口诀 □ □ □</div>
+    <div class="m-line">定义 · 意图 · 执行 · 回填 · 总结</div>
+    <div class="m-explain">你给工具 · 模型申请 · 你执行 · 你回喂 · 模型说答</div>
+  </div>
+
+  <h3>为什么：Function Calling 的三个大坑</h3>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 1 · 以为模型直接执行代码（安全模型完全错）</div>
+    <div>
+      <p>很多 PM 第一次听 Function Calling 就以为"模型能执行 Python"——立刻担心安全问题："那它会不会 <code>rm -rf</code>？会不会删库？"</p>
+      <p><strong>真相：模型永远不执行任何代码</strong>。它只是输出一段"我想调 X 函数、参数是 Y"的 JSON。执行完全在你的代码里，你决定什么工具能给它调、参数怎么校验、什么权限能开。</p>
+      <p>这个认知不对，你就无法给客户讲清"AI Agent 到底安不安全"——而这是政企场景客户第一个必问的问题。</p>
+      <p><strong>正确姿势：</strong>把 Function Calling 想成"<em>模型是甲方，你的代码是乙方，模型下单，你决定接不接</em>"。模型永远只在"下单"这一环，执行动作完全在你手里。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 2 · tool 定义写得模糊，模型不知道啥时候用</div>
+    <div>
+      <p>PM 常见错法 —— tool schema 写成这样：</p>
+      <pre style="background:#1e293b;color:#e2e8f0;padding:12px 14px;border-radius:6px;font-size:12.5px;line-height:1.6;">{
+  "name": "search",
+  "description": "搜索",
+  "parameters": {"query": {"type": "string"}}
+}</pre>
+      <p>然后你抱怨"模型 100 次里只有 20 次会调这个工具"。当然——你 description 只有"搜索"俩字，模型怎么知道啥时候该用？它看不到你脑子里的"是搜供应商还是搜合同"的场景想象。</p>
+      <p><strong>正确姿势：</strong>description 要具体到<strong>"什么场景该用 + 输入什么 + 返回什么"</strong>三件事。比如："查询供应商黑名单状态。当用户询问某个供应商是否被列入黑名单、或需要在评标前做合规检查时使用。输入 supplier_id（供应商编号），返回是否在黑名单及原因。"</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 3 · 忘记把工具结果回填，模型永远看不见</div>
+    <div>
+      <p>新手常犯的最坑 Bug —— 模型输出了 <code>tool_calls</code>，你的代码执行完拿到结果，但<strong>结果没塞回 messages 就直接结束了</strong>。用户看到的答案里模型可能还在说"我需要查询供应商信息"——因为它根本没看到你查完的结果。</p>
+      <p>Function Calling 是一个<strong>至少两轮</strong>的调用：第一轮模型说"我要调工具"，第二轮把结果喂回去让它总结。少了第二轮就等于问题只问了一半。</p>
+      <p><strong>正确姿势：</strong>写代码时把"工具执行完 → 把结果作为 role=tool 的消息塞回 messages → 再调一次 API"这个模式写成一个循环，见下面动手代码。</p>
+    </div>
+  </div>
+
+  <div class="box box-blue">
+    <div class="box-title">🧭 PM 行动指南：Function Calling 落地 4 关</div>
+    <div>
+      <p><strong>关 1 · 工具定义清晰</strong>：name 用动宾结构（<code>query_supplier_blacklist</code>）；description 写"什么场景用 + 输入 + 返回"；parameters 每个字段有 description 和类型。</p>
+      <p><strong>关 2 · 参数校验</strong>：模型输出的 arguments 是<strong>不可信输入</strong>，用 Pydantic 或手动校验（供应商 ID 格式对不对、金额范围合不合理）。</p>
+      <p><strong>关 3 · 执行沙箱</strong>：工具函数要<strong>只读优先</strong>；写操作（删数据、发邮件、下单）必须加人工二次确认或权限校验。</p>
+      <p><strong>关 4 · 错误回填</strong>：工具执行失败要以结构化错误信息回填（<code>{"error": "供应商不存在"}</code>），让模型知道"这次调用失败了"，能自我修正或换一种做法。</p>
+    </div>
+  </div>
+
+  <h3>怎么用：4 步搭出一个工具调用</h3>
+
+  <div class="steps">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>定义 tool schema</strong> —— 用 JSON Schema 描述 name / description / parameters（含 required、enum、type、format）。<em>description 是模型选工具的唯一依据，写清"什么场景用+输入+返回"三件事。</em>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>把 tools 传给 API</strong> —— <code>client.chat.completions.create(..., tools=[...], tool_choice="auto")</code>。<code>auto</code> 让模型自己决定；<code>"required"</code> 强制必调；<code>{"type":"function","function":{"name":"X"}}</code> 强制调 X。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>检测 tool_calls，执行对应函数</strong> —— 遍历 <code>response.choices[0].message.tool_calls</code>，按 name 分发到你的 Python 函数，<code>json.loads(arguments)</code> 拿参数。<em>永远 try/except 兜底，永远校验参数。</em>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>结果作为 tool message 回填，让模型总结</strong> —— 把执行结果拼成 <code>{"role":"tool","tool_call_id":id,"content":json.dumps(result)}</code>，加进 messages，<strong>再调一次 API</strong>，拿到模型的最终答案。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 板块 3：动手步骤 -->
+<div class="card">
+  <h2>🛠️ 三、动手步骤：给"物资评标 Agent"加两个工具</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>下面这个案例是我在某大型央企物资评标场景里的真实简化版。评标专家看到一个供应商时经常需要查两件事：这家有没有黑名单记录、过往中过我们哪些标。你把这两件事包装成工具喂给模型，Agent 就能自动做初筛了。跟着做一遍，你就搭完了人生第一个"能调工具的 Agent"。</p>
+    </div>
+  </div>
+
+  <details class="case-block" open>
+    <summary>📌 案例 A · 跟做：物资评标 Agent + 两个工具（完整代码）</summary>
+    <div class="case-body">
+      <h5>工具定义</h5>
+      <p>两个工具（真实场景里会连数据库，这里用 mock 数据）：</p>
+      <ul style="margin-left: 24px;">
+        <li><code>query_supplier_blacklist(supplier_id)</code> —— 查供应商是否在黑名单</li>
+        <li><code>query_past_contracts(supplier_id)</code> —— 查过往中标合同记录</li>
+      </ul>
+
+      <h5>完整代码 · evaluation_agent.py</h5>
+      <pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;"># -*- coding: utf-8 -*-
+# evaluation_agent.py —— 物资评标 Agent（Function Calling 最小骨架）
+import os, json
+from dotenv import load_dotenv
+from openai import OpenAI
+
+load_dotenv()
+client = OpenAI(
+    api_key=os.getenv("DASHSCOPE_API_KEY"),
+    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+)
+
+# ============ 【一】模拟数据库（生产环境要改成真实查询） ============
+BLACKLIST_DB = {
+    "S001": {"in_blacklist": True,  "reason": "2024 年因质量问题被列入 3 年黑名单"},
+    "S002": {"in_blacklist": False, "reason": None},
+    "S003": {"in_blacklist": True,  "reason": "2023 年围标被查处"},
+}
+
+CONTRACTS_DB = {
+    "S001": [{"year": 2022, "project": "A 项目", "amount": 3000000}],
+    "S002": [{"year": 2023, "project": "B 项目", "amount": 5000000},
+             {"year": 2024, "project": "C 项目", "amount": 8000000}],
+    "S003": [],
+}
+
+# ============ 【二】工具实现（真正干活的 Python 函数） ============
+def query_supplier_blacklist(supplier_id: str) -> dict:
+    """查供应商黑名单"""
+    if supplier_id not in BLACKLIST_DB:
+        return {"error": f"供应商 {supplier_id} 不存在"}
+    return BLACKLIST_DB[supplier_id]
+
+def query_past_contracts(supplier_id: str) -> dict:
+    """查过往合同"""
+    if supplier_id not in CONTRACTS_DB:
+        return {"error": f"供应商 {supplier_id} 不存在"}
+    contracts = CONTRACTS_DB[supplier_id]
+    return {
+        "supplier_id": supplier_id,
+        "total_count": len(contracts),
+        "total_amount": sum(c["amount"] for c in contracts),
+        "contracts": contracts,
+    }
+
+# 路由表：模型说要调哪个 name，就找对应函数
+TOOL_ROUTER = {
+    "query_supplier_blacklist": query_supplier_blacklist,
+    "query_past_contracts": query_past_contracts,
+}
+
+# ============ 【三】tool schema（模型看这个决定用哪个） ============
+TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "query_supplier_blacklist",
+            "description": (
+                "查询供应商是否在黑名单中。"
+                "当用户询问某个供应商的合规状态、评标前的合规检查、"
+                "或提到'黑名单''违规记录'时使用。"
+                "返回是否在黑名单及原因说明。"
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "supplier_id": {
+                        "type": "string",
+                        "description": "供应商编号，格式如 S001、S002",
+                    }
+                },
+                "required": ["supplier_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_past_contracts",
+            "description": (
+                "查询供应商过往中标合同记录。"
+                "当用户询问'合作历史''以前中过什么标''累计金额'时使用。"
+                "返回合同数量、总金额、每条合同的年份/项目/金额。"
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "supplier_id": {"type": "string", "description": "供应商编号"}
+                },
+                "required": ["supplier_id"],
+            },
+        },
+    },
+]
+
+SYSTEM = """你是物资评标助手，帮评标专家做供应商合规初筛。
+- 用户提到某个供应商时，主动查黑名单和历史合同
+- 结论要明确：建议通过 / 建议慎用 / 建议排除
+- 每个结论后面写清依据"""
+
+# ============ 【四】主循环：处理 tool_calls 到最终答案 ============
+def run_agent(user_question: str, max_rounds: int = 5) -> str:
+    """处理一次对话，直到模型给出最终答案"""
+    messages = [
+        {"role": "system", "content": SYSTEM},
+        {"role": "user",   "content": user_question},
+    ]
+
+    for round_idx in range(max_rounds):
+        resp = client.chat.completions.create(
+            model="qwen-plus",
+            messages=messages,
+            tools=TOOLS,
+            tool_choice="auto",        # 让模型自己决定要不要用工具
+            temperature=0.1,
+        )
+        msg = resp.choices[0].message
+
+        # 情况 1：模型不用工具，直接给答案 → 结束
+        if not msg.tool_calls:
+            return msg.content
+
+        # 情况 2：模型申请调用一个或多个工具
+        messages.append(msg)           # 【关键】把模型的 assistant 消息塞回历史
+        for tc in msg.tool_calls:
+            name = tc.function.name
+            args = json.loads(tc.function.arguments)
+            print(f"[第 {round_idx+1} 轮] 模型申请调用 {name}({args})")
+
+            # 【关键】参数校验（简版）
+            if name not in TOOL_ROUTER:
+                result = {"error": f"未知工具 {name}"}
+            else:
+                try:
+                    result = TOOL_ROUTER[name](**args)
+                except Exception as e:
+                    result = {"error": f"{type(e).__name__}: {e}"}
+
+            # 【关键】把结果作为 role=tool 的消息回填
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tc.id,
+                "content": json.dumps(result, ensure_ascii=False),
+            })
+        # 继续下一轮，让模型看到工具结果后总结
+
+    return "⚠️ 达到最大轮次仍未收敛，请人工介入"
+
+# ============ 【五】跑一个真实问题 ============
+if __name__ == "__main__":
+    q = "供应商 S001 这次投标了，你帮我看看能不能过评审？"
+    print(f"\n【用户】{q}")
+    print(f"\n【Agent】{run_agent(q)}")</pre>
+
+      <h5>预期运行输出</h5>
+      <pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;">【用户】供应商 S001 这次投标了，你帮我看看能不能过评审？
+
+[第 1 轮] 模型申请调用 query_supplier_blacklist({'supplier_id': 'S001'})
+[第 1 轮] 模型申请调用 query_past_contracts({'supplier_id': 'S001'})
+
+【Agent】建议排除。依据：
+- 黑名单状态：S001 在黑名单中，原因是 2024 年因质量问题被列入 3 年黑名单。
+- 历史合作：过往仅 1 次中标（2022 年 A 项目，300 万元）。
+- 结论：黑名单一票否决，本次评审建议排除该供应商。</pre>
+
+      <h5>你要盯住的 4 个关键点</h5>
+      <ol style="margin-left: 24px;">
+        <li><strong>模型自动并行调用两个工具</strong>——一次 tool_calls 里可能有多个，要循环处理。</li>
+        <li><strong>assistant 消息必须回塞历史</strong>（<code>messages.append(msg)</code>），否则模型下轮不知道自己申请过啥。</li>
+        <li><strong>tool 消息的 <code>tool_call_id</code> 必须对应</strong>——OpenAI 兼容协议靠这个把结果匹配回请求。</li>
+        <li><strong>max_rounds 兜底</strong>——防止模型陷入"调工具→调工具→调工具..."的无限循环（真发生过）。</li>
+      </ol>
+
+      <div class="box box-green">
+        <div class="box-title">✅ 你今天做完了什么</div>
+        <div>你搭出了一个能<strong>自主查数据、自主判断、自主给结论</strong>的 Agent 骨架。虽然还很简陋，但"模型 → 工具 → 数据库 → 答案"这一整条闭环已经打通。Day 7 你会在这个骨架上加 RAG，Day 8+ 就是完整 Agent 编排了。</div>
+      </div>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 B · 自练 1：给"员工问答 Agent"加"查请假余额"工具</summary>
+    <div class="case-body">
+      <p><strong>需求：</strong>HR 场景 —— 员工问"我还剩几天年假？"，Agent 要调用工具查该员工的请假余额，返回具体天数。</p>
+
+      <p><strong>提示：</strong></p>
+      <ol style="margin-left: 24px;">
+        <li>tool name 建议 <code>query_leave_balance</code>；</li>
+        <li>参数：<code>employee_id</code>（string），可选 <code>leave_type</code>（枚举：annual/sick/personal）；</li>
+        <li>description 要说清"用户问'还剩几天假''我的假期余额'时用"；</li>
+        <li>返回值建议结构化：<code>{"annual": 8, "sick": 15, "personal": 3}</code>；</li>
+        <li>思考：如果用户没说自己是谁怎么办？（提示：让 Agent 先反问，别瞎调工具）。</li>
+      </ol>
+
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--primary); font-weight: 600;">查看参考实现要点</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;">{
+    "type": "function",
+    "function": {
+        "name": "query_leave_balance",
+        "description": (
+            "查询指定员工的请假余额（年假/病假/事假天数）。"
+            "当员工询问'我还剩几天假''请假余额''休假额度'时使用。"
+            "如果员工没说自己的工号，不要瞎调，先反问工号。"
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "employee_id": {"type": "string", "description": "员工工号，格式 EMP+6位数字"},
+                "leave_type": {
+                    "type": "string",
+                    "enum": ["annual", "sick", "personal", "all"],
+                    "description": "假期类型，all 表示查所有类型",
+                    "default": "all"
+                }
+            },
+            "required": ["employee_id"]
+        }
+    }
+}
+
+# SYSTEM 里一定要加一句：
+# "查请假余额前，如果不知道员工工号，先反问，不要瞎调工具"</pre>
+          <p><strong>关键点 1：</strong>用 <code>enum</code> 限死可选值；<strong>关键点 2：</strong>用 <code>default</code> 兜底缺省；<strong>关键点 3：</strong>system prompt 显式教模型"缺参数就反问"，别调空工具。</p>
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 C · 自练 2：Bug case——模型该调工具却不调</summary>
+    <div class="case-body">
+      <p><strong>场景：</strong>某同事写了个"IT 运维助手 Agent"，工具是"查服务器 CPU 使用率"，可是模型经常自己瞎编一个数字回答用户，就是不调工具。他的定义长这样：</p>
+
+      <pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;">SYSTEM = "你是 IT 运维助手，回答用户问题。"
+
+TOOLS = [{
+    "type": "function",
+    "function": {
+        "name": "get_cpu",
+        "description": "获取 CPU",
+        "parameters": {
+            "type": "object",
+            "properties": {"h": {"type": "string"}}
+        }
+    }
+}]
+
+client.chat.completions.create(model="qwen-plus", messages=[...], tools=TOOLS)
+# 用户问："server-01 现在 CPU 多少？"
+# 模型："当前 CPU 使用率约 45%"  ← 编的！根本没调工具</pre>
+
+      <p><strong>请诊断：3 类典型问题分别是什么？怎么修？</strong></p>
+
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--primary); font-weight: 600;">查看参考答案</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <p><strong>原因 1 · description 太抽象</strong>——"获取 CPU"三个字模型看不出啥场景该用、要传啥、返回啥。<em>修复：写"查询指定服务器当前 CPU 使用率。当用户询问服务器负载、CPU 状态、性能监控时使用。输入 hostname（服务器名，如 server-01），返回 0-100 的百分比。"</em></p>
+          <p><strong>原因 2 · 参数名字 <code>h</code> 无语义 + 没有 description</strong>——模型看到 <code>h</code> 完全不知道该塞啥。<em>修复：改名 <code>hostname</code>，加 description "服务器主机名，如 server-01"，加到 required。</em></p>
+          <p><strong>原因 3 · system prompt 里没提示可用工具、没禁止编造</strong>——模型天生倾向"直接回答"而不是"调工具"，如果不主动提示它就会走幻觉路线。<em>修复：SYSTEM 里加 "查询实时数据（CPU、内存、日志）必须调工具，不允许编造数值。"</em></p>
+          <p><strong>合计修复后：</strong>模型会稳定调用工具。</p>
+          <p><strong>面试金句预埋：</strong><em>"Function Calling 模型不调工具的三大原因——description 太抽象、参数无语义、prompt 没教它优先调工具。三处修完，调用率从 30% 到 95%。"</em></p>
+        </div>
+      </details>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 4：速查卡 -->
+<div class="card">
+  <h2>📇 四、速查卡</h2>
+
+  <div class="cheatsheet">
+    <div class="cs-title">📋 Tool Schema 模板（直接套用）</div>
+    <pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:12.5px;line-height:1.7;">{
+  "type": "function",
+  "function": {
+    "name": "动宾结构_如_query_xxx / send_xxx",
+    "description": "1) 什么场景该用（触发词 / 用户意图）；\n"
+                   "2) 输入什么参数；\n"
+                   "3) 返回什么结果；\n"
+                   "4) 什么情况不该用（可选）",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "field_1": {
+          "type": "string",
+          "description": "字段含义 + 格式示例",
+          "enum": ["a", "b", "c"]        // 有限选项用 enum
+        },
+        "field_2": {
+          "type": "integer",
+          "description": "含义",
+          "minimum": 0, "maximum": 100    // 数值范围
+        },
+        "field_3": {
+          "type": "string",
+          "format": "date"                // 日期格式约束
+        }
+      },
+      "required": ["field_1"]             // 必填字段
+    }
+  }
+}</pre>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">⚠️ 常见坑对照表</div>
+    <table>
+      <thead><tr><th>症状</th><th>根因</th><th>修复</th></tr></thead>
+      <tbody>
+        <tr><td>模型不调工具，自己编答案</td><td>description 太抽象 / system 没引导</td><td>写清"什么场景用"+ system 说"实时数据必须调工具"</td></tr>
+        <tr><td>参数瞎写 / 缺 required</td><td>参数字段名无语义 / 没写 description</td><td>字段名可读 + 每个 property 都写 description</td></tr>
+        <tr><td>模型幻觉调不存在的工具</td><td>system 里没列出工具白名单</td><td>system 里明确"你只有以下 N 个工具" + 严格 name 匹配</td></tr>
+        <tr><td>陷入无限调工具循环</td><td>工具返回不够明确 / 缺 max_rounds</td><td>返回结构化结果 + 循环加最大轮次兜底</td></tr>
+        <tr><td>模型看不到工具执行结果</td><td>忘记把 tool 消息回填 messages</td><td>严格按 <code>{"role":"tool","tool_call_id":...}</code> 结构回填</td></tr>
+        <tr><td>并行 tool_calls 只处理了第一个</td><td>没循环遍历 <code>msg.tool_calls</code></td><td><code>for tc in msg.tool_calls</code> 全部处理</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">🔍 Function Calling vs Agent 一句话区别</div>
+    <table>
+      <tr><td style="width:35%"><strong>Function Calling</strong></td><td><strong>能力</strong>——模型能输出"我想调哪个工具"的意图。是<strong>零件</strong>。</td></tr>
+      <tr><td><strong>Agent</strong></td><td><strong>系统</strong>——用 Function Calling + 循环调度 + 记忆 + 规划构成的整体。是<strong>成品</strong>。</td></tr>
+      <tr><td><strong>类比</strong></td><td>Function Calling 是发动机；Agent 是汽车。发动机不能上路，但没发动机汽车动不了。</td></tr>
+    </table>
+    <p style="margin-top: 8px;"><strong>FDE 视角：</strong>今天学的循环骨架其实就是最小 Agent。Day 8+ 加规划、记忆、多工具协作，就是完整 Agent。</p>
+  </div>
+</div>
+
+<!-- 板块 5：5 题测验 -->
+<div class="card">
+  <h2>📝 五、5 题小测验</h2>
+  <p style="color: var(--gray-600); font-size: 14px;">先想 30 秒再翻答案。错项解析比正确答案更值钱。</p>
+
+  <details class="quiz-item">
+    <summary>Q1 · 关于 Function Calling 的执行边界，下列说法正确的是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 模型直接执行你注册的 Python 函数，所以有安全隐患</li>
+        <li>B. 模型只输出"想调用哪个工具、传什么参数"的意图 JSON，真正执行在你的代码里</li>
+        <li>C. 模型会自动连接你的数据库并执行 SQL</li>
+        <li>D. 需要给模型开 shell 权限才能用 Function Calling</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>Function Calling 的核心安全模型就是"模型出意图、代码来执行"。模型永远不接触你的数据库、你的文件、你的网络。这是 FDE 给政企客户讲清安全边界的关键——模型是"下单人"，代码是"操作员"，权限完全在你手里。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 错在把"输出意图"当成"执行代码"</strong>——很多 PM 第一反应是这个误解，跟客户讲 Agent 安全性时会犯同样的错。<strong>C 完全脱离事实</strong>——模型没有任何数据库连接能力，SQL 也是你的代码去执行。<strong>D 错在混淆了 Function Calling 和 Code Interpreter</strong>——后者是另一种能力（沙箱内执行代码），Function Calling 从不需要 shell。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q2 · Function Calling 五段口诀是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 请求 · 响应 · 解析 · 兜底 · 部署</li>
+        <li>B. 定义 · 意图 · 执行 · 回填 · 总结</li>
+        <li>C. 模型 · Prompt · 工具 · 数据 · 结果</li>
+        <li>D. 输入 · 处理 · 输出 · 校验 · 回滚</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>定义（你写 schema）→ 意图（模型出 tool_calls）→ 执行（你的代码跑）→ 回填（结果塞回 messages）→ 总结（模型看到结果给答案）。五个环节缺一不可，尤其是"回填"这一环，新手最容易漏。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 是普通 HTTP 请求的通用套路</strong>，没体现 Function Calling 独有的"模型-代码交互闭环"。<strong>C 是要素罗列</strong>，不是动作顺序。<strong>D 是软件工程通用流程</strong>，缺"意图"和"回填"这两个关键环节，没抓住 Function Calling 的精髓。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q3 · 模型明明该调工具却不调，最可能的三大原因？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 模型太笨 / API 有 bug / 网络不稳</li>
+        <li>B. description 太抽象 / 参数字段无语义没 description / system 里没提示优先调工具</li>
+        <li>C. 温度太低 / max_tokens 太小 / 没开流式</li>
+        <li>D. Key 权限不够 / 模型档次不够高 / 需要付费</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>这是 Function Calling 落地时 90% 案例的三大真凶。修 description 让模型知道"什么场景用"；修参数字段让模型知道"传什么"；修 system 引导让模型优先调工具而不是幻觉编答。三处一改，调用率一般能从 30% 拉到 95%。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 是甩锅思维</strong>——把工程问题归到"模型笨"，回避了 FDE 的责任。<strong>C 完全无关</strong>——温度和 max_tokens 影响输出风格但不决定是否调工具。<strong>D 错在归因方向</strong>——qwen-plus / gpt-4o mini 都完全支持 Function Calling，档次不够是错觉。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q4 · 模型在一轮里输出了 3 个 tool_calls（并行请求），正确处理是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 只处理第一个，忽略其他两个</li>
+        <li>B. 全部循环处理，每个都执行完把结果作为一条 tool 消息回填，然后再调一次 API</li>
+        <li>C. 报错给用户："模型申请太多工具"</li>
+        <li>D. 拒绝并行，Prompt 里强制模型一次只调一个</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>并行 tool_calls 是现代 LLM 的标准能力——用户一句话可能触发多个查询（如 "S001 的黑名单 + 历史合同"）。正确做法是全部执行，全部回填，再让模型综合总结。<strong>回填时每个 tool 结果对应各自的 tool_call_id</strong>——这是 OpenAI 兼容协议匹配请求和结果的方式。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 是最常见的新手 Bug</strong>——只处理第一个 tool_call 会让模型永远看不到其他工具的结果，导致答案不完整或幻觉。<strong>C 错在把模型的合理并发当成异常</strong>。<strong>D 是自废武功</strong>——强制串行会让 Agent 延迟翻倍，本来能一次调完的事拆成 3 轮。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q5 · 综合题——你为政企做一个"合同风险扫描 Agent"，涉及 3 个工具（查客户信用/查历史违约/发预警邮件），最应该怎么设计安全边界？</summary>
+    <div class="quiz-body">
+      <p style="color: var(--gray-600); margin-bottom: 8px;">简答，写出关键设计点。</p>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 参考答案</div>
+        <p><strong>1 · 工具权限分级：</strong>查询类工具（查信用、查违约）只读 → 直接给模型调；<strong>写操作类工具</strong>（发预警邮件）→ 必须加人工二次确认（模型只是提议，人点"确认"才真发）。</p>
+        <p><strong>2 · 参数校验：</strong>模型输出的 arguments 是<strong>不可信输入</strong>，用 Pydantic 强校验（客户 ID 格式、邮件收件人白名单、邮件正文长度上限）。</p>
+        <p><strong>3 · 审计日志：</strong>每次 tool 调用记录 tool_name / arguments / result / 触发的 user_query / timestamp。政企合规审计必备，也是 Debug 的救命稻草。</p>
+        <p><strong>4 · 限速与配额：</strong>发邮件工具单次运行调用上限（比如 5 封/次），防止模型抽风批量骚扰客户。</p>
+        <p><strong>5 · max_rounds 兜底：</strong>Agent 循环最多 5 轮，超出人工介入。防止无限调工具的僵尸循环。</p>
+        <p><strong>6 · 错误结构化回填：</strong>工具失败以 <code>{"error": "..."}</code> 回填，让模型知道"失败了"，可能换个工具或告诉用户"这一步查不到"。</p>
+        <p><strong>面试金句预埋：</strong><em>"Agent 的安全从来不是 Prompt 层的说服，是<strong>代码层的权限设计</strong>——只读工具可以给模型调，写操作必须人工二次确认。"</em></p>
+      </div>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 6：面试金句 + 心得笔记 -->
+<div class="card">
+  <h2>💼 六、面试金句预埋</h2>
+
+  <div class="interview-quote">
+    <span class="iq-tag">Function Calling 的定位 · 分水岭</span>
+    "Function Calling 是从<strong>'模型只会说'到'模型会干活'的分水岭</strong>。它把 LLM 从聊天机器人变成能查数据、能调 API、能真做事的执行主体。但要记住它的边界——<strong>模型只出意图，执行永远在你的代码里</strong>。这一点讲不清，客户就不敢让 Agent 上线。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">工具设计思维 · description 决定命中率</span>
+    "我给团队立的规矩——tool 的 description 必须写清<strong>三件事：什么场景用、输入什么、返回什么</strong>。见过太多同事把 description 写成'查询数据'四个字，然后抱怨模型不调工具。改一次 description 从 30% 调用率干到 95% 是常态。description 就是工具的'广告词'，模型看这个决定用不用。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">可观测性 · 每次工具调用都要留痕</span>
+    "生产 Agent 必须做的是<strong>全链路可观测</strong>——每次 tool_calls 的 name、arguments、result 都要打日志。政企审计要用、Debug 要用、PM 复盘也要用。没有可观测性的 Agent 就是黑盒，出事只能背锅，讲不清是模型的问题还是工具的问题。"
+  </div>
+
+  <h3>📓 心得笔记</h3>
+  <div class="box box-red">
+    <div class="box-title">⚠️ 今天最反直觉的 3 件事</div>
+    <div>
+      <p><strong>1.</strong> Function Calling 不是"模型执行代码"——<strong>模型只出意图，代码来执行</strong>。<em>（安全边界的第一课，PM 讲客户方案必须清楚。）</em></p>
+      <p><strong>2.</strong> 模型不调工具 90% 都是<strong>你 description 写得不清楚</strong>，不是模型笨。<em>（写 description 就是写工具的广告词，写得好模型就买账。）</em></p>
+      <p><strong>3.</strong> tool 消息必须<strong>严格回填 messages</strong>——漏了这一步模型永远看不到结果。<em>（新手最常犯的 Bug，也是 Agent 骨架的核心。）</em></p>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  学习笔记 · AI 项目经理成长 · FDE v2 · Day 6<br>
+  上一站 ← Day 5 · 下一站 → Day 7 RAG 让模型用上你的私有知识
+</div>
+
+</div>
+</body>
+</html>

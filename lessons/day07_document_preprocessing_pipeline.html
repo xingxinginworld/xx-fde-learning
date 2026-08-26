@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FDE v2 · Day 7 · 文档预处理流水线</title>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-bg: #eff6ff;
+  --blue-dark: #1e40af;
+  --orange: #ea580c;
+  --orange-bg: #fff7ed;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --green: #059669;
+  --green-bg: #ecfdf5;
+  --yellow: #d97706;
+  --yellow-bg: #fffbeb;
+  --purple: #7c3aed;
+  --purple-bg: #f5f3ff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-800: #1f2937;
+  --text: #1a1a2e;
+  --text-light: #6b7280;
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: #f0f4f8; color: var(--text); line-height: 1.8; font-size: 16px;
+}
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+.hero {
+  background: linear-gradient(135deg, #1e3a5f 0%, #1a56db 55%, #0d7377 100%);
+  color: #fff; border-radius: var(--radius); padding: 32px 30px 26px; margin-bottom: 20px;
+}
+.hero-badge { display: inline-block; background: rgba(255,255,255,0.18); padding: 4px 14px; border-radius: 20px; font-size: 12px; margin-bottom: 10px; }
+.hero h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; }
+.hero .subtitle { font-size: 14.5px; opacity: 0.92; margin-bottom: 14px; line-height: 1.7; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; opacity: 0.85; }
+.hero-back { font-size: 12px; margin-top: 10px; opacity: 0.75; }
+.hero-back a { color: #fff; text-decoration: underline; }
+
+.card { background: #fff; border-radius: var(--radius); padding: 26px 26px 22px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.card h2 { font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.card h3 { font-size: 17px; font-weight: 600; color: var(--gray-800); margin: 22px 0 10px; padding-left: 12px; border-left: 3px solid var(--primary); }
+.card h4 { font-size: 15px; font-weight: 600; margin: 14px 0 8px; color: var(--gray-800); }
+p { margin-bottom: 10px; }
+code { background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-size: 14px; font-family: "Cascadia Code", "Fira Code", Consolas, monospace; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-size: 14px; }
+th { background: var(--primary); color: #fff; padding: 9px 12px; text-align: left; font-weight: 600; font-size: 13px; }
+td { padding: 9px 12px; border-bottom: 1px solid var(--gray-200); vertical-align: top; }
+tr:nth-child(even) td { background: var(--gray-50); }
+
+.box { border-radius: 8px; padding: 14px 16px; margin: 14px 0; border-left: 4px solid; font-size: 14.5px; }
+.box-blue { background: var(--primary-bg); border-color: var(--primary); }
+.box-green { background: var(--green-bg); border-color: var(--green); }
+.box-yellow { background: var(--yellow-bg); border-color: var(--yellow); }
+.box-red { background: var(--red-bg); border-color: var(--red); }
+.box-purple { background: var(--purple-bg); border-color: var(--purple); }
+.box-orange { background: var(--orange-bg); border-color: var(--orange); }
+.box-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+
+.mentor { background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%); border-radius: 10px; padding: 16px 18px; margin: 14px 0; border: 1px solid #dbeafe; position: relative; }
+.mentor::before { content: '👨‍🏫'; position: absolute; top: -12px; left: 16px; background: #fff; padding: 0 6px; font-size: 20px; }
+.mentor .mentor-title { font-weight: 700; color: var(--blue-dark); font-size: 14px; margin-bottom: 6px; margin-top: 4px; }
+.mentor .mentor-body { font-size: 14.5px; color: var(--gray-800); line-height: 1.75; }
+.mentor .mentor-body p { margin-bottom: 8px; }
+
+.goal-list { list-style: none; padding: 0; }
+.goal-list li { padding: 8px 0 8px 32px; position: relative; font-size: 15px; }
+.goal-list li::before { content: '🎯'; position: absolute; left: 4px; top: 8px; font-size: 15px; }
+
+.mnemonic { background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 10px; padding: 14px 18px; margin: 14px 0; text-align: center; }
+.mnemonic .m-title { font-size: 12px; color: #92400e; margin-bottom: 6px; letter-spacing: 2px; }
+.mnemonic .m-line { font-size: 18px; font-weight: 700; color: #78350f; letter-spacing: 3px; }
+.mnemonic .m-explain { font-size: 13px; color: #92400e; margin-top: 6px; }
+
+.cheatsheet { border: 2px dashed var(--primary); border-radius: 10px; padding: 16px 18px; margin: 14px 0; background: #f0f9ff; }
+.cheatsheet .cs-title { font-weight: 700; color: var(--blue-dark); font-size: 15px; margin-bottom: 10px; }
+
+.steps { counter-reset: step; margin: 12px 0; }
+.step-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px dashed var(--gray-200); }
+.step-item:last-child { border-bottom: none; }
+.step-item .step-num { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--primary); color: #fff; text-align: center; line-height: 34px; font-weight: 700; }
+.step-item .step-body { flex: 1; }
+.step-item .step-body strong { color: var(--blue-dark); }
+
+.quiz-item { border: 1px solid var(--gray-200); border-radius: 8px; margin: 10px 0; overflow: hidden; }
+.quiz-item summary { background: var(--primary-bg); padding: 12px 14px; cursor: pointer; font-weight: 600; color: var(--primary); font-size: 14.5px; }
+.quiz-item[open] summary { border-bottom: 1px solid var(--gray-200); }
+.quiz-body { padding: 12px 16px; }
+.quiz-options { list-style: none; padding: 0; }
+.quiz-options li { padding: 5px 0; font-size: 14px; }
+.quiz-answer { background: var(--green-bg); border-left: 3px solid var(--green); padding: 10px 12px; margin-top: 10px; font-size: 14px; border-radius: 4px; }
+.quiz-answer .ans-title { font-weight: 700; color: var(--green); margin-bottom: 6px; }
+.wrong-analysis { background: var(--red-bg); border-left: 3px solid var(--red); padding: 10px 12px; margin-top: 8px; font-size: 13.5px; border-radius: 4px; }
+.wrong-analysis .wa-title { font-weight: 700; color: var(--red); margin-bottom: 4px; }
+
+.case-block { border: 1px solid var(--gray-200); border-radius: 8px; margin: 12px 0; overflow: hidden; }
+.case-block summary { background: linear-gradient(135deg, #ede9fe, #ddd6fe); padding: 12px 14px; cursor: pointer; font-weight: 600; color: #5b21b6; font-size: 14.5px; }
+.case-block .case-body { padding: 14px 16px; font-size: 14px; }
+.case-block .case-body h5 { color: var(--blue-dark); margin: 10px 0 6px; font-size: 14px; }
+
+.interview-quote { background: linear-gradient(135deg, #1e3a5f, #1a56db); color: #fff; border-radius: 10px; padding: 18px 20px; margin: 14px 0; font-size: 15px; font-style: italic; line-height: 1.8; position: relative; }
+.interview-quote::before { content: '💼'; position: absolute; top: -10px; left: 16px; background: #fff; padding: 2px 6px; border-radius: 12px; font-size: 16px; }
+.interview-quote .iq-tag { display: block; font-size: 11px; opacity: 0.8; margin-bottom: 6px; font-style: normal; letter-spacing: 1px; }
+
+.flow-diagram { background: linear-gradient(135deg, #f0f9ff, #eff6ff); border: 1px solid #dbeafe; border-radius: 10px; padding: 18px 16px; margin: 14px 0; text-align: center; font-size: 14px; }
+.flow-diagram .flow-row { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
+.flow-diagram .flow-node { background: #fff; border: 2px solid var(--primary); color: var(--blue-dark); padding: 8px 12px; border-radius: 6px; font-weight: 600; min-width: 90px; }
+.flow-diagram .flow-arrow { color: var(--primary); font-weight: 700; font-size: 18px; }
+.flow-diagram .flow-caption { font-size: 12px; color: var(--gray-500); margin-top: 8px; }
+
+.footer { text-align: center; color: var(--text-light); font-size: 12px; padding: 20px 0 36px; border-top: 1px solid var(--gray-200); margin-top: 16px; }
+
+@media (max-width: 640px) {
+  .container { padding: 12px; }
+  .hero { padding: 24px 18px 20px; }
+  .hero h1 { font-size: 20px; }
+  .card { padding: 20px 16px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="hero">
+  <div class="hero-badge">FDE v2 · Phase 2 · Day 7</div>
+  <h1>🗂️ 文档预处理流水线：RAG 的地基</h1>
+  <div class="subtitle">RAG 效果 <strong>70% 死在预处理</strong>——不是模型不行，是喂给它的东西就是烂的。今天教你把文档处理这一步做扎实。</div>
+  <div class="hero-meta">
+    <span>🧱 Phase 2 · RAG 与检索工程</span>
+    <span>⏱️ 预计 70-90 分钟</span>
+    <span>🧭 补齐能力：③ 搭原型</span>
+  </div>
+  <div class="hero-back">FDE v2 学习路径 · <a href="./day00_fde_panorama_and_radar.html">← 回到 Day 0 起点校准</a></div>
+</div>
+
+<!-- 板块 1：今日目标 -->
+<div class="card">
+  <h2>🎯 一、今日目标</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>你自评 ③ 搭原型 2.6——这是你在评标 Agent 那个项目里最没底的一块。今天补的是 RAG 里最不性感、但决定生死的一环：<strong>文档预处理</strong>。</p>
+      <p>我在客户现场见过最多的翻车，不是模型选错、不是 prompt 写差，是<em>把一份带表格的 PDF 原封不动扔进 embedding，然后责怪 LLM 答不准</em>。今天你要建立一个意识——<strong>喂进 RAG 的东西干不干净，比用哪个模型重要 10 倍</strong>。</p>
+    </div>
+  </div>
+
+  <ul class="goal-list">
+    <li>说清 <strong>文档预处理流水线的 4 环节</strong>：读取 · 清洗 · 分块 · 存储</li>
+    <li>识别 <strong>PDF / Word / Excel / 图片</strong> 4 类文档的典型坑，知道用哪个库</li>
+    <li>掌握 <strong>3 种分块策略</strong>（固定 / 语义 / 结构化）的适用场景</li>
+    <li>能跟着跑完一份《招标文件》PDF 的完整预处理代码，并给每一段加元数据</li>
+    <li>拿到 <strong>文档处理库选型对照表 + 元数据必填字段清单</strong>，直接落地项目</li>
+  </ul>
+</div>
+
+<!-- 板块 2：核心讲解 -->
+<div class="card">
+  <h2>📖 二、核心讲解</h2>
+
+  <h3>是什么：文档流水线的 4 环节</h3>
+  <p>大白话——预处理就是把"人类写给人看"的文档，翻译成"给检索器和大模型看"的干净片段。这个过程一共 4 步：</p>
+
+  <div class="flow-diagram">
+    <div class="flow-row">
+      <div class="flow-node">① 读取<br><span style="font-size:12px;font-weight:400;color:var(--gray-500);">Parse</span></div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-node">② 清洗<br><span style="font-size:12px;font-weight:400;color:var(--gray-500);">Clean</span></div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-node">③ 分块<br><span style="font-size:12px;font-weight:400;color:var(--gray-500);">Chunk</span></div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-node">④ 存储<br><span style="font-size:12px;font-weight:400;color:var(--gray-500);">Store</span></div>
+    </div>
+    <div class="flow-caption">原始文档 → 结构化文本 → 干净纯文本 → 语义完整片段 → 带元数据的检索单元</div>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th style="width: 15%">环节</th><th style="width: 35%">干什么</th><th>做不好会怎样</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>① 读取</strong></td><td>把 PDF / Word / Excel / 图片解析成文本，保留结构（标题、表格、列表）</td><td>表格变乱码、图片全丢、公式变问号，后面检索答不上专业问题</td></tr>
+      <tr><td><strong>② 清洗</strong></td><td>去页眉页脚、去水印、修 OCR 错字、合并跨页段落、去多余空白</td><td>脏数据被嵌入向量，检索"招标日期"结果检出一堆页眉</td></tr>
+      <tr><td><strong>③ 分块</strong></td><td>把长文档切成 200-500 字的语义片段，同一意思不切开</td><td>该合的段被切散、该分的段挤一起，Top-K 检出来全是半截话</td></tr>
+      <tr><td><strong>④ 存储</strong></td><td>每个分块附上元数据（来源、页码、章节、时间）后入库</td><td>后期没法按时间/文号过滤，不能追溯出处，客户问"哪份文件说的"你答不上</td></tr>
+    </tbody>
+  </table>
+
+  <div class="mnemonic">
+    <div class="m-title">□ □ □ 文档流水线口诀 □ □ □</div>
+    <div class="m-line">读 · 清 · 切 · 存</div>
+    <div class="m-explain">四步一步都不能省 · 后面 RAG 的天花板就在这</div>
+  </div>
+
+  <h3>为什么：PM 视角下的三个大坑</h3>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 1 · 直接把 PDF 丢给 LLM（表格/图片/公式全丢）</div>
+    <div>
+      <p>最经典的错误姿势——用 <code>PyPDF2.extract_text()</code> 一把梭，然后惊讶为什么模型答不出"招标金额"。</p>
+      <p>原因：<code>PyPDF2</code> 只能拿到文本流，表格里的"投标保证金 500,000 元"可能变成 <em>"投标保证金500,000元"</em> 混在正文里，也可能直接被跳过。图片格式的公章、盖章页、纯图 PDF 全部丢失。扫描版 PDF 更惨，一个字都读不出来。</p>
+      <p><strong>正确姿势：</strong>拿到 PDF 先分类——文本 PDF 用 <code>pdfplumber</code>（表格保留好）+ <code>unstructured</code>（结构解析强）；扫描版 PDF 走 OCR（<code>PaddleOCR</code> 或阿里云 OCR）。永远不要用 <code>PyPDF2</code> 处理带表格的文件。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 2 · 一刀切固定分块（该合的切开，该分的挤一起）</div>
+    <div>
+      <p>新手最爱写 <code>text[i:i+500]</code> 每 500 字切一段。结果："本项目投标截止时间为 2024 年 12 月 15 日" 这句话可能被切成 "本项目投标截止时" 和 "间为 2024 年 12 月 15 日" 两块——检索"截止时间"的时候，两块都不完整，都答不上。</p>
+      <p>更糟的是表格：一张 8 行的报价表被从中间切开，Top-K 检出上半段没金额、下半段没项目名，LLM 编都编不圆。</p>
+      <p><strong>正确姿势：</strong>优先按 <em>结构切</em>（章节、条款、表格整体保留），实在长再按 <em>语义切</em>（句号/段落边界优先），最后才是固定长度兜底。分块之间保留 10-20% 重叠。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 3 · 不留元数据（后期没法过滤/排序/追溯）</div>
+    <div>
+      <p>只把纯文本切好扔进向量库，是我见过 80% 政企 RAG 项目的通病。上线三个月后客户问："这段回答是哪份文件的第几页说的？"——你答不上。客户问："只查 2024 年之后的政策文件"——你做不到。</p>
+      <p>这时候补元数据？<em>要重新跑一遍全流水线</em>，历史向量全部作废。</p>
+      <p><strong>正确姿势：</strong>第一版就要把元数据字段设计好——来源文件名、页码、章节标题层级、发布日期、文档类型。这是政企场景的<strong>合规硬要求</strong>，不是可选项。</p>
+    </div>
+  </div>
+
+  <div class="box box-blue">
+    <div class="box-title">🧭 PM 行动指南：预处理质量校验 4 关</div>
+    <div>
+      <p><strong>关 1 · 可读性</strong>：随机抽 5 个分块，人眼能看懂在说什么吗？还是一堆乱码/半句话？</p>
+      <p><strong>关 2 · 结构保留</strong>：原文的表格、章节标题、编号列表，在分块里还认得出来吗？</p>
+      <p><strong>关 3 · 分块完整</strong>：核心事实（金额、日期、人名）有没有被从中间切断？</p>
+      <p><strong>关 4 · 元数据齐全</strong>：每个分块能不能回答"哪份文档 / 哪一页 / 哪个章节 / 什么时候发的"？</p>
+      <p style="color:var(--blue-dark);margin-top:8px;"><strong>四关都过再交给 embedding。任意一关不过，回炉重做，比调 Top-K 划算 10 倍。</strong></p>
+    </div>
+  </div>
+
+  <h3>怎么用：四种主流文档的坑与库选型</h3>
+
+  <table>
+    <thead>
+      <tr><th style="width: 12%">格式</th><th style="width: 30%">典型坑</th><th style="width: 28%">推荐库</th><th>一句话对比</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>PDF（文本）</strong></td><td>表格丢失 / 双栏乱序 / 公式变乱码</td><td><code>pdfplumber</code> + <code>unstructured</code></td><td>pdfplumber 强在表格，unstructured 强在版面识别</td></tr>
+      <tr><td><strong>PDF（扫描）</strong></td><td>一个字读不出 / 方向歪 / 印章遮字</td><td><code>PaddleOCR</code> / 阿里云 OCR API</td><td>PaddleOCR 免费、离线可用；阿里云 OCR 精度高、按量计费</td></tr>
+      <tr><td><strong>Word (docx)</strong></td><td>样式复杂 / 目录穿透 / 修订痕迹</td><td><code>python-docx</code> + <code>mammoth</code></td><td>python-docx 拿段落和表格，mammoth 转 HTML 保结构</td></tr>
+      <tr><td><strong>Excel</strong></td><td>合并单元格 / 多 sheet / 隐藏行</td><td><code>openpyxl</code> + <code>pandas</code></td><td>关键动作：把表格转成"语义描述"而不是原始行列</td></tr>
+      <tr><td><strong>图片</strong></td><td>方向不对 / 光照差 / 手写体</td><td><code>PaddleOCR</code> / 阿里云 OCR</td><td>拍照件先做倾斜校正再 OCR，精度差一大截</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box box-yellow">
+    <div class="box-title">⚠️ Excel 的隐藏坑：不要把整张表灌进 LLM</div>
+    <div>
+      <p>见过太多同学把 <code>df.to_string()</code> 结果直接塞进 prompt——一张 200 行 8 列的表格，输出一坨对齐困难的伪表格，LLM 读起来跟看天书一样。</p>
+      <p><strong>正确姿势：</strong>把每一行（或几行）转成<em>一句自然语言描述</em>。例如"2024 年第 3 季度，华东区销售额 830 万，环比增长 12%，负责人张伟"。这种句子 embedding 之后检索效果高一个数量级。</p>
+    </div>
+  </div>
+
+  <h3>分块策略：3 种主流选择</h3>
+
+  <table>
+    <thead>
+      <tr><th style="width: 22%">策略</th><th style="width: 30%">怎么切</th><th>适用场景</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Fixed 固定分块</strong></td><td>按字数或 token 数硬切，如每 300 tokens + 50 重叠</td><td>纯文本、无结构的语料（对话记录、爬虫抓的网页）</td></tr>
+      <tr><td><strong>Semantic 语义分块</strong></td><td>按句号、段落、语义相似度切，保证一块内话题一致</td><td>文章、报告、政策解读——结构不强但段落清晰</td></tr>
+      <tr><td><strong>Document-aware 结构化分块</strong></td><td>沿文档天然结构切：章节、条款、表格整体、列表整体</td><td>合同、招标文件、法规、SOP——结构强、条款独立</td></tr>
+    </tbody>
+  </table>
+
+  <div class="mnemonic">
+    <div class="m-title">□ □ □ 分块策略选择口诀 □ □ □</div>
+    <div class="m-line">有结构走结构 · 无结构走语义 · 都不行才 Fixed</div>
+    <div class="m-explain">政企场景 80% 都该走 Document-aware</div>
+  </div>
+
+  <div class="box box-green">
+    <div class="box-title">✅ 元数据必填字段（政企场景最低配）</div>
+    <div>
+      <p><strong>source</strong>：源文件名 / 文号（如"某单位 2024-招-018 号"）</p>
+      <p><strong>page</strong>：页码（PDF 必填，Word 可选）</p>
+      <p><strong>chunk_id</strong>：分块编号（在这份文档内的顺序号）</p>
+      <p><strong>section</strong>：所属章节标题（如"第三章 · 投标须知"）</p>
+      <p><strong>doc_type</strong>：文档类型（招标 / 合同 / 政策 / SOP / 手册）</p>
+      <p><strong>publish_date</strong>：发布日期（用于时间过滤）</p>
+      <p><strong>hash</strong>：分块内容 hash（去重用）</p>
+    </div>
+  </div>
+</div>
+
+<!-- 板块 3：动手步骤 -->
+<div class="card">
+  <h2>🛠️ 三、动手步骤：跑通一份《招标文件》PDF</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>下面这个案例是政企 FDE 最常见的活。你跟着敲一遍，敲完把代码存起来——这就是你以后每个 RAG 项目的<strong>起点模板</strong>。案例 A 是跟做，B 和 C 自己练。</p>
+    </div>
+  </div>
+
+  <details class="case-block" open>
+    <summary>📌 案例 A · 处理一份招标文件 PDF（跟着做）</summary>
+    <div class="case-body">
+      <h5>目标</h5>
+      <p>把《XX 项目施工招标文件.pdf》（约 60 页，含表格）处理成 JSON 分块，每块 200-500 字，带完整元数据，用于后续 embedding 入库。</p>
+
+      <h5>Step 1 · 环境准备</h5>
+<pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;"><span style="color:#94a3b8;"># 装 3 个核心库</span>
+pip install pdfplumber unstructured dashscope
+<span style="color:#94a3b8;"># dashscope 是阿里云百炼 SDK，后面 Day 8 用它做 embedding</span></pre>
+
+      <h5>Step 2 · 读取 PDF（保留表格）</h5>
+<pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;">import pdfplumber
+
+def read_pdf(path):
+    <span style="color:#94a3b8;">"""读取 PDF，逐页返回 (页码, 正文文本, 表格列表)"""</span>
+    pages = []
+    with pdfplumber.open(path) as pdf:
+        for i, page in enumerate(pdf.pages, start=1):
+            text = page.extract_text() or ""
+            <span style="color:#94a3b8"># 关键：单独抽表格，不跟正文混</span>
+            tables = page.extract_tables()
+            pages.append({"page": i, "text": text, "tables": tables})
+    return pages
+
+pages = read_pdf("招标文件.pdf")
+print(f"共 {len(pages)} 页，第 1 页字数 {len(pages[0]['text'])}")</pre>
+
+      <h5>Step 3 · 清洗（去页眉页脚、修常见错字）</h5>
+<pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;">import re
+
+def clean_text(text):
+    <span style="color:#94a3b8"># 去页眉页脚常见模式（每页重复出现的短行）</span>
+    text = re.sub(r"第\s*\d+\s*页\s*/\s*共\s*\d+\s*页", "", text)
+    text = re.sub(r"招标文件\s*·\s*机密", "", text)
+    <span style="color:#94a3b8"># 去多余空白和换行</span>
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    text = re.sub(r"[ \t]+", " ", text)
+    <span style="color:#94a3b8"># 合并被硬换行切开的中文段落（中文行尾无标点直接接下一行）</span>
+    text = re.sub(r"([\u4e00-\u9fff，、])\n([\u4e00-\u9fff])", r"\1\2", text)
+    return text.strip()
+
+for p in pages:
+    p["text"] = clean_text(p["text"])</pre>
+
+      <h5>Step 4 · 语义 + 结构混合分块</h5>
+<pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;">import hashlib
+
+def chunk_by_section(pages, min_len=200, max_len=500):
+    <span style="color:#94a3b8">"""按"第 X 章 / 第 X 条"切主结构，再控制长度"""</span>
+    chunks, buffer, current_section, current_page = [], "", "前言", 1
+    section_pat = re.compile(r"(第[一二三四五六七八九十百]+[章条节][^\n]{0,40})")
+
+    for p in pages:
+        for line in p["text"].split("\n"):
+            m = section_pat.search(line)
+            if m:
+                <span style="color:#94a3b8"># 遇到新章节，先把 buffer 落盘</span>
+                if buffer.strip():
+                    chunks.append({
+                        "text": buffer.strip(),
+                        "section": current_section,
+                        "page": current_page
+                    })
+                current_section = m.group(1).strip()
+                current_page = p["page"]
+                buffer = line + "\n"
+            else:
+                buffer += line + "\n"
+                <span style="color:#94a3b8"># buffer 太长了就按句号切</span>
+                if len(buffer) &gt;= max_len:
+                    cut = buffer.rfind("。", 0, max_len)
+                    if cut &lt; min_len:
+                        cut = max_len
+                    chunks.append({
+                        "text": buffer[:cut+1].strip(),
+                        "section": current_section,
+                        "page": p["page"]
+                    })
+                    <span style="color:#94a3b8"># 保留 15% 重叠，防止关键句子被切断</span>
+                    overlap = int((cut+1) * 0.15)
+                    buffer = buffer[cut+1-overlap:]
+
+    if buffer.strip():
+        chunks.append({"text": buffer.strip(), "section": current_section, "page": current_page})
+    return chunks
+
+chunks = chunk_by_section(pages)
+print(f"共切成 {len(chunks)} 块，平均长度 {sum(len(c['text']) for c in chunks)//len(chunks)} 字")</pre>
+
+      <h5>Step 5 · 加元数据 + 存 JSON</h5>
+<pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;">import json
+from datetime import datetime
+
+def enrich_metadata(chunks, source_file, doc_type="招标文件", publish_date="2024-11-01"):
+    enriched = []
+    for i, c in enumerate(chunks):
+        content_hash = hashlib.md5(c["text"].encode("utf-8")).hexdigest()[:10]
+        enriched.append({
+            "chunk_id": f"{source_file}_{i:04d}",
+            "text": c["text"],
+            "metadata": {
+                "source": source_file,
+                "page": c["page"],
+                "section": c["section"],
+                "doc_type": doc_type,
+                "publish_date": publish_date,
+                "hash": content_hash,
+                "processed_at": datetime.now().isoformat(timespec="seconds")
+            }
+        })
+    return enriched
+
+result = enrich_metadata(chunks, "招标文件.pdf")
+
+with open("chunks.json", "w", encoding="utf-8") as f:
+    json.dump(result, f, ensure_ascii=False, indent=2)
+
+print(f"✅ 已输出 {len(result)} 块到 chunks.json，可以进 Day 8 做 embedding 了")</pre>
+
+      <h5>Step 6 · 人肉抽检 4 关</h5>
+      <ul style="margin-left: 24px;">
+        <li><strong>可读性</strong>：随机看 5 块，能不能一眼看懂讲的什么？</li>
+        <li><strong>结构</strong>：section 字段是不是都填对了"第 X 章 XX"？</li>
+        <li><strong>完整性</strong>：找"投标保证金"、"截止时间"这类关键点，是否被切断？</li>
+        <li><strong>元数据</strong>：source / page / section / publish_date 是不是每块都有？</li>
+      </ul>
+      <p><em>4 关全过，才进 embedding 环节。</em></p>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 B · 处理一份《员工手册》Word 文档（自己练）</summary>
+    <div class="case-body">
+      <p><strong>需求：</strong>把 30 页的 <code>员工手册.docx</code> 处理成分块 JSON，让员工能问"年假多少天""报销流程"这类问题。</p>
+      <p style="color: var(--gray-500);">试着自己走一遍读·清·切·存，重点思考：Word 的目录、修订痕迹、样式该怎么处理？</p>
+
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--primary); font-weight: 600;">查看参考答案</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <p><strong>读：</strong>用 <code>python-docx</code> 遍历 <code>doc.paragraphs</code> 拿正文，遍历 <code>doc.tables</code> 拿表格。表格转成 "字段名: 值" 的键值对句子。</p>
+          <p><strong>清：</strong>过滤空段落、目录页（"第 X 章 ... 3"这种目录条目）、修订痕迹（<code>python-docx</code> 默认忽略 track changes，但要检查一下）。</p>
+          <p><strong>切：</strong>Word 天然按"一级标题 / 二级标题"分层。用 <code>paragraph.style.name</code> 判断层级，按二级标题切块，标题本身写进 <code>section</code> 元数据。</p>
+          <p><strong>存：</strong>元数据加上 <code>doc_type="员工手册"</code>、<code>publish_date</code>（从文档属性取）、<code>heading_level</code>（一级/二级/三级）。</p>
+<pre style="background:#1e293b;color:#e2e8f0;padding:12px 14px;border-radius:6px;overflow-x:auto;font-size:12.5px;line-height:1.6;margin-top:8px;">from docx import Document
+
+doc = Document("员工手册.docx")
+current_section, buffer, chunks = "封面", "", []
+for p in doc.paragraphs:
+    style = p.style.name  <span style="color:#94a3b8"># Heading 1 / Heading 2 / Normal</span>
+    if style.startswith("Heading"):
+        if buffer.strip():
+            chunks.append({"text": buffer, "section": current_section})
+        current_section = p.text.strip()
+        buffer = ""
+    else:
+        buffer += p.text + "\n"
+if buffer.strip():
+    chunks.append({"text": buffer, "section": current_section})</pre>
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 C · Bug case：这份分块结果有 5 处质量问题，你能挑出来吗？</summary>
+    <div class="case-body">
+      <p><strong>场景：</strong>某个下属用 <code>PyPDF2 + text[i:i+500]</code> 处理了一份招标文件，产出如下分块（节选 3 块）。找出至少 5 处质量问题。</p>
+<pre style="background:#1e293b;color:#e2e8f0;padding:12px 14px;border-radius:6px;overflow-x:auto;font-size:12.5px;line-height:1.6;">{
+  "chunks": [
+    {
+      "id": 0,
+      "text": "招标文件 · 机密第 1 页 / 共 60 页第一章 招标公告本项目投标截止时"
+    },
+    {
+      "id": 1,
+      "text": "间为 2024 年 12 月 15 日 14:00。投标保证金 5000 招标文件 · 机密第 2 页"
+    },
+    {
+      "id": 2,
+      "text": "00 元。投标人应为具备施工总承包一级资质的企业。评标办法："
+    }
+  ]
+}</pre>
+
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--primary); font-weight: 600;">查看参考答案（5 处修法）</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <p><strong>问题 1 · 页眉页脚未清洗</strong>：<em>"招标文件 · 机密第 1 页 / 共 60 页"</em> 混在正文里。<em>修法</em>：加正则 <code>re.sub(r"第\s*\d+\s*页.*", "", text)</code>。</p>
+          <p><strong>问题 2 · "投标截止时间"被从中间切开</strong>：chunk 0 结尾"截止时"、chunk 1 开头"间为"。<em>修法</em>：换 Document-aware 分块，按章节/句号切，不按字数硬切。</p>
+          <p><strong>问题 3 · "投标保证金 500000 元"被切成 chunk 1 的"5000"和 chunk 2 的"00 元"</strong>——语义完全断裂。<em>修法</em>：分块之间保留 15% 重叠。</p>
+          <p><strong>问题 4 · 元数据全无</strong>：只有 id 和 text，没有 source / page / section / publish_date。<em>修法</em>：加 metadata 字段，政企场景合规硬要求。</p>
+          <p><strong>问题 5 · "评标办法："后面就没了</strong>——表格被切没了。<em>修法</em>：用 <code>pdfplumber.extract_tables()</code> 单独抽表格，转成"评分项 XX / 分值 XX / 说明 XX"的语义句子。</p>
+          <p><strong>面试金句：</strong><em>"这三块分块，其实告诉我一件事——预处理没做对，后面 embedding 换 5 个模型都救不回来。"</em></p>
+        </div>
+      </details>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 4：速查卡 -->
+<div class="card">
+  <h2>📇 四、速查卡</h2>
+
+  <div class="cheatsheet">
+    <div class="cs-title">🧰 文档处理库选型对照表</div>
+    <table>
+      <thead><tr><th>格式</th><th>首选库</th><th>备选</th><th>一句话对比</th></tr></thead>
+      <tbody>
+        <tr><td>PDF · 文本</td><td><code>pdfplumber</code></td><td><code>unstructured</code></td><td>pdfplumber 表格准；unstructured 版面识别强</td></tr>
+        <tr><td>PDF · 扫描</td><td><code>PaddleOCR</code></td><td>阿里云 OCR API</td><td>Paddle 离线免费；阿里云精度稳、按量付费</td></tr>
+        <tr><td>Word (docx)</td><td><code>python-docx</code></td><td><code>mammoth</code></td><td>python-docx 拿结构；mammoth 转 HTML 保样式</td></tr>
+        <tr><td>Excel</td><td><code>openpyxl</code></td><td><code>pandas</code></td><td>openpyxl 处理合并单元格；pandas 好做数据变换</td></tr>
+        <tr><td>PPT</td><td><code>python-pptx</code></td><td><code>unstructured</code></td><td>PPT 里文字块顺序坑多，抽出来要重排</td></tr>
+        <tr><td>HTML/网页</td><td><code>BeautifulSoup</code></td><td><code>trafilatura</code></td><td>BS 灵活；trafilatura 一键抽正文</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:13px;color:var(--gray-600);"><strong>反模式：</strong>PyPDF2（只能拿文本流，表格全丢，别用）</p>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">✂️ 分块策略选型决策表</div>
+    <table>
+      <thead><tr><th>你的文档长啥样</th><th>选什么</th><th>参数建议</th></tr></thead>
+      <tbody>
+        <tr><td>有明确章节/条款（合同、法规、招标）</td><td><strong>Document-aware</strong></td><td>按章节切 → 长的再按 200-500 字二次切 → 15% overlap</td></tr>
+        <tr><td>结构不强但段落清晰（文章、报告、政策）</td><td><strong>Semantic</strong></td><td>按段落合并到 300-500 tokens → 段落边界不打碎</td></tr>
+        <tr><td>纯文本无结构（对话、爬虫抓的网页）</td><td><strong>Fixed</strong></td><td>300 tokens + 50 overlap（作为兜底方案）</td></tr>
+        <tr><td>问答对 / FAQ</td><td><strong>每对 = 一块</strong></td><td>问题和答案强绑一起，别拆</td></tr>
+        <tr><td>表格数据</td><td><strong>行级语义化</strong></td><td>每行转一句话，或每 3-5 行合成一句</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">🏷️ 元数据必填字段清单</div>
+    <ul style="margin-left: 24px;">
+      <li><strong>source</strong> · 源文件名 / 文号（追溯用）</li>
+      <li><strong>page</strong> · 页码（PDF 必填）</li>
+      <li><strong>chunk_id</strong> · 分块编号（在本文档内的顺序）</li>
+      <li><strong>section</strong> · 所属章节 / 标题层级（过滤用）</li>
+      <li><strong>doc_type</strong> · 文档类型（招标 / 合同 / 政策 / 手册）</li>
+      <li><strong>publish_date</strong> · 发布日期（时间过滤用）</li>
+      <li><strong>hash</strong> · 分块内容 hash（去重 / 更新检测）</li>
+      <li><strong>processed_at</strong> · 处理时间戳（版本追溯）</li>
+    </ul>
+    <p style="font-size:13px;color:var(--red);"><strong>提醒：</strong>政企项目上线前，客户合规部会盯这几个字段。第一版就上，别等半年后返工。</p>
+  </div>
+</div>
+
+<!-- 板块 5：5 题测验 -->
+<div class="card">
+  <h2>📝 五、5 题小测验</h2>
+  <p style="color: var(--gray-600); font-size: 14px;">建议先自己想 20 秒再点开答案。答错也别慌——错项解析比正确答案更值钱。</p>
+
+  <details class="quiz-item">
+    <summary>Q1 · 处理带表格的 PDF，下面哪个库最不该用？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. pdfplumber</li>
+        <li>B. unstructured</li>
+        <li>C. PyPDF2</li>
+        <li>D. PaddleOCR</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：C</div>
+        <p>PyPDF2 只能提取文本流，表格里的单元格会散成"值1值2值3"混在正文里，或者直接丢失。带表格的 PDF 用它就是自杀。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A pdfplumber 是首选</strong>——它对表格解析最好，能拿到二维数组结构。<strong>B unstructured 也可以</strong>——版面识别强，适合复杂布局。<strong>D PaddleOCR 是扫描版 PDF 的选择</strong>——文本 PDF 用它也不合适（大材小用还慢），但至少不会像 PyPDF2 那样把表格丢掉。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q2 · 一份 60 页的《施工招标文件》，最合适的分块策略是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. Fixed，每 500 tokens 硬切，简单可靠</li>
+        <li>B. Semantic，按段落语义相似度切</li>
+        <li>C. Document-aware，按"第 X 章 / 第 X 条"切，超长的再二次切</li>
+        <li>D. 不用切，整份 PDF 直接扔进 embedding</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：C</div>
+        <p>招标文件是典型的强结构文档——"第一章 招标公告 / 第二章 投标人须知 / 第三章 评标办法"，每章每条相对独立。Document-aware 切法保证语义完整、还能把 section 写进元数据，后期能按章节过滤。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A Fixed 会把"投标保证金 500000 元"从中间切开</strong>——检索关键条款答不上。<strong>B Semantic 比 Fixed 好，但没利用招标文件的强结构</strong>——效果不如 Document-aware。<strong>D 是最典型的新手错误</strong>——一份 60 页整体 embedding，检索时根本不知道匹配到了哪一段，且大部分 embedding 模型有 token 上限，超长会被截断。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q3 · 关于元数据，下面哪种说法是错的？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 元数据可以让后期按时间/来源/文号过滤</li>
+        <li>B. 政企场景，元数据是合规硬要求</li>
+        <li>C. 第一版可以先不加，等有需求了再补</li>
+        <li>D. hash 字段可以用来做分块去重和更新检测</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：C</div>
+        <p>C 是常见误解。第一版不加元数据，后期要补就得重新跑全流水线——历史所有向量作废、重新 embedding、重新入库，成本比第一版直接加高 5-10 倍。政企 RAG 项目最贵的返工之一就是"补元数据"。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 正确</strong>——元数据过滤是 RAG 优化最省力的一环。<strong>B 正确</strong>——政企客户合规部会问"这段答案是哪份文档说的？"，没有 source/page 你答不上。<strong>D 正确</strong>——hash 用来判断分块是否变化，节省重复 embedding 成本。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q4 · 处理 Excel 文件，下面哪种做法最推荐？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 用 pandas.read_excel 读进来，直接 df.to_string() 塞进 embedding</li>
+        <li>B. 转成 CSV，按行 embedding</li>
+        <li>C. 每行（或每几行）转成一句自然语言描述，再 embedding</li>
+        <li>D. 截图整张表，走 OCR 处理</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：C</div>
+        <p>Excel 里的数据要变成"人话"再 embedding。例如"2024 年第 3 季度，华东区销售额 830 万，环比增长 12%，负责人张伟"——这样一句话，embedding 出来的向量对"华东销售"这类查询匹配度极高。原始表格塞进去，向量里全是数字符号噪声。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 是新手最爱写的方式</strong>——但 df.to_string() 输出的伪表格排版，embedding 完全捕捉不到语义。<strong>B 按行 embedding 好一点，但一行"华东,830,12%,张伟"没有字段名，还是不像人话</strong>。<strong>D 是本末倒置</strong>——Excel 是结构化数据，走 OCR 反而丢了结构。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q5 · 综合题——预处理质量校验 4 关，如果 4 关都过，是否就一定能保证 RAG 效果好？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 是的，4 关全过 = RAG 效果一定好</li>
+        <li>B. 不是，4 关只是"预处理"这一步的合格线，后面还有 embedding、检索、重排、生成 4 步各自的天花板</li>
+        <li>C. 不是，4 关过了也可能因为 LLM 幻觉答错</li>
+        <li>D. B 和 C 都对</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：D</div>
+        <p>4 关是<strong>必要不充分条件</strong>——过不了这 4 关，后面再优化都白搭；但过了 4 关，还要经过 embedding 模型好不好、Top-K 调没调、有没有重排、prompt 写没写好等一系列关卡。今天学的只是 RAG 的地基。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 错在夸大预处理作用</strong>——预处理只是 RAG 的一环，不是全部。<strong>B 单独对</strong>，但漏了"LLM 幻觉"这个下游问题。<strong>C 单独对</strong>，但漏了"检索环节也可能翻车"。B 和 C 合起来才完整——这也是为什么 Day 8 讲检索优化、Day 9 讲端到端 Demo，你要建立<strong>全链路视角</strong>。</p>
+      </div>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 6：面试金句 + 心得笔记 -->
+<div class="card">
+  <h2>💼 六、面试金句预埋</h2>
+
+  <div class="interview-quote">
+    <span class="iq-tag">预处理决定 RAG 天花板</span>
+    "我做 RAG 项目的顺序不是先选模型——是先把<strong>文档预处理这一环做扎实</strong>。因为我见过太多项目，模型 embedding 换了三家、Top-K 从 5 调到 20，效果依然烂——回过头一看，喂进去的分块本身就是碎片，天花板早就锁死了。预处理没做对，后面白花力气。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">结构保留意识</span>
+    "拿到一份 PDF，我第一件事不是切分，是判断它有没有结构——章节、条款、表格。<strong>有结构就走 Document-aware 分块，让每一块跟原文的语义边界对齐</strong>。政企文档 80% 都有强结构，硬用 Fixed 或 Semantic 切，就是浪费客户的合规红利。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">元数据文化</span>
+    "元数据是 RAG 的<strong>第二次机会</strong>——分块切错了很难救，但只要 source/page/section/date 都齐全，后期检索出问题至少能过滤、能追溯、能追责。政企项目上线前，客户合规部会挨个字段查。<strong>第一版就要把元数据设计好，别等半年后返工</strong>。"
+  </div>
+
+  <h3>📓 心得笔记</h3>
+  <div class="box box-red">
+    <div class="box-title">⚠️ 今天最反直觉的 3 件事</div>
+    <div>
+      <p><strong>1.</strong> RAG 效果的天花板 <strong>70% 在预处理</strong>，模型换来换去只能救 30%。<em>（这也是为什么资深 FDE 花在预处理上的时间比选模型多。）</em></p>
+      <p><strong>2.</strong> Excel 里的数据要变成"人话"再 embedding，<em>直接 to_string() 塞进去是新手陷阱。</em></p>
+      <p><strong>3.</strong> 元数据不是"锦上添花"，是<strong>政企场景的合规硬要求</strong>。第一版就上，成本最低。</p>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  学习笔记 · AI 项目经理成长 · FDE v2 · Day 7<br>
+  下一站 → Day 8 向量化与检索质量优化
+</div>
+
+</div>
+</body>
+</html>

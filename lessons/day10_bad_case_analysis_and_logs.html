@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FDE v2 · Day 10 · 读日志定位问题 · Bad Case 分析</title>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-bg: #eff6ff;
+  --blue-dark: #1e40af;
+  --orange: #ea580c;
+  --orange-bg: #fff7ed;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --green: #059669;
+  --green-bg: #ecfdf5;
+  --yellow: #d97706;
+  --yellow-bg: #fffbeb;
+  --purple: #7c3aed;
+  --purple-bg: #f5f3ff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-800: #1f2937;
+  --text: #1a1a2e;
+  --text-light: #6b7280;
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: #f0f4f8; color: var(--text); line-height: 1.8; font-size: 16px;
+}
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+.hero {
+  background: linear-gradient(135deg, #1e3a5f 0%, #1a56db 55%, #0d7377 100%);
+  color: #fff; border-radius: var(--radius); padding: 32px 30px 26px; margin-bottom: 20px;
+}
+.hero-badge { display: inline-block; background: rgba(255,255,255,0.18); padding: 4px 14px; border-radius: 20px; font-size: 12px; margin-bottom: 10px; }
+.hero h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; }
+.hero .subtitle { font-size: 14.5px; opacity: 0.92; margin-bottom: 14px; line-height: 1.7; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; opacity: 0.85; }
+.hero-back { font-size: 12px; margin-top: 10px; opacity: 0.75; }
+.hero-back a { color: #fff; text-decoration: underline; }
+
+.card { background: #fff; border-radius: var(--radius); padding: 26px 26px 22px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.card h2 { font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.card h3 { font-size: 17px; font-weight: 600; color: var(--gray-800); margin: 22px 0 10px; padding-left: 12px; border-left: 3px solid var(--primary); }
+.card h4 { font-size: 15px; font-weight: 600; margin: 14px 0 8px; color: var(--gray-800); }
+p { margin-bottom: 10px; }
+code { background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-size: 14px; font-family: "Cascadia Code", "Fira Code", Consolas, monospace; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-size: 14px; }
+th { background: var(--primary); color: #fff; padding: 9px 12px; text-align: left; font-weight: 600; font-size: 13px; }
+td { padding: 9px 12px; border-bottom: 1px solid var(--gray-200); vertical-align: top; }
+tr:nth-child(even) td { background: var(--gray-50); }
+
+.box { border-radius: 8px; padding: 14px 16px; margin: 14px 0; border-left: 4px solid; font-size: 14.5px; }
+.box-blue { background: var(--primary-bg); border-color: var(--primary); }
+.box-green { background: var(--green-bg); border-color: var(--green); }
+.box-yellow { background: var(--yellow-bg); border-color: var(--yellow); }
+.box-red { background: var(--red-bg); border-color: var(--red); }
+.box-purple { background: var(--purple-bg); border-color: var(--purple); }
+.box-orange { background: var(--orange-bg); border-color: var(--orange); }
+.box-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+
+.mentor { background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%); border-radius: 10px; padding: 16px 18px; margin: 14px 0; border: 1px solid #dbeafe; position: relative; }
+.mentor::before { content: '👨‍🏫'; position: absolute; top: -12px; left: 16px; background: #fff; padding: 0 6px; font-size: 20px; }
+.mentor .mentor-title { font-weight: 700; color: var(--blue-dark); font-size: 14px; margin-bottom: 6px; margin-top: 4px; }
+.mentor .mentor-body { font-size: 14.5px; color: var(--gray-800); line-height: 1.75; }
+.mentor .mentor-body p { margin-bottom: 8px; }
+
+.goal-list { list-style: none; padding: 0; }
+.goal-list li { padding: 8px 0 8px 32px; position: relative; font-size: 15px; }
+.goal-list li::before { content: '🎯'; position: absolute; left: 4px; top: 8px; font-size: 15px; }
+
+.mnemonic { background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 10px; padding: 14px 18px; margin: 14px 0; text-align: center; }
+.mnemonic .m-title { font-size: 12px; color: #92400e; margin-bottom: 6px; letter-spacing: 2px; }
+.mnemonic .m-line { font-size: 18px; font-weight: 700; color: #78350f; letter-spacing: 3px; }
+.mnemonic .m-explain { font-size: 13px; color: #92400e; margin-top: 6px; }
+
+.cheatsheet { border: 2px dashed var(--primary); border-radius: 10px; padding: 16px 18px; margin: 14px 0; background: #f0f9ff; }
+.cheatsheet .cs-title { font-weight: 700; color: var(--blue-dark); font-size: 15px; margin-bottom: 10px; }
+
+.steps { counter-reset: step; margin: 12px 0; }
+.step-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px dashed var(--gray-200); }
+.step-item:last-child { border-bottom: none; }
+.step-item .step-num { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--primary); color: #fff; text-align: center; line-height: 34px; font-weight: 700; }
+.step-item .step-body { flex: 1; }
+.step-item .step-body strong { color: var(--blue-dark); }
+
+.quiz-item { border: 1px solid var(--gray-200); border-radius: 8px; margin: 10px 0; overflow: hidden; }
+.quiz-item summary { background: var(--primary-bg); padding: 12px 14px; cursor: pointer; font-weight: 600; color: var(--primary); font-size: 14.5px; }
+.quiz-item[open] summary { border-bottom: 1px solid var(--gray-200); }
+.quiz-body { padding: 12px 16px; }
+.quiz-options { list-style: none; padding: 0; }
+.quiz-options li { padding: 5px 0; font-size: 14px; }
+.quiz-answer { background: var(--green-bg); border-left: 3px solid var(--green); padding: 10px 12px; margin-top: 10px; font-size: 14px; border-radius: 4px; }
+.quiz-answer .ans-title { font-weight: 700; color: var(--green); margin-bottom: 6px; }
+.wrong-analysis { background: var(--red-bg); border-left: 3px solid var(--red); padding: 10px 12px; margin-top: 8px; font-size: 13.5px; border-radius: 4px; }
+.wrong-analysis .wa-title { font-weight: 700; color: var(--red); margin-bottom: 4px; }
+
+.case-block { border: 1px solid var(--gray-200); border-radius: 8px; margin: 12px 0; overflow: hidden; }
+.case-block summary { background: linear-gradient(135deg, #ede9fe, #ddd6fe); padding: 12px 14px; cursor: pointer; font-weight: 600; color: #5b21b6; font-size: 14.5px; }
+.case-block .case-body { padding: 14px 16px; font-size: 14px; }
+.case-block .case-body h5 { color: var(--blue-dark); margin: 10px 0 6px; font-size: 14px; }
+
+.interview-quote { background: linear-gradient(135deg, #1e3a5f, #1a56db); color: #fff; border-radius: 10px; padding: 18px 20px; margin: 14px 0; font-size: 15px; font-style: italic; line-height: 1.8; position: relative; }
+.interview-quote::before { content: '💼'; position: absolute; top: -10px; left: 16px; background: #fff; padding: 2px 6px; border-radius: 12px; font-size: 16px; }
+.interview-quote .iq-tag { display: block; font-size: 11px; opacity: 0.8; margin-bottom: 6px; font-style: normal; letter-spacing: 1px; }
+
+.code-block { background: #1e293b; color: #e2e8f0; border-radius: 8px; padding: 14px 16px; margin: 12px 0; font-family: "Cascadia Code", "Fira Code", Consolas, monospace; font-size: 13px; line-height: 1.6; overflow-x: auto; white-space: pre; }
+
+.footer { text-align: center; color: var(--text-light); font-size: 12px; padding: 20px 0 36px; border-top: 1px solid var(--gray-200); margin-top: 16px; }
+
+@media (max-width: 640px) {
+  .container { padding: 12px; }
+  .hero { padding: 24px 18px 20px; }
+  .hero h1 { font-size: 20px; }
+  .card { padding: 20px 16px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="hero">
+  <div class="hero-badge">FDE v2 · Phase 3 · Day 10</div>
+  <h1>🔍 读日志定位问题 · Bad Case 从"搞不定"到"能自己查"</h1>
+  <div class="subtitle">AI 应用 debug <strong>比传统软件难 10 倍</strong>——不确定性让你很难复现问题。今天给你一套 5 步法，让 Bad Case 从"我搞不定"变成"我能自己查"。</div>
+  <div class="hero-meta">
+    <span>🎯 Phase 3 · 让 Agent 改得动</span>
+    <span>⏱️ 预计 70-80 分钟</span>
+    <span>🧭 补齐能力：④ 改得动（3.4）</span>
+  </div>
+  <div class="hero-back">FDE v2 学习路径 · <a href="./day00_fde_panorama_and_radar.html">← 回到 Day 0 起点校准</a></div>
+</div>
+
+<!-- 板块 1：今日目标 -->
+<div class="card">
+  <h2>🎯 一、今日目标</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>你在某公司干过这么多年某单位项目，日志你不是没读过——Nginx access log、Tomcat catalina.out、Java 堆栈异常你都会翻。但 AI 应用的日志跟传统 Java 系统完全不是一个东西。传统日志你看到 <code>NullPointerException</code>，定位到某一行代码就完事了；AI 应用你看到 "答错了"，可能是 Prompt 写得不对、可能是检索没召回、可能是模型幻觉、可能是工具返回值格式变了——<strong>五层里任何一层出问题都长一个样：输出不对</strong>。</p>
+      <p>这就是为什么 AI debug 比传统难 10 倍。今天补的就是这个能力——你要能<strong>把"输出不对"这一句话，拆成 5 个可查的点，逐层追下来</strong>。这就是 FDE 和普通 PM 拉开差距的第一个技术分野。</p>
+    </div>
+  </div>
+
+  <ul class="goal-list">
+    <li>理解 <strong>「AI 应用可观测性三件套」</strong>——Logs / Traces / Metrics 分别看什么</li>
+    <li>掌握 <strong>「采分因改验」5 步 Bad Case 分析法</strong>，30 分钟定位一个真实 case</li>
+    <li>会用 <strong>Langfuse</strong>（或 LangSmith）读一条 Trace，知道每一环出了啥事</li>
+    <li>能建 <strong>Bad Case 库</strong>——不是每次都从零开始查，而是查过一次终身受益</li>
+    <li>能对领导说出 <strong>「这个 case 我用了 A/B 测试对比了 3 版 Prompt」</strong> 的话术</li>
+  </ul>
+</div>
+
+<!-- 板块 2：核心讲解 -->
+<div class="card">
+  <h2>📖 二、核心讲解</h2>
+
+  <h3>是什么：AI 应用可观测性三件套</h3>
+  <p>可观测性（Observability）这个词你在运维那边听过，但在 AI 场景下它长得不一样。传统运维看的是"机器活没活、接口通没通"；AI 应用看的是"<strong>模型在想什么、每一环拿到了什么、最终为什么输出这个</strong>"。</p>
+  <table>
+    <thead>
+      <tr><th style="width: 15%">类别</th><th style="width: 30%">记录什么</th><th style="width: 25%">用来回答的问题</th><th>典型工具</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Logs 日志</strong></td><td>每一次调用的 input / prompt / output / usage / latency / error</td><td>"这一条请求发生了什么？"</td><td>ELK / Loki / 自建 JSON 落盘</td></tr>
+      <tr><td><strong>Traces 链路</strong></td><td>一次会话/一次 Agent 运行里，各步骤的调用树、耗时、上下文流转</td><td>"多步链路里哪一步出错？"</td><td>Langfuse / LangSmith / Phoenix</td></tr>
+      <tr><td><strong>Metrics 指标</strong></td><td>调用量、Token 消耗、平均延迟、错误率、命中率、幻觉率</td><td>"整体健康度怎么样？趋势是好是坏？"</td><td>Prometheus + Grafana / Langfuse Dashboard</td></tr>
+    </tbody>
+  </table>
+  <p><strong>反直觉的地方：</strong>很多团队以为"打日志就够了"——错。<strong>没有 Trace，多步 Agent 链路你根本看不出问题在哪一步</strong>；没有 Metrics，你不知道昨天准确率是不是悄悄掉了 5 个点。三件套要一起上。</p>
+
+  <div class="mnemonic">
+    <div class="m-title">□ □ □ Bad Case 分析 5 步口诀 □ □ □</div>
+    <div class="m-line">采 · 分 · 因 · 改 · 验</div>
+    <div class="m-explain">采集 → 分类 → 归因 → 改进 → 验证 · 少一步就是碰运气</div>
+  </div>
+
+  <h3>为什么：AI debug 的三个大坑</h3>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 1 · 出问题就重跑一遍看能不能复现</div>
+    <div>
+      <p>传统 Java bug 你重跑一遍能复现，就能 debug。AI 应用你重跑，因为 <code>temperature &gt; 0</code>，输出就是不一样——你以为"这次好了"，实际上是<strong>换个用户问法一模一样的 bug 又出来了</strong>。</p>
+      <p>不确定性系统这样调试等于自杀。正确姿势是：<strong>把出问题那一条完整的 input / prompt / context / output 全存下来</strong>，回到评测集里反复分析，而不是重跑。</p>
+      <p><strong>PM 视角提醒：</strong>客户投诉一个 Bad Case，你的第一句话不是"我再试试看"，是"能把当时的问题原话和时间点给我吗，我拉日志"。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 2 · 只看输出不看中间步骤</div>
+    <div>
+      <p>用户问"招标截止时间"，Agent 回答"投标截止时间是 X 月 X 日"。<strong>只看输出</strong>你会以为是模型幻觉、想换个模型；打开 Trace 才发现，其实是<strong>检索环节 top-3 里全是"投标"相关的 chunk，"招标"这个词的 chunk 排到了 top-8</strong>——模型基于给它的上下文答得没毛病，问题在检索，不在生成。</p>
+      <p>RAG / Agent 里到底哪一步出错，只看输出完全黑盒。<strong>必须打开链路看每一步的 input/output</strong>。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 3 · 没有 Bad Case 库，每次都从零开始查</div>
+    <div>
+      <p>今天客户报了一个 case，你花 2 小时定位到"检索问题"，改了 Prompt 上线。三周后 <strong>另一个客户报了个几乎一样的 case</strong>——你已经忘了当时怎么定位的，又花 2 小时。半年后再来一个，还是 2 小时。</p>
+      <p>问题不在你记性差，在你<strong>没有 Bad Case 库</strong>。每个 case 应该沉淀成一条记录：现象 / 定位过程 / 根因 / 改进方案 / 是否已进回归集。这是 FDE 团队最值钱的资产之一。</p>
+      <p><strong>老外包 PM 的痛点：</strong>你以前做交付，"文档"是甩给客户的东西，自己不留。做 FDE 反过来——<strong>Bad Case 库是给自己留的</strong>，客户可能永远看不到，但它决定了你团队的迭代速度。</p>
+    </div>
+  </div>
+
+  <div class="box box-blue">
+    <div class="box-title">🧭 PM 行动指南：可观测性建设的 3 层门槛</div>
+    <div>
+      <p><strong>Layer 1 · 最低门槛（第 1 周就要有）</strong>：每次 LLM 调用都记 <code>input + prompt + output + model + usage(token) + latency + timestamp + user_id</code>——JSON 落盘或 MongoDB 存都行，先把数据攒起来。</p>
+      <p><strong>Layer 2 · 进阶（PoC 结束前要有）</strong>：接入 Langfuse / LangSmith，拿到多步 Trace 视图。Agent 多步调用、RAG 多环节都能看到全链路耗时和内容。</p>
+      <p><strong>Layer 3 · 成熟（正式交付要有）</strong>：加上 Metrics Dashboard——每日调用量、Token 消耗曲线、平均延迟、错误率、Bad Case 命中回归集比例、幻觉率抽检值。这一层是给运营和客户看的，不是给自己查 bug 用的。</p>
+    </div>
+  </div>
+
+  <h3>怎么用：Bad Case 分析 5 步法</h3>
+
+  <div class="steps">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>采集</strong>——日志埋点 + Trace 平台。<em>推荐 Langfuse</em>（开源、可自部署，政企环境友好，比 LangSmith 更适合国内合规）。埋点最低要求：input / prompt(完整拼接后的) / retrieval 结果 / tool 调用 / output / latency / cost。埋点写代码里的时候用 decorator 或 middleware，别散在业务代码里。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>分类</strong>——把 Bad Case 归入 <strong>5 大类</strong>：① 幻觉（编造）② 检索漏召回 ③ 工具调用错误 ④ 格式崩坏 ⑤ 超时/异常。归类不是精确科学，凭第一直觉分即可，分错了后续再改。分类的价值是<strong>让你能按类型统计</strong>——如果 60% 都是"检索漏召回"，那你 Prompt 调再多都是白搭，该动 RAG 的切分和向量化了。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>归因</strong>——定位到具体环节。这一步靠 Trace 视图。看：Prompt 里有没有相关信息？检索 top-k 命中没命中？工具返回值格式对不对？模型输出是否严格 follow Prompt 里的格式要求？归因不清就别急着改，宁可多花 20 分钟找准，也别<strong>盲改一小时白干</strong>。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>改进</strong>——先小改再大改。三种改法优先级：Prompt 微调（最便宜）→ 检索/工具/参数调整（中等）→ 换模型/加微调（最贵）。<strong>每次改动必须 A/B 测试对比</strong>——拿 20-50 条评测集跑一遍新旧两版，看命中率变化，别只看那一条 Bad Case 好没好。灰度上线：先 5% 流量试，再 30%，再全量。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>验证</strong>——把这条 Bad Case 加入回归测试集。<strong>这一步 80% 的团队都跳过</strong>——修完就上线，下次改另一个 Bad Case 时把这条又改坏了都没人知道。回归集是你的护城河，每一条 Bad Case 都是一块砖。回归集要能一键跑，跑完出报告：本次改动让整体命中率从 X% 到 Y%，其中 3 条历史 Bad Case 有 1 条又崩了。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 板块 3：动手步骤 -->
+<div class="card">
+  <h2>🛠️ 三、动手步骤：跟着做一个真实 Bad Case 全过程</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>下面这个 case 是某单位某供电公司招投标 RAG 助手的真实 Bad Case，脱敏后拿来给你练。跟做完你就掌握了从"发现问题"到"回归验证"的完整闭环。后两个自己练。</p>
+    </div>
+  </div>
+
+  <details class="case-block" open>
+    <summary>📌 案例 A · RAG 答错"招标截止时间"（跟着做）</summary>
+    <div class="case-body">
+      <h5>现象</h5>
+      <p>用户问："<em>2024 年新一代智能配电终端项目的招标截止时间是什么时候？</em>"</p>
+      <p>Agent 答："<em>投标截止时间是 2024 年 3 月 15 日 17:00。</em>"</p>
+      <p>——听起来好像挺专业，但用户炸了：<strong>"我问的是招标截止时间，不是投标截止时间！这两个是完全不同的日期！"</strong></p>
+
+      <h5>Step 1 · 采集：捞出这条完整 Trace</h5>
+      <p>打开 Langfuse，按 user_id + timestamp 定位到这条会话。Trace 视图显示这次调用有 3 个 span：<code>retrieval</code>（检索）→ <code>rerank</code>（重排）→ <code>generation</code>（生成）。全部展开看。</p>
+      <div class="code-block">Trace ID: trace-abc123
+├─ retrieval (312ms)
+│  Query: "招标截止时间"
+│  Top-5 chunks retrieved:
+│    #1  score=0.87  "...投标文件递交截止时间：2024年3月15日..."
+│    #2  score=0.85  "...投标保证金缴纳截止：2024年3月10日..."
+│    #3  score=0.83  "...投标澄清答疑截止：2024年3月8日..."
+│    #4  score=0.79  "...招标公告发布日期：2024年2月20日..."
+│    #5  score=0.76  "...招标文件领取截止：2024年2月28日..."
+├─ rerank (48ms)   → 保留 top-3（都是"投标"）
+└─ generation (1.2s)
+   Prompt片段: "基于以下资料回答问题：[chunk1, chunk2, chunk3]..."
+   Output: "投标截止时间是 2024 年 3 月 15 日 17:00。"</div>
+
+      <h5>Step 2 · 分类</h5>
+      <p>属于哪一类？——不是幻觉（答案确实在资料里），不是格式崩，不是超时。<strong>是"检索漏召回"</strong>——用户问"招标截止"，top-3 全被"投标"相关内容占了，"招标文件领取截止"排到 top-5 才出现，重排后被砍掉。</p>
+
+      <h5>Step 3 · 归因</h5>
+      <p>为什么会漏召回？三个可能：</p>
+      <ul style="margin-left: 24px;">
+        <li>① 向量模型对"招标 vs 投标"的语义区分不够（这两个词向量太接近）</li>
+        <li>② 切片时"招标"相关内容的 chunk 数远少于"投标"相关（数据分布不均）</li>
+        <li>③ 检索没做 query 扩展/关键词过滤（"招标"这个关键词权重不够）</li>
+      </ul>
+      <p>翻底层数据验证——发现问题主要是 ①+③：<strong>"招标"和"投标"在通用中文向量模型里余弦相似度高达 0.94</strong>，模型觉得这俩差不多。而 top-5 里 4 条都是"投标"，只有 1 条是"招标"相关。</p>
+
+      <h5>Step 4 · 改进：三版方案 A/B 对比</h5>
+      <table>
+        <thead><tr><th style="width: 8%">方案</th><th style="width: 32%">改动</th><th style="width: 20%">评测集命中率</th><th>成本</th></tr></thead>
+        <tbody>
+          <tr><td><strong>V0</strong></td><td>原始（纯向量检索）</td><td>62%（50 条评测集）</td><td>基线</td></tr>
+          <tr><td><strong>V1</strong></td><td>Prompt 里加"注意区分'招标'和'投标'是两个不同概念"</td><td>68%（+6pp）</td><td>免费，见效小</td></tr>
+          <tr><td><strong>V2</strong></td><td>检索加入 BM25 关键词分数 × 0.4 + 向量分数 × 0.6 混合排序</td><td>84%（+22pp）</td><td>改代码，见效显著</td></tr>
+          <tr><td><strong>V3</strong></td><td>V2 + 增加 query 扩展（"招标截止" → "招标文件领取截止 / 招标截止日期"）</td><td>91%（+29pp）</td><td>再加一层，工程量中</td></tr>
+        </tbody>
+      </table>
+      <p><strong>决策：</strong>V2 上线（性价比最高），V3 加入 Roadmap 下个迭代做。灰度：5% 试 3 天 → 30% 试 1 周 → 100%。</p>
+
+      <h5>Step 5 · 验证：加入回归集</h5>
+      <p>把这条 case 连同"招标 vs 投标"整个语义对，扩展成 <strong>8 条回归测试用例</strong>（不同表述、不同项目、不同时间点），一起进回归集。以后每次改 RAG / 换向量模型 / 调 chunk 大小，都要跑这 8 条 + 原有回归集，命中率不能低于 90%。</p>
+
+      <h5>📓 复盘一句话</h5>
+      <p><strong>不是模型不行，是检索不行。80% 的 RAG Bad Case 都在检索环节，不在生成环节。</strong></p>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 B · Function Calling 幻觉（自己练）</summary>
+    <div class="case-body">
+      <p><strong>现象：</strong>用户问"帮我查一下某单位某分公司 2024 年 Q3 的项目中标数量"。Agent 调用了 <code>query_bid_stats(company, year, quarter)</code> 工具，但工具返回值是 <code>{"error": "no data for 2024Q3"}</code>。结果 Agent 最终答：<em>"某单位某分公司 2024 年 Q3 共中标 47 个项目。"</em></p>
+      <p style="color: var(--gray-500);">按 5 步法自己走一遍，找出这是哪一类 Bad Case、归因到哪一环、你的改进方案是什么。</p>
+
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--primary); font-weight: 600;">查看参考答案</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <p><strong>分类：</strong>③ 工具调用错误 + ① 幻觉（组合型）。工具返回了 error，但模型无视 error，编造了数字。</p>
+          <p><strong>归因：</strong>Prompt 里没有告诉模型"工具返回 error 时该怎么办"。模型的默认行为是"编一个合理的数字应付用户"——这是模型的老毛病。</p>
+          <p><strong>改进方案（3 层）：</strong></p>
+          <ol style="margin-left: 24px;">
+            <li><strong>Prompt 硬约束</strong>：加一段"如果工具返回 error 字段，你必须直接把 error 告诉用户，禁止编造数字"。这一步能拦住 70% 的幻觉。</li>
+            <li><strong>代码兜底</strong>：在工具调用返回后加一个中间层——如果 error 存在，直接跳过模型生成，用固定话术回复"该数据暂不可查询，可能原因：XX"。这是最稳的。</li>
+            <li><strong>Trace 打标</strong>：把所有"工具返回 error 但模型没提 error"的 case 打标签自动落到 Bad Case 库，人工不用一条条捞。</li>
+          </ol>
+          <p><strong>验证：</strong>加 15 条工具异常回归用例（超时/error/空数据/字段缺失），每次改动都跑。</p>
+          <p><strong>面试金句：</strong><em>"Function Calling 里模型忽视工具异常继续编答案，是 Agent 里最隐蔽的幻觉。Prompt 拦一层 + 代码兜一层，两条都不能少。"</em></p>
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 C · 判断题——给一段日志，问题在哪一层？（自己练）</summary>
+    <div class="case-body">
+      <p><strong>场景：</strong>你收到用户反馈"Agent 答非所问"。捞出的 Trace 如下：</p>
+      <div class="code-block">用户 Query: "帮我把上个月的报销单汇总成 Excel"
+├─ intent_router (85ms)
+│  分类结果: "数据查询意图" (置信度 0.71)
+├─ retrieval (220ms)
+│  Query: "上个月的报销单"
+│  Top-3: 都是"报销制度说明"chunk
+├─ generation (900ms)
+│  Output: "根据公司报销制度，员工报销需要..."</div>
+      <p style="color: var(--gray-500);">问题出在哪一层？① 意图识别？② 检索？③ 生成？给出你的判断和归因。</p>
+
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--primary); font-weight: 600;">查看参考答案</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <p><strong>问题在①意图识别层</strong>——用户的真实意图是"生成 Excel 报表"（工具调用类），但意图路由把它分成了"数据查询"（RAG 类），置信度只有 0.71 也偏低。分错了意图，后面走了 RAG 分支，检索的都是"报销制度"，跟用户想要的差了十万八千里。</p>
+          <p><strong>归因确认方法</strong>：如果这里意图判对了走"工具调用"分支，应该调用 <code>generate_expense_report(month)</code>，才是用户要的。所以后两层不是问题源头，只是被前面带偏了。</p>
+          <p><strong>改进方案</strong>：① 意图分类器加 few-shot（把"汇总/生成/整理成 Excel"这类模式喂进去）；② 意图置信度低于 0.8 时反问用户"您是想查询报销数据还是生成报销汇总表？"——<strong>反问澄清比乱猜好 10 倍</strong>。</p>
+          <p><strong>关键学习点</strong>：<strong>多环节 Agent，先看第一环，第一环错了后面全错</strong>。Trace 从上往下看，别从输出倒推。</p>
+        </div>
+      </details>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 4：速查卡 -->
+<div class="card">
+  <h2>📇 四、速查卡</h2>
+
+  <div class="cheatsheet">
+    <div class="cs-title">🗂️ Bad Case 分类模板（5 大类 + 常见触发场景）</div>
+    <table>
+      <thead><tr><th style="width: 18%">类型</th><th style="width: 42%">典型症状</th><th>常见根因</th></tr></thead>
+      <tbody>
+        <tr><td><strong>① 幻觉</strong></td><td>编造事实、编造数字、编造工具返回值</td><td>Prompt 没兜底、temperature 高、上下文缺</td></tr>
+        <tr><td><strong>② 检索漏召回</strong></td><td>答的是相关但错的信息 / 答"我不知道"</td><td>切片过大/过小、向量模型不匹配、query 表述差异</td></tr>
+        <tr><td><strong>③ 工具调用错</strong></td><td>参数错、工具选错、忽略 error 继续编</td><td>工具描述不清、参数 schema 模糊、无异常处理约束</td></tr>
+        <tr><td><strong>④ 格式崩坏</strong></td><td>要求 JSON 输出结果不是合法 JSON、Markdown 断裂</td><td>无 few-shot、无 output schema、模型能力不够</td></tr>
+        <tr><td><strong>⑤ 超时/异常</strong></td><td>无响应、报错、429/500</td><td>长上下文、并发过高、API 限流、网络抖动</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">🧪 Prompt A/B 测试 SOP</div>
+    <ol style="margin-left: 24px;">
+      <li><strong>建评测集</strong>：20-50 条覆盖典型场景的 QA 对（含 Bad Case），标准答案人工标好</li>
+      <li><strong>双盲运行</strong>：新旧 Prompt 都跑一遍，输出打乱顺序，评审人不知道哪版是哪版</li>
+      <li><strong>打分维度</strong>：准确性 / 相关性 / 格式合规 / 有害内容 / 长度合理（5 维，每维 1-5 分）</li>
+      <li><strong>统计显著性</strong>：新版比旧版平均分高 &lt; 0.3 别急着上，可能只是波动</li>
+      <li><strong>灰度上线</strong>：5% → 30% → 100%，每阶段观察 3 天以上，看 Metrics 曲线不掉</li>
+    </ol>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">🧰 AI 可观测性工具选型</div>
+    <table>
+      <thead><tr><th style="width: 18%">工具</th><th style="width: 22%">适合场景</th><th style="width: 30%">优势</th><th>坑</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Langfuse</strong></td><td>政企/开源自部署/中大团队</td><td>开源、私有部署友好、Trace + Metrics + 评测集一体</td><td>UI 中文不太友好、需要自己运维</td></tr>
+        <tr><td><strong>LangSmith</strong></td><td>互联网/云上/团队用 LangChain</td><td>官方支持、上手快、集成好</td><td>SaaS 为主、数据出境政企不能用</td></tr>
+        <tr><td><strong>自建 ELK</strong></td><td>已有 ELK 基础设施</td><td>复用现有栈、日志检索强</td><td>没有 Trace 树视图、要自己搭 Dashboard</td></tr>
+        <tr><td><strong>Phoenix</strong></td><td>轻量试用 / 单机调试</td><td>Arize 出品、零配置本地起</td><td>不适合生产、多用户支持弱</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">🔑 埋点最低标准（Copy 走）</div>
+    <div class="code-block">{
+  "trace_id": "uuid",
+  "user_id": "user_xxx",
+  "timestamp": "2024-XX-XX HH:MM:SS",
+  "input": "用户原始问题",
+  "prompt": "拼接后的完整 prompt",
+  "retrieved_chunks": [{"score": 0.87, "text": "..."}],
+  "tool_calls": [{"name": "xxx", "args": {}, "result": {}}],
+  "output": "模型最终输出",
+  "model": "qwen-max-2024",
+  "usage": {"prompt_tokens": 1234, "completion_tokens": 89},
+  "latency_ms": 1520,
+  "error": null,
+  "feedback": null   // 用户点赞点踩后回填
+}</div>
+  </div>
+</div>
+
+<!-- 板块 5：5 题测验 -->
+<div class="card">
+  <h2>📝 五、5 题小测验</h2>
+  <p style="color: var(--gray-600); font-size: 14px;">建议先自己想 20 秒再点开答案。错项解析比正确答案更值钱。</p>
+
+  <details class="quiz-item">
+    <summary>Q1 · 用户反馈一个 Bad Case，你的第一反应最该是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 让用户重问一次，看能不能复现</li>
+        <li>B. 直接改 Prompt 试试看能不能好</li>
+        <li>C. 拉这条会话的完整 Trace 日志，看每一环发生了什么</li>
+        <li>D. 换个更贵的模型跑跑试试</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：C</div>
+        <p>Bad Case 分析 5 步的第一步就是"采集"——拉完整 Trace 才有分析基础。<strong>没有数据的调优就是碰运气</strong>。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 是"坑 1"</strong>——AI 是不确定性系统，重跑很可能"这次好了"，但 bug 只是被 temperature 藏起来了。<strong>B 跳过归因直接改是最典型的盲改</strong>——你都不知道问题在检索还是生成，改 Prompt 大概率白改。<strong>D 换模型是最贵最偷懒的方案</strong>——先看清问题在哪一层，很多时候换模型没用（问题在检索或工具层）。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q2 · Logs / Traces / Metrics 三件套，下面搭配正确的是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. Logs 看趋势、Traces 看单次、Metrics 看细节</li>
+        <li>B. Logs 看单次调用细节、Traces 看多步链路、Metrics 看整体健康度趋势</li>
+        <li>C. 三者作用一样，选一个就够</li>
+        <li>D. Traces 是 Logs 的升级版，有 Traces 就不用 Logs 了</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>Logs 回答"这一次发生了什么"（单点）、Traces 回答"链路里哪一步出错"（多步）、Metrics 回答"整体好不好、趋势对不对"（宏观）。三者互补，缺一不可。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 把三者的角色对调了</strong>——Logs 才是细节，Metrics 才是趋势，Traces 是链路。<strong>C 是典型误区</strong>——只有 Logs 你看不到链路，只有 Metrics 你查不到具体 case。<strong>D 错在 Traces ≠ Logs 升级版</strong>——Traces 关注"步骤之间的关系"，Logs 关注"每一步内部的内容"，一个偏拓扑一个偏内容。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q3 · 改完 Prompt 后，验证有效性的正确方式是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 拿出问题那一条 Bad Case 重跑，好了就上线</li>
+        <li>B. 拿 20-50 条评测集（含 Bad Case + 历史正常 case）跑 A/B 对比</li>
+        <li>C. 让客户试用一周，没投诉就算过</li>
+        <li>D. 相信自己的经验，Prompt 写得漂亮就没问题</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>A/B 测试 + 评测集是唯一靠谱的验证方式。<strong>只看 Bad Case 那一条是"过拟合到 Bad Case"</strong>——你改的 Prompt 可能修好了这一条，但把其他 30 条本来好的答坏了。评测集必须同时覆盖 Bad Case 和历史正常 case。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 是最常见的错法</strong>——修好一条不代表整体好了，甚至可能整体变差。<strong>C 把生产环境当测试场，客户不投诉不代表没问题</strong>（很多用户遇到 bug 直接不用，不会来投诉）。<strong>D 是新人 FDE 最容易犯的傲慢——没数据支撑的"我觉得"在 AI 项目里等于零</strong>。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q4 · 关于 Bad Case 库，下面说法错误的是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 每个 Bad Case 都应该沉淀成一条记录，含现象/根因/修复方案</li>
+        <li>B. Bad Case 库主要给客户看，展示我们发现和修复问题的能力</li>
+        <li>C. 每条 Bad Case 都应该扩展成 3-5 条回归测试用例</li>
+        <li>D. 每次改 Prompt / 换模型都要跑一遍回归集，命中率不能倒退</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>Bad Case 库主要是<strong>给自己团队</strong>用的——是内部资产、迭代护城河。客户可能永远看不到，但它决定你团队第二次遇到同类问题时是 2 分钟解决还是 2 小时解决。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 说的是标准做法</strong>——不沉淀就等于白查。<strong>C 说的扩展一条为多条也对</strong>——一条 Bad Case 背后往往是一类问题，只写一条测试用例覆盖不全。<strong>D 是回归测试的核心纪律</strong>——不跑回归集就上线 = 用生产环境当测试环境。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q5 · 综合题：RAG 助手用户反馈"经常答非所问"，你会怎么系统地查？</summary>
+    <div class="quiz-body">
+      <p style="color: var(--gray-600); margin-bottom: 8px;">按 5 步法给出你的排查计划。</p>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 参考答案：先分类归因，再决定改哪一层</div>
+        <p><strong>Step 1 · 采集：</strong>从近 7 天日志中捞出所有 <em>用户显式或隐式打差评</em> 的会话（点踩、追问"你没答我问题"、重复提问），Trace 全部导出。目标至少 30 条。</p>
+        <p><strong>Step 2 · 分类：</strong>按 5 大类打标签。假设结果：检索漏召回 60%、幻觉 20%、格式崩 10%、工具错 5%、其他 5%。<strong>这一步定了你后面的重心。</strong></p>
+        <p><strong>Step 3 · 归因：</strong>拿出"检索漏召回"那 18 条挖深——共同点是啥？可能是：切片过大导致 top-k 稀疏 / 用户 query 里的口语化词（"截止时间"vs 文档里的"申报期限"）向量匹配差 / 某个业务领域的 chunk 数量本身就少。</p>
+        <p><strong>Step 4 · 改进：</strong>分层出手——① Prompt 加澄清反问兜底（成本最低，先做）② 检索加 BM25 + 向量混合（工程中等，做第二版）③ 领域数据补充切片和领域向量微调（成本高，看 ROI 再上）。三层各自 A/B 对比评测集。</p>
+        <p><strong>Step 5 · 验证：</strong>把这 30 条 Bad Case 全部进回归集，扩展到 50-80 条。每周跑一次回归，命中率作为团队北极星指标之一。</p>
+        <p><strong>面试金句：</strong><em>"看到'经常答非所问'我不会去改 Prompt，我会先拉 30 条 Trace 分类。60% 是检索问题就动检索，60% 是幻觉才动 Prompt——用数据定位方向比经验拍脑袋靠谱 10 倍。"</em></p>
+      </div>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 6：面试金句 + 心得笔记 -->
+<div class="card">
+  <h2>💼 六、面试金句预埋</h2>
+
+  <div class="interview-quote">
+    <span class="iq-tag">可观测性文化</span>
+    "AI 应用不能没有可观测性。<strong>Logs 看单点、Traces 看链路、Metrics 看趋势</strong>，三件套缺一不可。我们团队第一周就把 Langfuse 部起来了——没这个基础后面所有 Bad Case 都是靠猜。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">Bad Case 库价值</span>
+    "我最看重的团队资产不是 Prompt 库，是 <strong>Bad Case 库 + 回归测试集</strong>。每一条问题都沉淀成一块砖——半年之后新员工来查历史 case 30 分钟能上手，而不是每次都从零开始。这才是可持续的迭代能力。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">灰度纪律</span>
+    "Prompt 一改就全量上线是我见过最危险的操作。<strong>我们所有改动都走 A/B + 灰度 5%→30%→100%</strong>。评测集拿命中率说话，命中率不涨 3pp 以上不上线。感觉是'好像好一点'的时候，往往就是回归又崩一条历史 case。"
+  </div>
+
+  <h3>📓 心得笔记</h3>
+  <div class="box box-red">
+    <div class="box-title">⚠️ 今天最反直觉的 3 件事</div>
+    <div>
+      <p><strong>1.</strong> AI debug 出问题不能重跑复现——不确定性系统重跑等于自杀。<em>（用日志 + Trace 分析，别靠重现。）</em></p>
+      <p><strong>2.</strong> 80% 的 RAG Bad Case 在检索层，不在生成层。<em>（先看 Trace 里 retrieval 的 top-k，别急着骂模型。）</em></p>
+      <p><strong>3.</strong> 修好一条 Bad Case 不算完事——加入回归集才算完。<em>（没进回归集的修复，下次改动就会把它改坏。）</em></p>
+    </div>
+  </div>
+
+  <div class="box box-orange">
+    <div class="box-title">🎯 老 PM 转 FDE 的思维切换</div>
+    <div>
+      <p>你以前做交付管的是"进度、质量、验收"这三件事，出了问题找开发。现在做 FDE，<strong>"质量"这一件事有一半要你自己扛</strong>——因为 Bad Case 定位没有代码 bug 那么清楚，需要一个懂业务又能读日志的人先分类再派活。这个人就是 FDE。你的某公司多年交付经验在"分类归因"这一步是加分项——你知道客户投诉的话怎么听、真痛点在哪。</p>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  学习笔记 · AI 项目经理成长 · FDE v2 · Day 10<br>
+  下一站 → Day 11 Git 基础 + Code Review + 提 issue/PR
+</div>
+
+</div>
+</body>
+</html>

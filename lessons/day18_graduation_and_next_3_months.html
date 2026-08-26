@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FDE v2 · Day 18 · 结营 · 雷达图重测 + 未来 3 个月成长路径</title>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-bg: #eff6ff;
+  --blue-dark: #1e40af;
+  --orange: #ea580c;
+  --orange-bg: #fff7ed;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --green: #059669;
+  --green-bg: #ecfdf5;
+  --yellow: #d97706;
+  --yellow-bg: #fffbeb;
+  --purple: #7c3aed;
+  --purple-bg: #f5f3ff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-800: #1f2937;
+  --text: #1a1a2e;
+  --text-light: #6b7280;
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: #f0f4f8; color: var(--text); line-height: 1.8; font-size: 16px;
+}
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+.hero {
+  background: linear-gradient(135deg, #064e3b 0%, #047857 55%, #059669 100%);
+  color: #fff; border-radius: var(--radius); padding: 32px 30px 26px; margin-bottom: 20px;
+}
+.hero-badge { display: inline-block; background: rgba(255,255,255,0.18); padding: 4px 14px; border-radius: 20px; font-size: 12px; margin-bottom: 10px; }
+.hero h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; }
+.hero .subtitle { font-size: 14.5px; opacity: 0.92; margin-bottom: 14px; line-height: 1.7; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; opacity: 0.85; }
+.hero-back { font-size: 12px; margin-top: 10px; opacity: 0.75; }
+.hero-back a { color: #fff; text-decoration: underline; }
+
+.card { background: #fff; border-radius: var(--radius); padding: 26px 26px 22px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.card h2 { font-size: 20px; font-weight: 700; color: var(--green); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.card h3 { font-size: 17px; font-weight: 600; color: var(--gray-800); margin: 22px 0 10px; padding-left: 12px; border-left: 3px solid var(--green); }
+.card h4 { font-size: 15px; font-weight: 600; margin: 14px 0 8px; color: var(--gray-800); }
+p { margin-bottom: 10px; }
+code { background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-size: 14px; font-family: "Cascadia Code", "Fira Code", Consolas, monospace; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-size: 14px; }
+th { background: var(--green); color: #fff; padding: 9px 12px; text-align: left; font-weight: 600; font-size: 13px; }
+td { padding: 9px 12px; border-bottom: 1px solid var(--gray-200); vertical-align: top; }
+tr:nth-child(even) td { background: var(--gray-50); }
+
+.box { border-radius: 8px; padding: 14px 16px; margin: 14px 0; border-left: 4px solid; font-size: 14.5px; }
+.box-blue { background: var(--primary-bg); border-color: var(--primary); }
+.box-green { background: var(--green-bg); border-color: var(--green); }
+.box-yellow { background: var(--yellow-bg); border-color: var(--yellow); }
+.box-red { background: var(--red-bg); border-color: var(--red); }
+.box-purple { background: var(--purple-bg); border-color: var(--purple); }
+.box-orange { background: var(--orange-bg); border-color: var(--orange); }
+.box-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+
+.mentor { background: linear-gradient(135deg, #ecfdf5 0%, #eff6ff 100%); border-radius: 10px; padding: 16px 18px; margin: 14px 0; border: 1px solid #a7f3d0; position: relative; }
+.mentor::before { content: '👨‍🏫'; position: absolute; top: -12px; left: 16px; background: #fff; padding: 0 6px; font-size: 20px; }
+.mentor .mentor-title { font-weight: 700; color: #065f46; font-size: 14px; margin-bottom: 6px; margin-top: 4px; }
+.mentor .mentor-body { font-size: 14.5px; color: var(--gray-800); line-height: 1.75; }
+.mentor .mentor-body p { margin-bottom: 8px; }
+
+.goal-list { list-style: none; padding: 0; }
+.goal-list li { padding: 8px 0 8px 32px; position: relative; font-size: 15px; }
+.goal-list li::before { content: '🎯'; position: absolute; left: 4px; top: 8px; font-size: 15px; }
+
+.mnemonic { background: linear-gradient(135deg, #a7f3d0, #6ee7b7); border-radius: 10px; padding: 14px 18px; margin: 14px 0; text-align: center; }
+.mnemonic .m-title { font-size: 12px; color: #064e3b; margin-bottom: 6px; letter-spacing: 2px; }
+.mnemonic .m-line { font-size: 18px; font-weight: 700; color: #064e3b; letter-spacing: 3px; }
+.mnemonic .m-explain { font-size: 13px; color: #065f46; margin-top: 6px; }
+
+.cheatsheet { border: 2px dashed var(--green); border-radius: 10px; padding: 16px 18px; margin: 14px 0; background: #ecfdf5; }
+.cheatsheet .cs-title { font-weight: 700; color: #065f46; font-size: 15px; margin-bottom: 10px; }
+
+.steps { counter-reset: step; margin: 12px 0; }
+.step-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px dashed var(--gray-200); }
+.step-item:last-child { border-bottom: none; }
+.step-item .step-num { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--green); color: #fff; text-align: center; line-height: 34px; font-weight: 700; }
+.step-item .step-body { flex: 1; }
+.step-item .step-body strong { color: #065f46; }
+
+.quiz-item { border: 1px solid var(--gray-200); border-radius: 8px; margin: 10px 0; overflow: hidden; }
+.quiz-item summary { background: var(--green-bg); padding: 12px 14px; cursor: pointer; font-weight: 600; color: var(--green); font-size: 14.5px; }
+.quiz-item[open] summary { border-bottom: 1px solid var(--gray-200); }
+.quiz-body { padding: 12px 16px; }
+.quiz-options { list-style: none; padding: 0; }
+.quiz-options li { padding: 5px 0; font-size: 14px; }
+.quiz-answer { background: var(--green-bg); border-left: 3px solid var(--green); padding: 10px 12px; margin-top: 10px; font-size: 14px; border-radius: 4px; }
+.quiz-answer .ans-title { font-weight: 700; color: var(--green); margin-bottom: 6px; }
+.wrong-analysis { background: var(--red-bg); border-left: 3px solid var(--red); padding: 10px 12px; margin-top: 8px; font-size: 13.5px; border-radius: 4px; }
+.wrong-analysis .wa-title { font-weight: 700; color: var(--red); margin-bottom: 4px; }
+
+.case-block { border: 1px solid var(--gray-200); border-radius: 8px; margin: 12px 0; overflow: hidden; }
+.case-block summary { background: linear-gradient(135deg, #d1fae5, #a7f3d0); padding: 12px 14px; cursor: pointer; font-weight: 600; color: #065f46; font-size: 14.5px; }
+.case-block .case-body { padding: 14px 16px; font-size: 14px; }
+.case-block .case-body h5 { color: #065f46; margin: 10px 0 6px; font-size: 14px; }
+
+.interview-quote { background: linear-gradient(135deg, #064e3b, #047857); color: #fff; border-radius: 10px; padding: 18px 20px; margin: 14px 0; font-size: 15px; font-style: italic; line-height: 1.8; position: relative; }
+.interview-quote::before { content: '💼'; position: absolute; top: -10px; left: 16px; background: #fff; padding: 2px 6px; border-radius: 12px; font-size: 16px; }
+.interview-quote .iq-tag { display: block; font-size: 11px; opacity: 0.8; margin-bottom: 6px; font-style: normal; letter-spacing: 1px; }
+
+.footer { text-align: center; color: var(--text-light); font-size: 12px; padding: 20px 0 36px; border-top: 1px solid var(--gray-200); margin-top: 16px; }
+
+@media (max-width: 640px) {
+  .container { padding: 12px; }
+  .hero { padding: 24px 18px 20px; }
+  .hero h1 { font-size: 20px; }
+  .card { padding: 20px 16px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="hero">
+  <div class="hero-badge">FDE v2 · Phase 5 · Day 18 · 结营</div>
+  <h1>🎓 结营 · 雷达图重测 + 未来 3 个月成长路径</h1>
+  <div class="subtitle">18 天你走完了<strong>从 PM 到 FDE 的第一段路</strong>——今天不学新东西，只做 3 件事：<strong>知道你到哪了、把学的东西沉淀下来、想清楚下一步</strong>。</div>
+  <div class="hero-meta">
+    <span>🎉 Phase 5 · 结营</span>
+    <span>⏱️ 预计 90 分钟（含重测）</span>
+    <span>🧭 输出：新雷达图 + 3 个月成长路径</span>
+  </div>
+  <div class="hero-back">FDE v2 学习路径 · <a href="./day00_fde_panorama_and_radar.html">→ 打开 Day 0 重测 35 题</a></div>
+</div>
+
+<!-- 板块 1：今日目标 -->
+<div class="card">
+  <h2>🎯 一、今日目标</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>先恭喜你。18 天，6 个阶段，35 题自评 ×2，三个真实案例 ×18 天——这个完成度，已经超过 90% 说"我要转型"的人了。</p>
+      <p>但今天这 90 分钟比前面任何一天都重要。因为<strong>学完不复盘，3 天后忘 70%</strong>；不复盘能力变化，你就不知道这 18 天到底改变了什么；不想下一步，这 18 天就只是一段"学过"的记忆，而不是转型的起点。</p>
+    </div>
+  </div>
+
+  <ul class="goal-list">
+    <li>重测 35 题，对比 Day 0 基线，<strong>量化你的能力变化</strong></li>
+    <li>萃取 18 天最反直觉的观点，写成你自己的 <strong>《FDE 心法卡》</strong></li>
+    <li>从 3 条路径里<strong>锁定未来 3 个月的下一步</strong>，并写下第一周行动</li>
+  </ul>
+</div>
+
+<!-- 板块 2：核心讲解 -->
+<div class="card">
+  <h2>📖 二、核心讲解</h2>
+
+  <h3>是什么：18 天你到底学了什么（总览地图）</h3>
+  <table>
+    <thead>
+      <tr><th style="width: 16%">阶段</th><th style="width: 26%">解决什么问题</th><th style="width: 30%">核心产出</th><th>对应能力</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Phase 0</td><td>我在哪，缺什么</td><td>七维雷达基线（3.17 分）</td><td>全局</td></tr>
+      <tr><td>Phase 1（Day 1-3）</td><td>需求该不该接、方案怎么选</td><td>三条决策线 + 架构决策树 + 方案模板</td><td>① ②</td></tr>
+      <tr><td>Phase 2（Day 4-9）</td><td>从 0 到 1 搭出能演示的 Demo</td><td>端到端 RAG Demo</td><td>③</td></tr>
+      <tr><td>Phase 3（Day 10-11）</td><td>出了问题我能自己查、自己改</td><td>Bad Case 5 步法 + Git/Review 视角</td><td>④</td></tr>
+      <tr><td>Phase 4（Day 12-16）</td><td>让系统在客户真实环境活下去</td><td>网络地形图 + 白名单 SOP + 离线部署 + 合规清单</td><td>⑦</td></tr>
+      <tr><td>Phase 5（Day 17-18）</td><td>交付签字、能力沉淀</td><td>验收 4 段模板 + 心法卡 + 3 个月路径</td><td>⑤ ⑥</td></tr>
+    </tbody>
+  </table>
+  <p>注意看右列：你补的是 <strong>②③④⑦</strong>——正好是 Day 0 雷达图上凹进去的四个角。这条路径从第一天起就是为你定制的。</p>
+
+  <div class="mnemonic">
+    <div class="m-title">□ □ □ 结营口诀 □ □ □</div>
+    <div class="m-line">知 · 练 · 带</div>
+    <div class="m-explain">自己知道 → 独立练透 → 能带别人 · 三层才算真的会</div>
+  </div>
+
+  <h3>为什么：3 个反直觉</h3>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 反直觉 1 · 学完不复盘 = 白学</div>
+    <div>记忆曲线不骗人：不复盘，3 天忘 70%，30 天忘 90%。复盘不是"回顾"，是<strong>把知识从"认得"变成"用得出来"</strong>的唯一工序。今天的《心法卡》就是你的复盘产物。</div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 反直觉 2 · 看能力变化，不看知识清单</div>
+    <div>"我学了 RAG、学了白名单"是知识清单；"③ 搭原型从 2.6 到 3.8"是能力变化。<strong>面试和实战认的是后者。</strong>所以今天第一件事是重测雷达图，不是翻笔记。</div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 反直觉 3 · 不想下一步，就没有下一步</div>
+    <div>能力不用就退。3 个月不碰代码，③④ 会掉回原形。<strong>结营不是结束，是"保持训练"的开始</strong>——今天必须锁定一条路径 + 写下第一周行动，否则这 18 天只是简历上的一行字。</div>
+  </div>
+
+  <div class="box box-blue">
+    <div class="box-title">🧭 PM 行动指南：结营复盘 3 步法</div>
+    <div>
+      <p><strong>Step 1 能力自检</strong>：重测 35 题 → 对比基线 → 看最弱 3 项涨了几分。</p>
+      <p><strong>Step 2 知识萃取</strong>：18 天各挑 1 条最反直觉观点 → 写成 20 条心法卡。</p>
+      <p><strong>Step 3 下一步锁定</strong>：实战 / 深造 / 教别人，三选一 + 第一周行动写死在日历上。</p>
+    </div>
+  </div>
+</div>
+
+<!-- 板块 3：动手步骤 -->
+<div class="card">
+  <h2>🛠️ 三、动手步骤：完成你的结营三件套</h2>
+
+  <details class="case-block" open>
+    <summary>📌 跟做 · FDE 心法 20 条（先读，再写你自己的版本）</summary>
+    <div class="case-body">
+      <p>下面是我从 18 天里萃取的 20 条。<strong>你的任务不是背，是对照自己的经历改写</strong>——改成带你自己案例的版本，才有用。</p>
+      <ol style="margin-left: 24px;">
+        <li><strong>Day 1</strong>：AI 最贵的成本不是开发，是接了一个不该用 AI 做的活。</li>
+        <li><strong>Day 1</strong>：能做·值做·敢做，缺一票否决。</li>
+        <li><strong>Day 2</strong>：先问"步骤固不固定"，再谈架构——80% 场景死在工作流就够。</li>
+        <li><strong>Day 2</strong>：RAG 是知识源，Agent 是决策架构，两者不冲突。</li>
+        <li><strong>Day 3</strong>：方案文档要同时过客户商务和开发技术两关。</li>
+        <li><strong>Day 3</strong>：Token 账算不清，预算就守不住。</li>
+        <li><strong>Day 4</strong>：PM 和 FDE 的分水岭，是你有没有亲手跑通过一次 API。</li>
+        <li><strong>Day 4</strong>：API Key 进代码 = 安全事故，环境变量是底线。</li>
+        <li><strong>Day 5</strong>：80% 的 Agent 应用死在 JSON 输出稳定性上。</li>
+        <li><strong>Day 5</strong>：Schema·示例·校验·兜底，四层防线一个不能少。</li>
+        <li><strong>Day 6</strong>：Function Calling 里模型只输出"意图"，执行永远在你的代码里。</li>
+        <li><strong>Day 7</strong>：RAG 效果 70% 死在预处理，不是模型不行。</li>
+        <li><strong>Day 8</strong>：检索决定天花板，生成只是天花板下的装修。</li>
+        <li><strong>Day 9</strong>：Demo 没有 UI 等于没有 Demo，客户看不懂 curl。</li>
+        <li><strong>Day 10</strong>：先问"通不通/记没记"，再问"对不对"——可观测性是 debug 的前提。</li>
+        <li><strong>Day 11</strong>：你不用当开发，但要看得懂、改得动小 bug、提得出好 issue。</li>
+        <li><strong>Day 12</strong>：政企"内网"不是一个网，是 3-5 个互相不通的网段。</li>
+        <li><strong>Day 13</strong>：卡住项目的往往不是技术，是一张申请单。</li>
+        <li><strong>Day 14</strong>：私有化不是默认答案，TCO 三年算下来经常是混合模式赢。</li>
+        <li><strong>Day 15-18</strong>：离线要预演、合规要前置、验收要带评测集、学完要复盘——<strong>所有"最后一公里"都要提前走一遍</strong>。</li>
+      </ol>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 自练 1 · 写你自己的《3 个月成长路径》</summary>
+    <div class="case-body">
+      <p>用下面这个模板，结合你的重测分数填。填完拍照存档。</p>
+      <pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;">【我的重测分数】最弱 3 项：____ / ____ / ____
+【Month 1 · 补弱项】每周 3 晚，针对最弱项做 2 个小练习
+  （例：⑦ 弱 → 把 Day 12-16 的 SOP 用自己项目环境走一遍）
+【Month 2 · 找实战】接 1 个真实小项目（内部工具也算）
+  目标：独立完成"需求判断→Demo→部署"全链路
+【Month 3 · 教别人】把 18 天内容讲给 3 个同事听
+  或写 3 篇公众号文章——教是最好的学</pre>
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--green); font-weight: 600;">查看参考思路</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <p>你的情况（基线 3.17，⑤⑥ 强、②③⑦ 弱）最适合的组合是：<strong>Month 1 主攻 ⑦</strong>（政企环境是你驻场天天碰的，练了马上能用，正反馈最快）→ <strong>Month 2 用你现在的评标 Agent 项目当实战场</strong>（哪怕只争取到"自己搭一个内部演示 Demo"的权限）→ <strong>Month 3 把这套学习路径讲给团队</strong>（你 PM 的沟通底子会让这一步效果翻倍，同时建立"团队里最懂 FDE 的人"的定位）。</p>
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 自练 2 · 「学完就废」反面案例拆解</summary>
+    <div class="case-body">
+      <p><strong>案例：</strong>某 PM 花了 6 周学完一套 FDE 课程，当时信心满满。3 个月后面试 FDE 岗位，被问"RAG 检索质量怎么优化"，只答出"调 Top-K"——其余全忘。面试官评价：学过，但没练透。</p>
+      <p style="color: var(--gray-500);">问题：怎么防止这件事发生在你身上？写 3 条机制。</p>
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--green); font-weight: 600;">查看参考答案</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <p><strong>机制 1 · 定期演练</strong>：每两周重做一天教程的自练案例（轮换 Day 4-16），保持手感。</p>
+          <p><strong>机制 2 · 教别人</strong>：每月给同事讲一个主题——讲不出来的地方就是你没练透的地方。</p>
+          <p><strong>机制 3 · 每月一个小项目</strong>：哪怕只是"给团队搭一个周报摘要工具"，<strong>用出来</strong>的知识才记得住。</p>
+          <p><strong>底层逻辑：</strong>对应口诀「知·练·带」——他只停在"知"，你要走到"带"。</p>
+        </div>
+      </details>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 4：速查卡 -->
+<div class="card">
+  <h2>📇 四、速查卡</h2>
+
+  <div class="cheatsheet">
+    <div class="cs-title">📈 七项能力 → 下一阶段进阶方向</div>
+    <table>
+      <thead><tr><th>能力</th><th>你结营时大概的位置</th><th>下一阶段进阶</th></tr></thead>
+      <tbody>
+        <tr><td>① 懂业务</td><td>3.0 → 3.5+</td><td>行业 Know-how 深耕（电力/政务 AI 场景库）</td></tr>
+        <tr><td>② 会翻译</td><td>2.4 → 3.0+</td><td>Multi-Agent 架构设计 + 成本精算</td></tr>
+        <tr><td>③ 搭原型</td><td>2.6 → 3.5+</td><td>复杂工作流编排 + 评测自动化</td></tr>
+        <tr><td>④ 改得动</td><td>3.4 → 4.0</td><td>读源码级 debug + 性能调优</td></tr>
+        <tr><td>⑤ 管交付</td><td>4.6</td><td>AI 项目组合管理 + 供应商管理</td></tr>
+        <tr><td>⑥ 善沟通</td><td>4.2</td><td>技术布道 + 售前支持</td></tr>
+        <tr><td>⑦ 啃环境</td><td>2.0 → 3.0+</td><td>私有化运维 + 等保测评实操</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">❓ 结营常见困惑答疑（精选 10 条）</div>
+    <ol style="margin-left: 24px; font-size: 14px;">
+      <li><strong>没项目怎么练？</strong>——给自己造：把团队周报、会议纪要做成 RAG 工具，就是项目。</li>
+      <li><strong>老板不给 API 预算？</strong>——百炼有免费额度，个人学习足够；先做出 Demo 再谈预算。</li>
+      <li><strong>同事觉得我不懂技术？</strong>——下次他抱怨 bug 时，你直接指出日志第几行——一次就够。</li>
+      <li><strong>40 岁转型晚不晚？</strong>——FDE 最值钱的是业务判断力，这恰好是年龄给的。</li>
+      <li><strong>外包身份影响转型吗？</strong>——FDE 岗位大量存在于交付型公司，外包经验反而是驻场证明。</li>
+      <li><strong>记不住这么多命令？</strong>——不用记，速查卡存手机里，用多了自然记住。</li>
+      <li><strong>重测分数没涨多少？</strong>——正常。能力滞后于知识 2-4 周，先坚持 Month 1 演练再测。</li>
+      <li><strong>要不要考证书？</strong>——证书是锦上添花，一个能演示的 Demo 才是雪中送炭。</li>
+      <li><strong>面试被问没做过的场景？</strong>——用框架答：三条决策线 + 决策树 + 兜底思维，框架比经验更显专业。</li>
+      <li><strong>学完这套算什么水平？</strong>——初级 FDE 的"知道+练过"水平，离"独立扛项目"还差 1-2 个真实项目。</li>
+    </ol>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">🗓️ 结营后 30-60-90 天行动清单</div>
+    <table>
+      <thead><tr><th>时间</th><th>行动</th><th>验收标志</th></tr></thead>
+      <tbody>
+        <tr><td>30 天</td><td>每周 3 晚演练 + 重测一次雷达</td><td>最弱 3 项各 +0.5</td></tr>
+        <tr><td>60 天</td><td>独立交付 1 个内部小工具</td><td>有真实用户 ≥ 5 人</td></tr>
+        <tr><td>90 天</td><td>讲 3 次分享 / 写 3 篇文章 + 更新简历</td><td>简历写上"独立交付 AI 应用 X"</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 板块 5：5 题测验 -->
+<div class="card">
+  <h2>📝 五、5 题小测验（结营综合考）</h2>
+  <p style="color: var(--gray-600); font-size: 14px;">这 5 题覆盖 18 天全链路。能独立答对 4 题以上，说明你已经具备初级 FDE 的判断框架。</p>
+
+  <details class="quiz-item">
+    <summary>Q1 · 新客户说"我要一个智能会议纪要助手，自动记录、自动分派任务"。你的第一步是什么？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 立刻评估用哪个模型做语音识别</li>
+        <li>B. 追问真痛点：替谁、干什么、什么时候、输出什么，再识别 AI 任务类型</li>
+        <li>C. 先报价，看客户预算</li>
+        <li>D. 直接搭 Demo 给客户看</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>Day 1 五步法第一步。"智能会议纪要"里"自动分派任务"可能涉及决策链末端（谁该干什么），要先追问清楚再判断适配性。A 是技术先行反模式，C/D 跳过了判断环节。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A</strong> 上来聊模型 = Day 1 点名的 FDE 反模式。<strong>C</strong> 预算是判断"值做"时才用的输入，不是第一步。<strong>D</strong> 没判断就搭 Demo，可能搭完发现"分派任务"客户根本不敢让 AI 做。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q2 · 该会议纪要助手需求澄清后是"录音转写 + 摘要 + 从摘要里抽任务项"，步骤固定。架构选什么？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. Multi-Agent</li>
+        <li>B. 工作流（转写→摘要→抽取三个固定节点，节点内用 LLM）</li>
+        <li>C. 纯 RAG</li>
+        <li>D. 全自主 Agent</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>Day 2 决策树第一问："步骤固不固定？"固定 → 工作流。三个环节顺序明确，不需要模型自主决策，上 Agent 是成本 5 倍还更不稳。RAG 是知识检索场景，这里没有知识库要查。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A/D 过度设计</strong>——步骤固定就不需要自主决策。<strong>C 场景不匹配</strong>——没有"从知识库里找答案"的需求。记住口诀：步骤定 → 工作流。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q3 · 上线后用户反馈"摘要里把张总说的话记到李总头上"。这属于哪类 Bad Case，优先在哪层修？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 幻觉，改 Prompt 加"不要编造"</li>
+        <li>B. 上游转写/说话人分离错误，先查转写环节日志，再决定修转写还是修摘要</li>
+        <li>C. 检索漏召回，调 Top-K</li>
+        <li>D. 格式崩溃，加 JSON 校验</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>Day 10 的归因思维：先看链路再下结论。"张冠李戴"大概率是说话人分离（diarization）在上游就错了，摘要模型只是忠实复述了错误输入。<strong>在错误的层修 bug 是 AI 项目最常见的浪费。</strong>先查 trace，定位是哪一环出错。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 是"咒语式修复"</strong>——加"不要编造"对上游输入错误毫无作用。<strong>C 场景不匹配</strong>——这不是检索问题。<strong>D 更不沾边</strong>——输出格式是好的，错在内容归属。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q4 · 客户内网部署该助手，推理走公有云 API。进场第一周你最重要的动作是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 先把 Demo 部署到客户机器</li>
+        <li>B. 提交白名单申请（域名+端口+流量估算+归属人），因为审批周期最长，是关键路径</li>
+        <li>C. 先做等保测评</li>
+        <li>D. 先培训客户用户</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>Day 13 核心认知：白名单审批是政企 AI 项目的<strong>关键路径</strong>（3-15 天），必须第一周提交，和其他工作并行。等它批的期间你再做部署、培训都不迟。A 会在连通性验证时当场翻车，C/D 顺序颠倒。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 没考虑关键路径</strong>——部署完发现 API 不通，干等两周。<strong>C</strong> 等保是上线前的关，不是第一周的事。<strong>D</strong> 系统还没活起来，培训谁？</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q5 · 综合题——客户验收时提出"摘要准确率必须 100%，否则不签字"。用 Day 17 的方法处理。</summary>
+    <div class="quiz-body">
+      <p style="color: var(--gray-600); margin-bottom: 8px;">写出你的应对思路（谈判 + 验收标准改写）。</p>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 参考答案</div>
+        <p><strong>第一步 不接 100%：</strong>100% 是"自杀条款"（Day 1 陷阱 4），签字即违约。温和而坚定地说明 AI 系统的行业惯例是"指标 + 评测集 + 兜底"。</p>
+        <p><strong>第二步 给替代验收结构：</strong>① 效果验收：双方确认的 200 条评测集上，任务抽取准确率 ≥ 90%、摘要关键信息覆盖率 ≥ 92%；② 异常验收：未达标输出必须有"低置信提示 + 转人工"兜底；③ 灰度验收：先试运行 2 周，用真实数据出验收报告。</p>
+        <p><strong>第三步 话术：</strong>"我们承诺的不是不犯错，是犯错时您看得见、兜得住、改得快。"——把客户从"追求不犯错"引导到"追求可控"。</p>
+      </div>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 6：面试金句 + 心得笔记 -->
+<div class="card">
+  <h2>💼 六、面试金句预埋</h2>
+
+  <div class="interview-quote">
+    <span class="iq-tag">转型叙事</span>
+    "我从 PM 转 FDE，不是放弃管理，而是<strong>把管理能力和动手能力接上</strong>。18 天系统训练 + 真实项目演练，让我既能和客户谈业务，也能自己把 Demo 跑起来、把环境啃下来。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">方法论</span>
+    "我做 AI 项目有三条纪律：<strong>需求先过三条决策线，架构先问步骤固不固定，交付先定评测集</strong>。这三条让我避开大多数 AI 项目的坑。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">政企经验</span>
+    "政企项目的最后一公里是环境——网络、白名单、离线、合规。<strong>我习惯在方案设计阶段就把这些坑画进架构图</strong>，而不是上线前一周才发现。"
+  </div>
+
+  <h3>📓 心得笔记</h3>
+  <div class="box box-red">
+    <div class="box-title">⚠️ 结营前要刻进脑子的 3 件事</div>
+    <div>
+      <p><strong>1.</strong> 能力 = 知识 × 练习 × 时间。<em>（18 天给你的是知识框架，练习要靠未来 90 天。）</em></p>
+      <p><strong>2.</strong> 你的差异化是"PM + 动手"。<em>（纯开发不缺，纯 PM 不缺，缺的是两头都沾、能端到端的人。）</em></p>
+      <p><strong>3.</strong> 教是最好的学。<em>（Month 3 把这套路径讲出去的那天，才是你真正毕业的那天。）</em></p>
+    </div>
+  </div>
+
+  <div class="box box-green">
+    <div class="box-title">🎓 最后一段话</div>
+    <div>18 天前你的雷达图是 3.17，四个角凹着。今天重测，凹角应该都抬起来了——但真正的抬升，发生在未来 90 天你把「知·练·带」走完的时候。去接一个真实的小项目吧，<strong>哪怕它很小</strong>。FDE 这条路，是拿项目喂出来的。结营快乐，路上见。</div>
+  </div>
+</div>
+
+<div class="footer">
+  🎓 学习笔记 · AI 项目经理成长 · FDE v2 · 结营 · 恭喜你走完 18 天！<br>
+  下一站 → 找一个真实项目练手
+</div>
+
+</div>
+</body>
+</html>

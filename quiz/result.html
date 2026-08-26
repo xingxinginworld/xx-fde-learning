@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>成绩存证 · FDE 学习先锋小队</title>
+<style>
+  :root{--gold:#b8860b;--ink:#1a1a2e;--line:#c9a96a;--ok:#2e7d32;--bad:#c62828;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:#f4efe6;font-family:"Microsoft YaHei","PingFang SC",sans-serif;
+       display:flex;justify-content:center;min-height:100vh;padding:28px 14px;color:var(--ink);}
+  .wrap{width:560px;max-width:100%;}
+  h1{text-align:center;font-size:22px;letter-spacing:1px;margin:6px 0 2px;}
+  .sub{text-align:center;color:#888;font-size:13px;margin-bottom:16px;}
+  .card{border:3px double var(--gold);border-radius:12px;background:#fffdf8;padding:26px;
+        box-shadow:0 8px 30px rgba(0,0,0,.12);text-align:center;position:relative;}
+  .card::before{content:"";position:absolute;inset:8px;border:1px solid var(--line);border-radius:6px;pointer-events:none;}
+  .big{font-size:48px;font-weight:800;color:var(--gold);}
+  .verdict{font-size:18px;font-weight:700;margin:6px 0 14px;}
+  .pass{color:var(--ok);} .fail{color:var(--bad);}
+  .row{display:flex;justify-content:space-between;font-size:14px;color:#555;
+       border-bottom:1px dashed #eee;padding:8px 18px;}
+  .row b{color:var(--ink);}
+  .fp{font-size:11px;color:#999;word-break:break-all;margin:12px 18px 0;text-align:left;}
+  .note{font-size:12px;color:#aaa;text-align:center;margin-top:16px;line-height:1.7;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>成绩存证</h1>
+  <div class="sub">FDE 学习先锋小队 · 99 题知识测验</div>
+  <div id="card" class="card">
+    <div class="big" id="rscore">—</div>
+    <div class="verdict" id="rverdict">读取中…</div>
+    <div class="row"><span>答对题数</span><b id="rcorrect">—</b></div>
+    <div class="row"><span>折合百分制</span><b id="rpercent">—</b></div>
+    <div class="row"><span>用时</span><b id="rtime">—</b></div>
+    <div class="row"><span>防伪指纹</span><b id="rhash" style="font-size:11px;word-break:break-all;"></b></div>
+    <div class="fp">说明：指纹由『作答序列 + 用时 + 站点盐值』哈希生成，用于群主核验成绩真实性，不可篡改。</div>
+  </div>
+  <div class="note">
+    将本页截图发到 9.9 学习群，群主核对指纹后即可为你签发带编号结营证书。<br/>
+    证书核验：xx-fde-learning 仓库 certs/verify.html（GitHub Pages）。
+  </div>
+</div>
+<script>
+const p=new URLSearchParams(location.search);
+const score=p.get("score"), correct=p.get("correct"), time=p.get("time"),
+      hash=p.get("hash"), pass=p.get("pass")==="true";
+document.getElementById("rscore").textContent=score??"—";
+const v=document.getElementById("rverdict");
+v.textContent=(pass?"✔ 通过 · 具备结营基础证书资格":"✘ 未通过 · 需 ≥80 分");
+v.className="verdict "+(pass?"pass":"fail");
+document.getElementById("rcorrect").textContent=(correct??"—")+" / 99";
+document.getElementById("rpercent").textContent=score??"—";
+document.getElementById("rtime").textContent=time??"—";
+document.getElementById("rhash").textContent=hash??"—";
+</script>
+</body>
+</html>

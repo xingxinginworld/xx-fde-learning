@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FDE v2 · Day 14 · 私有化 vs 公有云 API 选型决策树</title>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-bg: #eff6ff;
+  --blue-dark: #1e40af;
+  --orange: #ea580c;
+  --orange-bg: #fff7ed;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --green: #059669;
+  --green-bg: #ecfdf5;
+  --yellow: #d97706;
+  --yellow-bg: #fffbeb;
+  --purple: #7c3aed;
+  --purple-bg: #f5f3ff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-800: #1f2937;
+  --text: #1a1a2e;
+  --text-light: #6b7280;
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: #f0f4f8; color: var(--text); line-height: 1.8; font-size: 16px;
+}
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+.hero {
+  background: linear-gradient(135deg, #7c2d12 0%, #c2410c 55%, #ea580c 100%);
+  color: #fff; border-radius: var(--radius); padding: 32px 30px 26px; margin-bottom: 20px;
+}
+.hero-badge { display: inline-block; background: rgba(255,255,255,0.18); padding: 4px 14px; border-radius: 20px; font-size: 12px; margin-bottom: 10px; }
+.hero h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; }
+.hero .subtitle { font-size: 14.5px; opacity: 0.92; margin-bottom: 14px; line-height: 1.7; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; opacity: 0.85; }
+.hero-back { font-size: 12px; margin-top: 10px; opacity: 0.75; }
+.hero-back a { color: #fff; text-decoration: underline; }
+
+.card { background: #fff; border-radius: var(--radius); padding: 26px 26px 22px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.card h2 { font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.card h3 { font-size: 17px; font-weight: 600; color: var(--gray-800); margin: 22px 0 10px; padding-left: 12px; border-left: 3px solid var(--primary); }
+.card h4 { font-size: 15px; font-weight: 600; margin: 14px 0 8px; color: var(--gray-800); }
+p { margin-bottom: 10px; }
+code { background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-size: 14px; font-family: "Cascadia Code", "Fira Code", Consolas, monospace; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-size: 14px; }
+th { background: var(--primary); color: #fff; padding: 9px 12px; text-align: left; font-weight: 600; font-size: 13px; }
+td { padding: 9px 12px; border-bottom: 1px solid var(--gray-200); vertical-align: top; }
+tr:nth-child(even) td { background: var(--gray-50); }
+
+.box { border-radius: 8px; padding: 14px 16px; margin: 14px 0; border-left: 4px solid; font-size: 14.5px; }
+.box-blue { background: var(--primary-bg); border-color: var(--primary); }
+.box-green { background: var(--green-bg); border-color: var(--green); }
+.box-yellow { background: var(--yellow-bg); border-color: var(--yellow); }
+.box-red { background: var(--red-bg); border-color: var(--red); }
+.box-purple { background: var(--purple-bg); border-color: var(--purple); }
+.box-orange { background: var(--orange-bg); border-color: var(--orange); }
+.box-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+
+.mentor { background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%); border-radius: 10px; padding: 16px 18px; margin: 14px 0; border: 1px solid #dbeafe; position: relative; }
+.mentor::before { content: '👨‍🏫'; position: absolute; top: -12px; left: 16px; background: #fff; padding: 0 6px; font-size: 20px; }
+.mentor .mentor-title { font-weight: 700; color: var(--blue-dark); font-size: 14px; margin-bottom: 6px; margin-top: 4px; }
+.mentor .mentor-body { font-size: 14.5px; color: var(--gray-800); line-height: 1.75; }
+.mentor .mentor-body p { margin-bottom: 8px; }
+
+.goal-list { list-style: none; padding: 0; }
+.goal-list li { padding: 8px 0 8px 32px; position: relative; font-size: 15px; }
+.goal-list li::before { content: '🎯'; position: absolute; left: 4px; top: 8px; font-size: 15px; }
+
+.mnemonic { background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 10px; padding: 14px 18px; margin: 14px 0; text-align: center; }
+.mnemonic .m-title { font-size: 12px; color: #92400e; margin-bottom: 6px; letter-spacing: 2px; }
+.mnemonic .m-line { font-size: 18px; font-weight: 700; color: #78350f; letter-spacing: 3px; }
+.mnemonic .m-explain { font-size: 13px; color: #92400e; margin-top: 6px; }
+
+.cheatsheet { border: 2px dashed var(--primary); border-radius: 10px; padding: 16px 18px; margin: 14px 0; background: #f0f9ff; }
+.cheatsheet .cs-title { font-weight: 700; color: var(--blue-dark); font-size: 15px; margin-bottom: 10px; }
+
+.steps { counter-reset: step; margin: 12px 0; }
+.step-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px dashed var(--gray-200); }
+.step-item:last-child { border-bottom: none; }
+.step-item .step-num { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--primary); color: #fff; text-align: center; line-height: 34px; font-weight: 700; }
+.step-item .step-body { flex: 1; }
+.step-item .step-body strong { color: var(--blue-dark); }
+
+.quiz-item { border: 1px solid var(--gray-200); border-radius: 8px; margin: 10px 0; overflow: hidden; }
+.quiz-item summary { background: var(--primary-bg); padding: 12px 14px; cursor: pointer; font-weight: 600; color: var(--primary); font-size: 14.5px; }
+.quiz-item[open] summary { border-bottom: 1px solid var(--gray-200); }
+.quiz-body { padding: 12px 16px; }
+.quiz-options { list-style: none; padding: 0; }
+.quiz-options li { padding: 5px 0; font-size: 14px; }
+.quiz-answer { background: var(--green-bg); border-left: 3px solid var(--green); padding: 10px 12px; margin-top: 10px; font-size: 14px; border-radius: 4px; }
+.quiz-answer .ans-title { font-weight: 700; color: var(--green); margin-bottom: 6px; }
+.wrong-analysis { background: var(--red-bg); border-left: 3px solid var(--red); padding: 10px 12px; margin-top: 8px; font-size: 13.5px; border-radius: 4px; }
+.wrong-analysis .wa-title { font-weight: 700; color: var(--red); margin-bottom: 4px; }
+
+.case-block { border: 1px solid var(--gray-200); border-radius: 8px; margin: 12px 0; overflow: hidden; }
+.case-block summary { background: linear-gradient(135deg, #ede9fe, #ddd6fe); padding: 12px 14px; cursor: pointer; font-weight: 600; color: #5b21b6; font-size: 14.5px; }
+.case-block .case-body { padding: 14px 16px; font-size: 14px; }
+.case-block .case-body h5 { color: var(--blue-dark); margin: 10px 0 6px; font-size: 14px; }
+
+.interview-quote { background: linear-gradient(135deg, #1e3a5f, #1a56db); color: #fff; border-radius: 10px; padding: 18px 20px; margin: 14px 0; font-size: 15px; font-style: italic; line-height: 1.8; position: relative; }
+.interview-quote::before { content: '💼'; position: absolute; top: -10px; left: 16px; background: #fff; padding: 2px 6px; border-radius: 12px; font-size: 16px; }
+.interview-quote .iq-tag { display: block; font-size: 11px; opacity: 0.8; margin-bottom: 6px; font-style: normal; letter-spacing: 1px; }
+
+.footer { text-align: center; color: var(--text-light); font-size: 12px; padding: 20px 0 36px; border-top: 1px solid var(--gray-200); margin-top: 16px; }
+
+@media (max-width: 640px) {
+  .container { padding: 12px; }
+  .hero { padding: 24px 18px 20px; }
+  .hero h1 { font-size: 20px; }
+  .card { padding: 20px 16px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="hero">
+  <div class="hero-badge">FDE v2 · Phase 4 · Day 14</div>
+  <h1>🏢 私有化 vs 公有云 API 选型决策树</h1>
+  <div class="subtitle">选错部署方案 <strong>一年后重构成本 100 万起步</strong>——今天把这个决策树彻底想清楚，你以后在客户会议室能拍板，不用回来问架构师。</div>
+  <div class="hero-meta">
+    <span>🎯 Phase 4 · 政企环境适配</span>
+    <span>⏱️ 预计 70-80 分钟</span>
+    <span>🧭 补齐能力：⑦ 啃环境</span>
+  </div>
+  <div class="hero-back">FDE v2 学习路径 · <a href="./day00_fde_panorama_and_radar.html">← 回到 Day 0 起点校准</a></div>
+</div>
+
+<!-- 板块 1：今日目标 -->
+<div class="card">
+  <h2>🎯 一、今日目标</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>你自评 ⑦ 啃环境只有 2.1 分。这是你转 FDE 最大的一道坎——不是因为难，是因为你之前在某公司驻场某单位，架构选型这活基本被产品部门和架构师包了，你没实操过。但 FDE 面客户的时候，客户问一句"我们数据不能出内网，你们这方案能不能私有化"，你要能当场给出思路，而不是回一句"我回去问下"。</p>
+      <p>今天不学怎么装 GPU 服务器（那是运维干的），学的是 <strong>决策</strong>——在客户面前 30 分钟画出选型树、算清 TCO、给出方案。学完你会发现，"默认私有化"其实是最坑的默认答案。</p>
+    </div>
+  </div>
+
+  <ul class="goal-list">
+    <li>能用 <strong>「敏·量·钱·规」四维口诀</strong> 30 秒定位客户属于哪一类</li>
+    <li>掌握 <strong>「3 种部署模式」</strong> 的边界、成本结构、隐性坑</li>
+    <li>能给客户算 <strong>3 年 TCO 对比</strong>，让"最强模型 + 完全私有化"的执念自己散开</li>
+    <li>拿到 <strong>「主流开源模型 + 硬件配置速查表」</strong>，客户问"你们打算用哪个模型多少张卡"能答上来</li>
+  </ul>
+</div>
+
+<!-- 板块 2：核心讲解 -->
+<div class="card">
+  <h2>📖 二、核心讲解</h2>
+
+  <h3>是什么：LLM 部署的 3 种模式</h3>
+  <p>大白话——大模型跑在哪儿、谁的机器、谁交电费，就这三种：</p>
+  <table>
+    <thead>
+      <tr><th style="width:18%">模式</th><th style="width:28%">白话解释</th><th style="width:22%">典型场景</th><th>成本结构</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>公有云 API</strong></td><td>调阿里通义/百度千帆/OpenAI 的接口，按 token 计费</td><td>初创、互联网、非涉密业务</td><td>按量付费，无硬件投入</td></tr>
+      <tr><td><strong>私有化部署</strong></td><td>模型下载到客户机房，GPU 服务器自己跑</td><td>银行、政务、央国企涉密</td><td>硬件 200 万+ 一次性 + 运维</td></tr>
+      <tr><td><strong>混合模式</strong></td><td>敏感数据走本地小模型，非敏感走 API 大模型</td><td>大多数政企的最优解</td><td>本地基础机器 + API 按量</td></tr>
+    </tbody>
+  </table>
+  <p><strong>反直觉的地方：</strong>90% 的政企客户张口就说"要私有化"，但其中大概一半，做混合模式反而<strong>更安全、更便宜、效果更好</strong>。为什么？因为私有化能跑起来的模型，普遍比公有云顶配模型弱一代。</p>
+
+  <div class="mnemonic">
+    <div class="m-title">□ □ □ 四维选型口诀 □ □ □</div>
+    <div class="m-line">敏 · 量 · 钱 · 规</div>
+    <div class="m-explain">数据敏感度 · QPS 量级 · 成本预算 · 合规要求 — 缺一项就问不出真答案</div>
+  </div>
+
+  <h3>为什么：FDE 视角下的三个大坑</h3>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 1 · 政企默认要私有化——其实非涉密业务用国内公有云 + VPC 加密完全够</div>
+    <div>
+      <p>客户信息部门开口就说"我们是央企/政务/金融，数据当然不能出内网，必须私有化"。你如果顺着说"好我们做私有化方案"，就掉坑了。</p>
+      <p><strong>真相：</strong>央国企的数据也分级。C1（公开信息）、C2（内部可加密上云）、C3（不出境）、C4（不出内网涉密）——真正必须私有化的只有 C3、C4。而 <em>员工问答里的制度条款、办事咨询里的政策解读、员工报销的规则解释</em> 这些恰恰是 C1/C2，走国内公有云 + VPC 私有链路 + API 密钥托管完全合规。</p>
+      <p><strong>正确姿势：</strong>拿到需求先做数据分级——"我把这次涉及的所有数据字段列一下，我们逐项判断是哪一级"，然后再谈方案。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 2 · 只看采购成本不看 TCO——私有化硬件+人力运维一年比 API 还贵</div>
+    <div>
+      <p>客户说"API 每天要几千块，一年就 100 多万，太贵了，我们买 8 张 A800 一次性搞定"。你算给他听：8×A800 服务器 200 万一次性 + 电费/机房托管 15 万/年 + 专职运维 40 万/年 + 模型迭代升级 20 万/年 + 备件冗余 10 万/年——第一年 285 万，第二年往后每年 85 万。而 QPS 20 左右的 API 一年也就 60-80 万。</p>
+      <p><strong>正确姿势：</strong>永远算 <strong>3 年 TCO</strong>（Total Cost of Ownership），把硬件折旧、人力、机房、升级、备件全算进去。低于 100 QPS 的场景，3 年 TCO 私有化基本必输。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 3 · 混合模式想都不想——涉密走本地/非涉密走 API 反而最经济</div>
+    <div>
+      <p>客户信息部长最怕的是"数据泄露我背锅"，业务部长最怕的是"效果差业务不用"。这两个诉求看起来对立，其实混合模式一把解决——敏感数据（合同全文、客户身份证、内部薪资）在本地脱敏后处理，非敏感任务（通用问答、公开政策查询、格式转换）走公有云顶配模型。</p>
+      <p><strong>正确姿势：</strong>你要在第一次架构讨论会上主动提出混合模式选项，别等客户想。因为客户大概率想不到，他脑子里只有非黑即白的两个选项。</p>
+    </div>
+  </div>
+
+  <div class="box box-blue">
+    <div class="box-title">🧭 PM 行动指南：给客户讲选型的 4 步</div>
+    <div>
+      <p><strong>Step A · 先聊数据敏感度</strong>——拿一张表，把涉及的数据字段（用户输入、知识库、日志、输出）逐项贴 C1-C4 标签。这一步决定后面所有推演。</p>
+      <p><strong>Step B · 再算量</strong>——预估 QPS 峰值和日均调用量。政企内部业务 QPS 通常 1-30 之间，比互联网小两个数量级，别用互联网思维。</p>
+      <p><strong>Step C · 再算钱</strong>——3 年 TCO 三种模式并列对比。硬件成本很直观，隐性成本（运维、升级、备件）要主动加进去。</p>
+      <p><strong>Step D · 最后过合规</strong>——等保 2.0 三级/关基/涉密三个门槛。合规是一票否决项，放最后是因为前三步已经把 80% 的选择过滤掉了，合规只做最终确认。</p>
+    </div>
+  </div>
+
+  <h3>怎么用：四维决策树</h3>
+
+  <div class="steps">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>数据敏感度（敏）</strong>——C1 可上云 / C2 加密后可上云 / C3 不出境（可用国内公有云）/ C4 不出内网（必须私有化）。<em>关键：这个分级不是你定的，是客户信息安全部门定的，你去要一份《数据分类分级表》，避免自己拍脑袋。</em>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>QPS 量级（量）</strong>—— &lt; 10 QPS 用 API（硬件闲置浪费）/ 10-100 QPS 混合（部分本地部分 API）/ &gt; 100 QPS 建议私有化（API 按量成本会飙升）。<em>算 QPS 要看峰值，不是均值。政企场景通常"日常 5 QPS 但月底突发 60 QPS"，按 60 算。</em>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>成本预算（钱）</strong>——私有化硬件门槛 8×A800/H20 一台服务器约 200 万起（跑一个 32B/70B 参数模型合适）。API 按量，通义千问 Max 输入约 20 元/百万 token、输出 60 元/百万 token。<em>你要能张口就说这个基准数字，客户才服你。</em>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>合规要求（规）</strong>——等保 2.0 二级（一般政务/企业业务）/ 三级（重要政务、金融业务、公共服务）/ 关键信息基础设施（关基，能源、金融、水利等）/ 涉密。<em>三级以上多数走私有化或行业专有云；二级国内公有云一般能过。</em>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>综合决策</strong>——敏 C4 或 合规关基/涉密 → 私有化；敏 C1/C2 且 QPS &lt; 30 且 合规二级 → 公有云 API；其他 → <strong>混合模式</strong>（默认答案，60% 政企项目最优解）。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 板块 3：动手步骤 -->
+<div class="card">
+  <h2>🛠️ 三、动手步骤：拿三个真实客户过一遍</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>三个案例都是行业里能找到影子的场景，我把敏感信息处理掉了。第一个跟着走完整推演，后两个自己练——练完再看参考答案，比对推理过程，不是比对结论。</p>
+    </div>
+  </div>
+
+  <details class="case-block" open>
+    <summary>📌 案例 A · 某国有银行「智能客服 Agent」选型（跟着做）</summary>
+    <div class="case-body">
+      <h5>客户背景</h5>
+      <p>某省级国有银行，要做一个内部智能客服 Agent，帮柜员回答业务规则问题（转账限额、外汇政策、开卡资料要求等）。要接入知识库 300+ 篇规章。</p>
+
+      <h5>Step 1 · 数据敏感度（敏）</h5>
+      <ul style="margin-left:24px;">
+        <li>用户输入（柜员提问）：C2——含分行名、员工工号，加密后可上云</li>
+        <li>知识库（规章制度）：C2——内部非涉密，加密后可上云</li>
+        <li>日志（问答记录）：C3——涉及内部业务口径，不出境</li>
+        <li>输出（AI 回答）：C2——同知识库</li>
+      </ul>
+      <p>→ 综合 C2/C3，可以用国内公有云 + VPC 私有链路。</p>
+
+      <h5>Step 2 · QPS 量级（量）</h5>
+      <p>全行 2000 柜员，业务时段假设 20% 同时活跃，均值 3 QPS，峰值（月底结算日）估 20 QPS。→ 属于低量级，API 完全够。</p>
+
+      <h5>Step 3 · 成本预算（钱）</h5>
+      <table>
+        <tr><th>方案</th><th>一次性</th><th>3 年总</th><th>备注</th></tr>
+        <tr><td>公有云 API</td><td>0</td><td>约 180 万</td><td>Qwen-Max 按量，日均 5 万 token</td></tr>
+        <tr><td>私有化（8×A800）</td><td>200 万</td><td>约 405 万</td><td>+ 运维 40 万/年 + 电费/机房 15 万/年 + 升级 10 万/年</td></tr>
+        <tr><td>混合（本地 7B + API 补漏）</td><td>50 万</td><td>约 230 万</td><td>2×A10 本地跑 Qwen-7B 处理敏感字段，其余走 API</td></tr>
+      </table>
+
+      <h5>Step 4 · 合规要求（规）</h5>
+      <p>银行核心系统等保三级，客服辅助系统一般二级。业务不涉决策，AI 输出前置人工确认即可满足审计。</p>
+
+      <h5>Step 5 · 结论</h5>
+      <p><strong>推荐混合模式。</strong>敏感字段（客户身份证号、账号）在本地 Qwen-7B 上做脱敏与初步意图分类，脱敏后的问题+知识库检索片段走 Qwen-Max API 生成回答。3 年 TCO 比纯私有化省 175 万，效果比纯本地强一档，合规无风险。</p>
+      <p><strong>面试金句预埋：</strong><em>"客户嘴里的'必须私有化'，翻译过来常常是'我不想背数据泄露的锅'。混合模式把敏感数据留在本地就够了，其余按量走 API 反而合规审计更好过。"</em></p>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 B · 某省级政务「办事咨询助手」选型（自己练）</summary>
+    <div class="case-body">
+      <p><strong>客户背景：</strong>省级政务办事大厅，要一个 AI 助手帮群众查"落户政策""医保报销""营业执照办理"等。涉及群众身份信息、办事人电话、政策文件。QPS 峰值预估 50，业务由信息厅监督，等保三级要求。</p>
+      <p style="color: var(--gray-500);">按四维走一遍，写下你的方案。</p>
+
+      <details style="margin-top:12px;">
+        <summary style="cursor:pointer;color:var(--primary);font-weight:600;">查看参考答案</summary>
+        <div style="padding:10px 14px;background:var(--gray-50);border-radius:6px;margin-top:8px;">
+          <p><strong>结论：混合模式偏本地。</strong></p>
+          <p><strong>敏：</strong>群众身份证/电话 C3（个人信息 + 不出境）、政策文件 C1（公开信息）、日志 C3。整体 C3——不能用境外 API，但国内公有云 + 私有链路可行。</p>
+          <p><strong>量：</strong>50 QPS 峰值，日均调用 30-40 万次，量不小。</p>
+          <p><strong>钱：</strong>纯 API 3 年约 400 万；纯私有化 3 年约 450 万；混合方案（本地 32B 处理个人信息脱敏与主流程 + API 处理长文档理解等复杂任务）约 320 万。</p>
+          <p><strong>规：</strong>政务等保三级，另需过《个人信息保护法》的评估——个人信息处理必须提供本地兜底、可解释、可撤回。</p>
+          <p><strong>方案：</strong>本地部署 4×A800 跑 Qwen-32B 作为主链路（保证 PIPL 合规），API 只用于复杂长文档理解（政策解读时），且入 API 前把身份证/电话字段全部脱敏。</p>
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 C · Bug case · 客户坚持"最强模型 + 完全私有化"（自己练）</summary>
+    <div class="case-body">
+      <p><strong>客户原话：</strong>"我们是国资委下面的央企，业务重要，你给我们私有化部署 GPT-4 那个级别的模型，本地跑起来。预算 800 万一次性到位。"</p>
+      <p style="color: var(--gray-500);">你怎么劝退？给出你的话术和替代方案。</p>
+
+      <details style="margin-top:12px;">
+        <summary style="cursor:pointer;color:var(--primary);font-weight:600;">查看参考答案</summary>
+        <div style="padding:10px 14px;background:var(--gray-50);border-radius:6px;margin-top:8px;">
+          <p><strong>核心事实：</strong>GPT-4 级别的模型（如 GPT-4、Claude 3.5、Gemini Ultra）<strong>不开源、不允许私有化部署</strong>。你根本买不到。这是第一层要澄清的。</p>
+          <p><strong>可以私有化的最强开源模型：</strong>DeepSeek-V3 671B、Qwen2.5-72B、GLM-4-9B、Llama-3.3-70B。这些跑推理需要 8×H20 或 8×A800 一台，约 200-300 万硬件。跑 DeepSeek-V3 完整版需要 2-4 台机器互联，约 500-800 万起，且专业运维一年 100 万起。</p>
+          <p><strong>更关键的问题：</strong>就算你花 800 万私有化，效果只是最新公有云顶配模型的 80%——因为开源模型迭代滞后 3-6 个月，你等于花高价买了个"上一代"。</p>
+          <p><strong>推荐替代：</strong><em>混合方案</em>——2×A100 本地跑 Qwen-32B 处理涉密数据脱敏和敏感任务（一次性 60 万），非涉密走通义千问 Max/DeepSeek API（按量 3 年约 80 万）。总 3 年成本 200 万，剩下 600 万做业务定制、prompt 工程、评测集建设、灰度运营——这些才是让 AI 真正落地的钱。</p>
+          <p><strong>话术：</strong>"张总，坦白讲，GPT-4 级别的模型今天全世界没有一家能私有化，OpenAI 不卖。您 800 万预算，我建议这样切——50 万买本地机器把涉密的活干了，80 万走 API 把通用任务干了，剩下 670 万投在业务侧调优。这样一年后您得到的是<strong>真能用的系统</strong>，而不是一堆吃电的服务器。"</p>
+        </div>
+      </details>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 4：速查卡 -->
+<div class="card">
+  <h2>📇 四、速查卡</h2>
+
+  <div class="cheatsheet">
+    <div class="cs-title">📋 主流开源大模型清单（2025 · 中文场景优先）</div>
+    <table>
+      <thead>
+        <tr><th>模型</th><th>参数量</th><th>推理硬件门槛</th><th>中文效果</th><th>许可证</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Qwen2.5-72B-Instruct</strong></td><td>72B</td><td>4×A800/H20（约 100 万）</td><td>★★★★★ 顶配</td><td>Apache 2.0 商用友好</td></tr>
+        <tr><td><strong>Qwen2.5-32B-Instruct</strong></td><td>32B</td><td>2×A800（约 50 万）</td><td>★★★★☆ 甜品</td><td>Apache 2.0</td></tr>
+        <tr><td><strong>Qwen2.5-7B-Instruct</strong></td><td>7B</td><td>1×A10（约 8 万）</td><td>★★★☆☆ 够用</td><td>Apache 2.0</td></tr>
+        <tr><td><strong>DeepSeek-V3</strong></td><td>671B MoE</td><td>2-4 台 8×H20（500 万+）</td><td>★★★★★ 顶配</td><td>MIT 商用友好</td></tr>
+        <tr><td><strong>GLM-4-9B</strong></td><td>9B</td><td>1×A10 (约 8 万)</td><td>★★★☆☆</td><td>智谱协议，商用需授权</td></tr>
+        <tr><td><strong>Baichuan2-13B</strong></td><td>13B</td><td>1×A100（约 15 万）</td><td>★★★☆☆</td><td>百川协议，商用需授权</td></tr>
+        <tr><td><strong>MiniCPM3-4B</strong></td><td>4B</td><td>1 张 3090/4090（3 万）</td><td>★★★☆☆ 端侧首选</td><td>MIT</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:13px;color:var(--gray-600);">默认选型建议：<strong>Qwen2.5 系列</strong>——Apache 2.0 许可证省事、中文一线、政企版本齐全。<strong>DeepSeek 系列</strong>——效果最强但硬件门槛高，适合旗舰项目。</p>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">🖥️ 私有化硬件配置速查（推理场景）</div>
+    <table>
+      <thead>
+        <tr><th>目标模型</th><th>推荐配置</th><th>大约显存</th><th>可承载 QPS</th><th>硬件参考价</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>7B（FP16）</td><td>1×A10 24G</td><td>15-18 GB</td><td>10-20</td><td>8-12 万</td></tr>
+        <tr><td>13B（FP16）</td><td>1×A100 40G</td><td>28-32 GB</td><td>8-15</td><td>15-25 万</td></tr>
+        <tr><td>32B（INT8）</td><td>2×A800 80G</td><td>60-70 GB</td><td>15-30</td><td>50-70 万</td></tr>
+        <tr><td>72B（INT8）</td><td>4×A800 80G</td><td>140-160 GB</td><td>20-50</td><td>100-140 万</td></tr>
+        <tr><td>72B（FP16）</td><td>8×A800/H20 80G</td><td>280-320 GB</td><td>30-80</td><td>200-280 万</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:13px;color:var(--gray-600);">加上机架/交换机/电源冗余，整机采购单价约为 GPU 卡价的 1.3-1.5 倍。别只报卡钱。</p>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">💰 3 年 TCO 三种模式对比（以中型政企项目为例，QPS 20）</div>
+    <table>
+      <thead>
+        <tr><th>成本项</th><th>公有云 API</th><th>私有化 32B</th><th>混合模式</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>硬件（一次性）</td><td>0</td><td>60 万</td><td>15 万（1×A100 兜底）</td></tr>
+        <tr><td>API 费（3 年）</td><td>150-200 万</td><td>0</td><td>60-80 万</td></tr>
+        <tr><td>专职运维（3 年）</td><td>10 万</td><td>120 万</td><td>50 万</td></tr>
+        <tr><td>机房/电费（3 年）</td><td>0</td><td>45 万</td><td>15 万</td></tr>
+        <tr><td>模型升级迭代（3 年）</td><td>0（云侧自动）</td><td>60 万</td><td>25 万</td></tr>
+        <tr><td>备件与故障响应</td><td>0</td><td>30 万</td><td>10 万</td></tr>
+        <tr><td><strong>3 年总 TCO</strong></td><td><strong>160-210 万</strong></td><td><strong>315 万</strong></td><td><strong>175-195 万</strong></td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:13px;color:var(--gray-600);">结论：低 QPS 场景，混合模式常常和纯公有云 TCO 接近，但合规空间大得多。<strong>纯私有化只在 QPS &gt; 100 或数据 C4 涉密时才有性价比</strong>。</p>
+  </div>
+</div>
+
+<!-- 板块 5：5 题小测验 -->
+<div class="card">
+  <h2>📝 五、5 题小测验</h2>
+  <p style="color: var(--gray-600); font-size: 14px;">建议先自己想 20 秒再点开答案。答错也别慌——错项解析比正确答案更值钱。</p>
+
+  <details class="quiz-item">
+    <summary>Q1 · 客户是省级政务，QPS 峰值 15，数据 C2 加密后可上云，等保三级——首选方案是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 私有化 8×A800 跑 Qwen-72B</li>
+        <li>B. 混合模式，本地小模型兜底 + 国内公有云 API 主链路</li>
+        <li>C. 用 OpenAI GPT-4 API</li>
+        <li>D. 私有化 1×A10 跑 Qwen-7B</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>敏 C2、量 &lt; 30 QPS、规等保三级、政务客户。C2 允许加密上云，QPS 低说明私有化 TCO 划不来，等保三级需要本地兜底与可解释——混合模式全部命中。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 错在杀鸡用牛刀</strong>——15 QPS 用 8×A800 有 90% 的算力闲置，3 年 TCO 至少 400 万，客户预算撑不住。<strong>C 错在跨境合规</strong>——政务数据出境需过安全评估，且 GPT-4 数据在境外，PIPL 直接封死。<strong>D 错在效果偏低</strong>——政务问答的政策语言复杂，7B 模型准确率通常不足 75%，客户不会验收。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q2 · "私有化部署一台 8×A800 服务器 3 年成本"最接近下列哪个数字？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 200 万</li>
+        <li>B. 250 万</li>
+        <li>C. 400 万</li>
+        <li>D. 700 万</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：C</div>
+        <p>硬件 200 万 + 运维 120 万（40 万/年 × 3）+ 机房电费 45 万 + 模型升级 30-60 万 + 备件故障 20-30 万 ≈ 400 万。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 是只算硬件采购</strong>——最常见的错误，客户和不懂行的乙方都会掉进去。<strong>B 加了运维但漏了机房、升级、备件</strong>——政企机房托管一年 15 万+，跳不过。<strong>D 属于顶配私有化（8×H100 或多机集群）</strong>，不是标配。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q3 · 「敏·量·钱·规」四维中，哪一维通常是"一票否决"？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 敏（数据敏感度）</li>
+        <li>B. 量（QPS）</li>
+        <li>C. 钱（预算）</li>
+        <li>D. 规（合规要求）</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：D</div>
+        <p>合规是硬门槛——等保三级/关基/涉密要求过不了，方案再优秀也上不了线。前 3 维是"选优"，第 4 维是"生死"。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 敏是选型输入</strong>，能推出多个可行方案，不是否决。<strong>B 量决定成本结构</strong>，是经济性问题不是准入问题。<strong>C 钱不够可以缩方案</strong>（换小模型、砍功能），不到否决层面。合规是唯一"必须过、过不了就不能上线"的门。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q4 · 客户说"我们跑 Qwen-72B，日均 API 费 5000 块，一年 180 万太贵"——你的第一反应？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 建议改私有化，一次性买 8×A800 一劳永逸</li>
+        <li>B. 先看是不是所有请求都必须 72B，能不能用 32B/7B 分流降本</li>
+        <li>C. 换个便宜 API 厂商</li>
+        <li>D. 建议客户把日均 token 消耗砍一半</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>降本第一原则是<strong>模型分级路由</strong>——简单意图/短问答走 7B，复杂推理走 32B，只有 20% 的真正难任务走 72B。这样能把 API 成本压到原来的 30-40%，且效果几乎不掉。这是 FDE 的标准动作，比换厂商、换部署模式都优先。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 是坑 2 典型场景</strong>——180 万 API 换成 400 万私有化 3 年 TCO，账没算。<strong>C 换厂商只能省 10-20%</strong>，且质量风险大，不是首选。<strong>D 砍 token 会伤害效果</strong>，且没考虑请求量是否合理，是最后的手段。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q5 · 综合题——客户是市级税务局，要「税收政策问答 Agent」，QPS 峰值 8，等保三级+关基，涉及企业纳税信息。请给方案。</summary>
+    <div class="quiz-body">
+      <p style="color: var(--gray-600); margin-bottom: 8px;">按敏·量·钱·规四维写下你的分析。</p>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 参考答案：<strong>纯私有化，走行业专有云或本地机房</strong></div>
+        <p><strong>敏：</strong>纳税信息是 C3-C4 敏感数据，且属关基行业。国内公有云也不合规。</p>
+        <p><strong>量：</strong>QPS 8 极低，硬件闲置严重，但合规压过经济性。</p>
+        <p><strong>钱：</strong>3 年 TCO 约 200 万（2×A800 跑 Qwen-32B 就够了，QPS 8 不用上 72B）。虽然贵于 API，但没得选。</p>
+        <p><strong>规：</strong>关基 + 等保三级，必须私有化 + 内网部署。走电子政务外网或行业专有云也可以，但接口和运维复杂度高。</p>
+        <p><strong>方案：</strong>本地 2×A800 部署 Qwen-32B + 内网向量库 + 完整日志审计。<strong>不上 72B</strong>——8 QPS 用不上，32B 政策问答准确率能到 85%+，性价比更好。</p>
+        <p><strong>面试金句：</strong><em>"关基和涉密项目算 ROI 的时候要认怂——合规不通过所有账都是零。"</em></p>
+      </div>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 6：面试金句 + 心得笔记 -->
+<div class="card">
+  <h2>💼 六、面试金句预埋</h2>
+
+  <div class="interview-quote">
+    <span class="iq-tag">TCO 意识</span>
+    "谈私有化 vs 公有云，我从来不看采购单价，我看<strong>3 年 TCO</strong>。硬件、运维、机房、升级、备件——这五项加起来，私有化通常比客户想的贵一倍。QPS 低于 100 的政企场景，私有化几乎必输。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">混合模式思维</span>
+    "政企客户张口就说'必须私有化'，但真正需要私有化的只有 C4 涉密的那 20% 数据。剩下 80% 走混合模式——<strong>敏感数据本地脱敏，非敏感走 API</strong>——合规、成本、效果三个维度全赢。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">数据分级文化</span>
+    "架构选型第一步不是聊模型，是<strong>拉客户信息安全部门做数据分类分级</strong>。C1-C4 分完，方案自己就出来了。跳过这一步的选型都是拍脑袋，上线后一改就是重构级。"
+  </div>
+
+  <h3>📓 心得笔记</h3>
+  <div class="box box-red">
+    <div class="box-title">⚠️ 今天最反直觉的 3 件事</div>
+    <div>
+      <p><strong>1.</strong> "私有化最安全"是错觉——本地运维水平不够反而更容易泄露。合规看的是"是否满足要求"，不是"是否本地"。</p>
+      <p><strong>2.</strong> 私有化能跑的最强模型比公有云顶配弱一代。你花 800 万私有化，效果不如别人花 80 万 API 调用。</p>
+      <p><strong>3.</strong> 混合模式是 60% 政企项目的最优解，但客户默认想不到——<strong>你要主动摆到桌面上</strong>。</p>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  学习笔记 · AI 项目经理成长 · FDE v2 · Day 14<br>
+  下一站 → Day 15 离线环境部署：pip/npm 内网镜像 + 离线依赖包
+</div>
+
+</div>
+</body>
+</html>

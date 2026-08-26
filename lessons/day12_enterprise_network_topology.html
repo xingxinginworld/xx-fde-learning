@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FDE v2 · Day 12 · 政企网络地形入门</title>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-bg: #eff6ff;
+  --blue-dark: #1e40af;
+  --orange: #ea580c;
+  --orange-bg: #fff7ed;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --green: #059669;
+  --green-bg: #ecfdf5;
+  --yellow: #d97706;
+  --yellow-bg: #fffbeb;
+  --purple: #7c3aed;
+  --purple-bg: #f5f3ff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-800: #1f2937;
+  --text: #1a1a2e;
+  --text-light: #6b7280;
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: #f0f4f8; color: var(--text); line-height: 1.8; font-size: 16px;
+}
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+.hero {
+  background: linear-gradient(135deg, #7c2d12 0%, #c2410c 55%, #ea580c 100%);
+  color: #fff; border-radius: var(--radius); padding: 32px 30px 26px; margin-bottom: 20px;
+}
+.hero-badge { display: inline-block; background: rgba(255,255,255,0.18); padding: 4px 14px; border-radius: 20px; font-size: 12px; margin-bottom: 10px; }
+.hero h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; }
+.hero .subtitle { font-size: 14.5px; opacity: 0.92; margin-bottom: 14px; line-height: 1.7; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; opacity: 0.85; }
+.hero-back { font-size: 12px; margin-top: 10px; opacity: 0.75; }
+.hero-back a { color: #fff; text-decoration: underline; }
+
+.card { background: #fff; border-radius: var(--radius); padding: 26px 26px 22px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.card h2 { font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.card h3 { font-size: 17px; font-weight: 600; color: var(--gray-800); margin: 22px 0 10px; padding-left: 12px; border-left: 3px solid var(--primary); }
+.card h4 { font-size: 15px; font-weight: 600; margin: 14px 0 8px; color: var(--gray-800); }
+p { margin-bottom: 10px; }
+code { background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-size: 14px; font-family: "Cascadia Code", "Fira Code", Consolas, monospace; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-size: 14px; }
+th { background: var(--primary); color: #fff; padding: 9px 12px; text-align: left; font-weight: 600; font-size: 13px; }
+td { padding: 9px 12px; border-bottom: 1px solid var(--gray-200); vertical-align: top; }
+tr:nth-child(even) td { background: var(--gray-50); }
+
+.box { border-radius: 8px; padding: 14px 16px; margin: 14px 0; border-left: 4px solid; font-size: 14.5px; }
+.box-blue { background: var(--primary-bg); border-color: var(--primary); }
+.box-green { background: var(--green-bg); border-color: var(--green); }
+.box-yellow { background: var(--yellow-bg); border-color: var(--yellow); }
+.box-red { background: var(--red-bg); border-color: var(--red); }
+.box-purple { background: var(--purple-bg); border-color: var(--purple); }
+.box-orange { background: var(--orange-bg); border-color: var(--orange); }
+.box-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+
+.mentor { background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%); border-radius: 10px; padding: 16px 18px; margin: 14px 0; border: 1px solid #dbeafe; position: relative; }
+.mentor::before { content: '👨‍🏫'; position: absolute; top: -12px; left: 16px; background: #fff; padding: 0 6px; font-size: 20px; }
+.mentor .mentor-title { font-weight: 700; color: var(--blue-dark); font-size: 14px; margin-bottom: 6px; margin-top: 4px; }
+.mentor .mentor-body { font-size: 14.5px; color: var(--gray-800); line-height: 1.75; }
+.mentor .mentor-body p { margin-bottom: 8px; }
+
+.goal-list { list-style: none; padding: 0; }
+.goal-list li { padding: 8px 0 8px 32px; position: relative; font-size: 15px; }
+.goal-list li::before { content: '🎯'; position: absolute; left: 4px; top: 8px; font-size: 15px; }
+
+.mnemonic { background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 10px; padding: 14px 18px; margin: 14px 0; text-align: center; }
+.mnemonic .m-title { font-size: 12px; color: #92400e; margin-bottom: 6px; letter-spacing: 2px; }
+.mnemonic .m-line { font-size: 18px; font-weight: 700; color: #78350f; letter-spacing: 3px; }
+.mnemonic .m-explain { font-size: 13px; color: #92400e; margin-top: 6px; }
+
+.cheatsheet { border: 2px dashed var(--primary); border-radius: 10px; padding: 16px 18px; margin: 14px 0; background: #f0f9ff; }
+.cheatsheet .cs-title { font-weight: 700; color: var(--blue-dark); font-size: 15px; margin-bottom: 10px; }
+
+.steps { counter-reset: step; margin: 12px 0; }
+.step-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px dashed var(--gray-200); }
+.step-item:last-child { border-bottom: none; }
+.step-item .step-num { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--primary); color: #fff; text-align: center; line-height: 34px; font-weight: 700; }
+.step-item .step-body { flex: 1; }
+.step-item .step-body strong { color: var(--blue-dark); }
+
+.quiz-item { border: 1px solid var(--gray-200); border-radius: 8px; margin: 10px 0; overflow: hidden; }
+.quiz-item summary { background: var(--primary-bg); padding: 12px 14px; cursor: pointer; font-weight: 600; color: var(--primary); font-size: 14.5px; }
+.quiz-item[open] summary { border-bottom: 1px solid var(--gray-200); }
+.quiz-body { padding: 12px 16px; }
+.quiz-options { list-style: none; padding: 0; }
+.quiz-options li { padding: 5px 0; font-size: 14px; }
+.quiz-answer { background: var(--green-bg); border-left: 3px solid var(--green); padding: 10px 12px; margin-top: 10px; font-size: 14px; border-radius: 4px; }
+.quiz-answer .ans-title { font-weight: 700; color: var(--green); margin-bottom: 6px; }
+.wrong-analysis { background: var(--red-bg); border-left: 3px solid var(--red); padding: 10px 12px; margin-top: 8px; font-size: 13.5px; border-radius: 4px; }
+.wrong-analysis .wa-title { font-weight: 700; color: var(--red); margin-bottom: 4px; }
+
+.case-block { border: 1px solid var(--gray-200); border-radius: 8px; margin: 12px 0; overflow: hidden; }
+.case-block summary { background: linear-gradient(135deg, #ede9fe, #ddd6fe); padding: 12px 14px; cursor: pointer; font-weight: 600; color: #5b21b6; font-size: 14.5px; }
+.case-block .case-body { padding: 14px 16px; font-size: 14px; }
+.case-block .case-body h5 { color: var(--blue-dark); margin: 10px 0 6px; font-size: 14px; }
+
+.interview-quote { background: linear-gradient(135deg, #1e3a5f, #1a56db); color: #fff; border-radius: 10px; padding: 18px 20px; margin: 14px 0; font-size: 15px; font-style: italic; line-height: 1.8; position: relative; }
+.interview-quote::before { content: '💼'; position: absolute; top: -10px; left: 16px; background: #fff; padding: 2px 6px; border-radius: 12px; font-size: 16px; }
+.interview-quote .iq-tag { display: block; font-size: 11px; opacity: 0.8; margin-bottom: 6px; font-style: normal; letter-spacing: 1px; }
+
+.topology { background: #0f172a; color: #e2e8f0; border-radius: 10px; padding: 20px; margin: 14px 0; font-family: "Cascadia Code", "Fira Code", Consolas, monospace; font-size: 13px; line-height: 1.6; overflow-x: auto; }
+.topology .layer { border: 1px solid #475569; border-radius: 6px; padding: 8px 12px; margin: 4px 0; }
+.topology .l1 { border-color: #22d3ee; }
+.topology .l2 { border-color: #a78bfa; }
+.topology .l3 { border-color: #34d399; }
+.topology .l4 { border-color: #fbbf24; }
+.topology .l5 { border-color: #f87171; }
+.topology .l-title { font-weight: 700; color: #fff; }
+.topology .arrow { text-align: center; color: #64748b; margin: 2px 0; }
+.topology .fw { color: #fbbf24; font-weight: 700; }
+
+.footer { text-align: center; color: var(--text-light); font-size: 12px; padding: 20px 0 36px; border-top: 1px solid var(--gray-200); margin-top: 16px; }
+
+@media (max-width: 640px) {
+  .container { padding: 12px; }
+  .hero { padding: 24px 18px 20px; }
+  .hero h1 { font-size: 20px; }
+  .card { padding: 20px 16px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="hero">
+  <div class="hero-badge">FDE v2 · Phase 4 · Day 12</div>
+  <h1>🏛️ 政企网络地形入门 · 内外网 / DMZ / 堡垒机 / 跳板机</h1>
+  <div class="subtitle">政企机房的网络拓扑跟公有云 <strong>完全不是一回事</strong>——今天先带你把这张地图看懂，不懂拓扑后面白名单申请全听不懂。</div>
+  <div class="hero-meta">
+    <span>🎯 Phase 4 · 政企环境适配</span>
+    <span>⏱️ 预计 70-80 分钟</span>
+    <span>🧭 补齐能力：⑦ 啃环境（2.0 · 最弱）</span>
+  </div>
+  <div class="hero-back">FDE v2 学习路径 · <a href="./day00_fde_panorama_and_radar.html">← 回到 Day 0 起点校准</a></div>
+</div>
+
+<!-- 板块 1：今日目标 -->
+<div class="card">
+  <h2>🎯 一、今日目标</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>你在某公司做某单位驻场那么多年，跳板机、堡垒机、白名单这些词你听过一百遍，但你自己评分 <strong>⑦ 啃环境 2.0</strong>——为什么？因为你听过不代表你说得清。你以前是"客户网络运维告诉我怎么办，我照着做就完事"；现在做 FDE，<strong>你得能主动看懂这张网络图、能自己判断 AI 服务应该放哪一层、能对客户运维说清楚我们的部署诉求</strong>。这个跨度非常大。</p>
+      <p>Phase 4 是给你补短板中的短板。今天先不讲白名单怎么申请（那是明天 Day 13），今天先把"地图"看懂——<strong>互联网 / DMZ / 办公网 / 生产网 / 隔离网</strong>这 5 层每一层是干啥的、我们的 AI 服务通常放哪一层、客户运维口中的"内网"到底指的是哪个网。地图看懂了，明天申请白名单才有的放矢。</p>
+    </div>
+  </div>
+
+  <ul class="goal-list">
+    <li>理解 <strong>「政企网络 5 层典型部署」</strong>——互联网/DMZ/办公/生产/隔离</li>
+    <li>看懂 <strong>「一张真实政企拓扑图」</strong>——能指着图说出每一层放啥、防火墙在哪、堡垒机在哪</li>
+    <li>会对客户运维问 <strong>「进机房前 5 件事」</strong>——不问清楚就动手 = 找死</li>
+    <li>掌握 <strong>「AI 项目 3-4 种典型部署位置」</strong>——各自约束和取舍</li>
+    <li>能对领导说出 <strong>「客户的内网至少 3 个网段，我们服务放哪层要先明确」</strong> 的话术</li>
+  </ul>
+</div>
+
+<!-- 板块 2：核心讲解 -->
+<div class="card">
+  <h2>📖 二、核心讲解</h2>
+
+  <h3>是什么：政企网络的 5 层典型部署</h3>
+  <p>你在公有云上部过服务对不对？你从阿里云买台 ECS，绑个公网 IP，配个安全组，就能对外提供服务了。<strong>政企机房完全不是这个玩法</strong>。政企网络是"层层隔离、逐级审批"的思路，一个公司内部可能同时存在 5 个物理或逻辑隔离的网络层。</p>
+
+  <div class="topology">
+<span class="l-title">🌐 政企网络典型 5 层拓扑（自上而下）</span>
+
+<div class="layer l1"><span class="l-title">Layer 1 · 互联网</span>
+  公有云资源 · 外部 SaaS · 公网 API（阿里云百炼、OpenAI、GitHub）</div>
+<div class="arrow">│ <span class="fw">🔥 边界防火墙 · NAT 网关</span> │</div>
+<div class="layer l2"><span class="l-title">Layer 2 · DMZ 非军事区</span>
+  对外服务网关 · 反向代理 · 邮件网关 · 面向公众的 Web 服务</div>
+<div class="arrow">│ <span class="fw">🔥 内网防火墙</span> │</div>
+<div class="layer l3"><span class="l-title">Layer 3 · 办公内网</span>
+  员工电脑 · 办公 OA/邮件/IM · 开发测试环境 · 通常有代理出网能力</div>
+<div class="arrow">│ <span class="fw">🔥 生产防火墙 · 堡垒机</span> │</div>
+<div class="layer l4"><span class="l-title">Layer 4 · 生产内网</span>
+  核心业务系统 · 数据库 · 中台服务 · <strong>通常无外网出口</strong></div>
+<div class="arrow">│ <span class="fw">🔥 隔离网关（可能物理隔离）</span> │</div>
+<div class="layer l5"><span class="l-title">Layer 5 · 隔离网 / 涉密网</span>
+  涉密业务 · 国密加密 · 物理隔离 · 通常 AI 上不了</div>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th style="width: 14%">层</th><th style="width: 22%">谁能进</th><th style="width: 24%">能出网吗</th><th>AI 服务能放这层吗</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>L1 互联网</strong></td><td>所有人</td><td>本身就是</td><td>放外面：客户不同意，数据不敢出</td></tr>
+      <tr><td><strong>L2 DMZ</strong></td><td>外部 + 内部（有限）</td><td>受控出网</td><td>✅ 常见：AI 网关放这里做代理转发</td></tr>
+      <tr><td><strong>L3 办公网</strong></td><td>员工 + 驻场</td><td>有代理可出</td><td>✅ 常见：开发测试环境放这里</td></tr>
+      <tr><td><strong>L4 生产内网</strong></td><td>严格审批 + 堡垒机</td><td>❌ 默认不能</td><td>✅ 最常见：正式服务放这里，需白名单出网</td></tr>
+      <tr><td><strong>L5 隔离网</strong></td><td>持证人员 + 物理进入</td><td>❌ 物理隔离</td><td>❌ 不能：AI 通常上不了</td></tr>
+    </tbody>
+  </table>
+  <p><strong>反直觉的地方：</strong>客户嘴上一个"内网"，其实可能是 L3 / L4 / L5 中的任何一个。你不问清楚，可能把服务部到 L3 结果客户要求 L4，白干一遍。</p>
+
+  <div class="mnemonic">
+    <div class="m-title">□ □ □ 政企 5 层网络口诀 □ □ □</div>
+    <div class="m-line">互 · D · 办 · 产 · 隔</div>
+    <div class="m-explain">层层隔离，逐级审批 · 5 层每一层都有一道防火墙</div>
+  </div>
+
+  <h3>为什么：驻场 FDE 的三个大坑</h3>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 1 · 以为客户"内网"是一个网</div>
+    <div>
+      <p>客户运维说"你把服务部到我们内网"，你就以为是"一个网"。等你部好了发现——服务在办公网（L3），但客户要接的业务系统在生产网（L4），中间还有一道防火墙。你的服务调不到业务系统，业务系统也调不到你。</p>
+      <p><strong>正确姿势：</strong>拿到"内网"两个字先追问：<em>"是办公网还是生产网？跟我要对接的业务系统在同一个网段吗？"</em>——一句话能救你 3 天时间。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 2 · 把办公开发环境当客户机房环境</div>
+    <div>
+      <p>你在某公司办公室调好了 Demo，用的是某公司办公网——能连外网、能装 pip 包、能访问 GitHub。你到了客户机房，插上网线，一样的代码<strong>连 pip install 都跑不通</strong>。</p>
+      <p>为什么？<strong>客户机房大概率是 L4 生产网，默认不能出外网</strong>。你办公室能连 pypi.org，客户机房连 DNS 都解析不了 pypi.org。</p>
+      <p><strong>正确姿势：</strong>Demo 阶段就要问客户能不能出网、要不要走内网 pip 镜像、要不要提前打好 Docker 离线包。<strong>能连外网的环境 ≠ 客户生产网环境</strong>——这是驻场 FDE 最容易翻船的地方。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 3 · 忽略堡垒机（跳板机）的存在</div>
+    <div>
+      <p>你想 SSH 到生产网服务器上装东西——直接 <code>ssh admin@10.100.x.x</code>？拒。政企生产网基本都有<strong>堡垒机</strong>（也叫跳板机、运维审计系统）——你要通过堡垒机中转才能操作生产网服务器，堡垒机会全程录像、审计每一条命令、限制部分高危操作。</p>
+      <p><strong>正确姿势：</strong>你需要客户给你开堡垒机账号 + 授权可访问的目标机器清单 + 授权可用的操作类型（SSH / RDP / SFTP）。这三样任何一个没到位你都进不去。<strong>堡垒机不是网络设备，是运维流程</strong>。</p>
+    </div>
+  </div>
+
+  <div class="box box-blue">
+    <div class="box-title">🧭 PM 行动指南：进客户机房前必问的 5 件事</div>
+    <div>
+      <p><strong>Q1 · 网络层次</strong>：你们目前几层网络？分别是干啥的？（哪怕客户答"就一个内网"你也要追问 DMZ、办公、生产是分开的吗）</p>
+      <p><strong>Q2 · 我们的位置</strong>：AI 服务准备放哪一层？（DMZ / 办公 / 生产）</p>
+      <p><strong>Q3 · 上下游位置</strong>：我们要对接的业务系统 / 数据库 / 中台在哪一层？跟我们同网段吗？</p>
+      <p><strong>Q4 · 出网能力</strong>：那一层能连互联网吗？能出的话走什么代理？不能出的话有没有内网镜像？</p>
+      <p><strong>Q5 · 堡垒机</strong>：需要通过堡垒机吗？给我们开账号需要走什么流程？多久能开好？</p>
+      <p style="margin-top: 8px; font-style: italic;">这 5 个问题在第一次跟客户运维见面就要问清，越晚问代价越大。</p>
+    </div>
+  </div>
+
+  <h3>怎么用：三种典型 AI 部署位置的取舍</h3>
+
+  <table>
+    <thead>
+      <tr><th style="width: 20%">部署位置</th><th style="width: 22%">典型场景</th><th style="width: 22%">优势</th><th>约束</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>纯 DMZ 部署</strong></td><td>面向公众的 AI 客服 / 政务问答</td><td>接入方便、出网灵活</td><td>敏感数据不能进 DMZ，功能受限</td></tr>
+      <tr><td><strong>DMZ 网关 + 生产网服务</strong></td><td>员工 AI 助手 / 内部知识问答</td><td>安全性高、能对接业务系统</td><td>需要打通两层防火墙 + 白名单</td></tr>
+      <tr><td><strong>纯生产网离线部署</strong></td><td>数据涉密的 AI 分析 / 涉核心业务</td><td>数据不出网、合规最强</td><td>要私有部署大模型，成本高</td></tr>
+      <tr><td><strong>混合部署</strong></td><td>大部分政企 AI 项目现状</td><td>灵活取舍</td><td>复杂度高，网络架构要画清</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 板块 3：动手步骤 -->
+<div class="card">
+  <h2>🛠️ 三、动手步骤：读懂一张真实政企拓扑</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>下面 3 个 case 都是真实政企拓扑的脱敏版。第一个跟着走，你要能指着图说出每一层放啥；后两个自己练。练完你就有了"看图说话"的基本功。</p>
+    </div>
+  </div>
+
+  <details class="case-block" open>
+    <summary>📌 案例 A · 某省电力公司典型拓扑（跟着做）</summary>
+    <div class="case-body">
+      <h5>拓扑图</h5>
+      <div class="topology">
+<span class="l-title">🏢 某省电力公司 · 5 层拓扑</span>
+
+<div class="layer l1"><span class="l-title">L1 · 互联网</span>
+  ☁ 阿里云百炼 API · GitHub · pypi</div>
+<div class="arrow">│ <span class="fw">🔥 边界防火墙</span> │</div>
+<div class="layer l2"><span class="l-title">L2 · DMZ</span>
+  🌐 对外门户网站 · 邮件网关 · 【AI 反向代理网关】</div>
+<div class="arrow">│ <span class="fw">🔥 办公防火墙</span> │</div>
+<div class="layer l3"><span class="l-title">L3 · 办公内网 (10.10.x.x)</span>
+  💻 员工 PC · OA 系统 · 【AI 开发测试环境】 · 代理服务器可出网</div>
+<div class="arrow">│ <span class="fw">🔥 生产防火墙 + 堡垒机</span> │</div>
+<div class="layer l4"><span class="l-title">L4 · 生产内网 (10.100.x.x)</span>
+  ⚡ 核心生产调度系统 · 营销业务 · 【AI 生产服务集群】 · 数据仓库
+  ⚠ 默认无外网出口 · 需白名单</div>
+<div class="arrow">│ <span class="fw">🔥 隔离网关（物理隔离）</span> │</div>
+<div class="layer l5"><span class="l-title">L5 · 涉密网 (192.168.x.x 独立)</span>
+  🔒 调度自动化系统 · 二次安全防护区
+  ❌ AI 不进入</div>
+      </div>
+
+      <h5>拆解每一层</h5>
+      <table>
+        <thead><tr><th style="width: 12%">层</th><th style="width: 28%">这一层有啥业务</th><th>AI 项目落在哪</th></tr></thead>
+        <tbody>
+          <tr><td><strong>L1</strong></td><td>不属于客户内部</td><td>阿里云百炼 API（在这里，需白名单调用）</td></tr>
+          <tr><td><strong>L2 DMZ</strong></td><td>对外门户、邮件网关</td><td><strong>AI 反向代理网关</strong>——所有生产网出去调 LLM 的流量在这里做审计和过滤</td></tr>
+          <tr><td><strong>L3 办公网</strong></td><td>员工电脑、OA</td><td><strong>AI 开发测试环境</strong>——驻场开发在这里搭 Demo</td></tr>
+          <tr><td><strong>L4 生产网</strong></td><td>生产调度、营销业务</td><td><strong>AI 生产服务集群</strong>——正式对内提供的 AI 应用</td></tr>
+          <tr><td><strong>L5 涉密网</strong></td><td>二次安全防护、调度</td><td>❌ AI 上不了，法规不允许</td></tr>
+        </tbody>
+      </table>
+
+      <h5>典型调用链路（员工用 AI 助手查配电资料）</h5>
+      <div class="topology">
+员工电脑 (L3 办公网)
+  ↓ HTTPS
+AI 生产服务 (L4 生产网)  ← 从这里开始需要打通 L3→L4
+  ↓ 调用 LLM
+AI 反向代理网关 (L2 DMZ)  ← 生产网出网必经之路
+  ↓ HTTPS + 白名单
+阿里云百炼 API (L1 互联网)
+  ↓ 响应原路返回
+      </div>
+
+      <h5>📓 复盘一句话</h5>
+      <p><strong>AI 项目在政企落地本质上是"在多层网络之间打通合规的通道"——每一道防火墙都要有白名单，每一个网段跳转都要有代理。</strong></p>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 B · 某商业银行客户拓扑（自己练）</summary>
+    <div class="case-body">
+      <p><strong>拓扑描述：</strong>某商业银行 6 层网络——互联网 / DMZ / 办公网 / <strong>数据脱敏区</strong> / 核心业务网 / 涉密网。数据脱敏区是银行特有的，所有从核心业务网出到办公网/DMZ 的数据都要经过脱敏区做敏感字段脱敏（客户身份证、手机号、账号）。堡垒机在办公网到核心业务网之间。</p>
+      <p style="color: var(--gray-500);">问题：如果客户要求做一个"员工智能助手"回答业务政策类问题（不涉及客户隐私数据），你会建议部在哪一层？为什么？</p>
+
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--primary); font-weight: 600;">查看参考答案</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <p><strong>推荐：部在办公网（L3）为主 + DMZ 放 AI 网关。</strong></p>
+          <p><strong>理由 3 条：</strong></p>
+          <ol style="margin-left: 24px;">
+            <li>业务政策类问题不涉及客户 PII，不用进核心业务网，避免触碰数据脱敏区的复杂合规</li>
+            <li>员工都在办公网工作，服务放办公网响应最快，跳的防火墙最少</li>
+            <li>调用 LLM 的出网走 DMZ 的 AI 网关，符合银行"所有外部出网必经审计"的常规要求</li>
+          </ol>
+          <p><strong>如果客户坚持要放核心业务网？</strong>提三条反问：<em>"是要对接客户数据吗？如果不对接，放核心业务网收益是什么？维护成本你们能承担吗？"</em>——用反问帮客户想清楚。</p>
+          <p><strong>面试金句：</strong><em>"AI 服务部署位置不是越靠内越安全——越靠内维护成本越高、迭代越慢。要以业务数据敏感度反推部署位置，不是以'客户觉得安全'反推。"</em></p>
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 C · Bug case——Demo 上线后调不到 LLM API（自己练）</summary>
+    <div class="case-body">
+      <p><strong>现象：</strong>你在客户生产网（L4）部署了 AI 服务，代码在办公室调通了，到客户环境启动后调用阿里云百炼 API 报错：<code>Connection timed out</code>。日志里 DNS 解析成功、但 TCP 连接不上。请给出 3 种可能的原因和排查方向。</p>
+
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--primary); font-weight: 600;">查看参考答案</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <p><strong>可能原因 3 种（按可能性排序）：</strong></p>
+          <ol style="margin-left: 24px;">
+            <li><strong>白名单没申请</strong>——生产网默认所有出网请求都被防火墙 drop，即使 DNS 解析出 IP 也连不上 443。<em>排查：telnet dashscope.aliyuncs.com 443 看能不能通</em></li>
+            <li><strong>生产网无外网出口，需要走代理</strong>——很多客户生产网要经 DMZ 的正向代理才能出网，你的代码没配 <code>HTTP_PROXY / HTTPS_PROXY</code>。<em>排查：问客户运维要代理地址，在环境变量或 SDK 里配上</em></li>
+            <li><strong>DNS 解析被劫持到内网 IP</strong>——政企内网 DNS 有时会把外部域名解析到内部服务的一个"代理镜像"，但代理没配好导致连不上。<em>排查：nslookup dashscope.aliyuncs.com 对比办公网和生产网的解析结果</em></li>
+          </ol>
+          <p><strong>验证顺序：</strong>先 <code>ping</code> 看网络通不通 → <code>nslookup</code> 看 DNS → <code>telnet host port</code> 看端口 → <code>curl -v https://xxx</code> 看完整请求。四把梯子上去，每一层出问题都能定位。</p>
+          <p><strong>驻场经验：</strong>这种 case 8 成是 <strong>①+② 组合</strong>——既没申请白名单也没配代理。所以 Day 13 我们要重点讲怎么申请。</p>
+        </div>
+      </details>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 4：速查卡 -->
+<div class="card">
+  <h2>📇 四、速查卡</h2>
+
+  <div class="cheatsheet">
+    <div class="cs-title">📖 网络术语中英对照表（政企常用）</div>
+    <table>
+      <thead><tr><th style="width: 22%">中文</th><th style="width: 22%">英文</th><th>一句话解释</th></tr></thead>
+      <tbody>
+        <tr><td><strong>DMZ 非军事区</strong></td><td>Demilitarized Zone</td><td>介于内外网之间的缓冲区，放对外服务</td></tr>
+        <tr><td><strong>内网 / 外网</strong></td><td>Intranet / Internet</td><td>内网是企业内部专用网络，外网是互联网。企业内网又分办公/生产等多层</td></tr>
+        <tr><td><strong>堡垒机</strong></td><td>Bastion Host / Jump Server</td><td>运维审计通道，录像所有登录操作</td></tr>
+        <tr><td><strong>跳板机</strong></td><td>Jump Server</td><td>堡垒机的一种，也可能是简单中转机</td></tr>
+        <tr><td><strong>代理网关</strong></td><td>Proxy Gateway</td><td>转发出网请求的中间节点，常有审计和限流</td></tr>
+        <tr><td><strong>反向代理</strong></td><td>Reverse Proxy</td><td>外部请求先到反向代理，再转发到内部服务</td></tr>
+        <tr><td><strong>VPN</strong></td><td>Virtual Private Network</td><td>虚拟专用网络，远程接入内网的老办法</td></tr>
+        <tr><td><strong>SDP</strong></td><td>Software Defined Perimeter</td><td>软件定义边界，比 VPN 更细粒度的接入控制</td></tr>
+        <tr><td><strong>零信任</strong></td><td>Zero Trust</td><td>"默认不信任任何请求"的安全模型，每次访问都验证</td></tr>
+        <tr><td><strong>白名单</strong></td><td>Whitelist / Allowlist</td><td>被允许通过防火墙的目标清单</td></tr>
+        <tr><td><strong>ACL 访问控制</strong></td><td>Access Control List</td><td>防火墙上的一条条允许/禁止规则</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">🏗️ AI 项目常见接入路径决策表</div>
+    <table>
+      <thead><tr><th style="width: 22%">部署方案</th><th style="width: 26%">适用条件</th><th>关键约束</th></tr></thead>
+      <tbody>
+        <tr><td><strong>公有云 SaaS 直连</strong></td><td>非涉密业务 / 客户接受数据出网</td><td>需申请对外出网白名单 + 走 DMZ 网关</td></tr>
+        <tr><td><strong>DMZ 部署 + 公网 LLM</strong></td><td>对外服务型 AI（客服/门户）</td><td>敏感数据不能进 DMZ</td></tr>
+        <tr><td><strong>生产网服务 + DMZ 代理出网</strong></td><td>企业内部 AI 助手（80% 场景）</td><td>需两层白名单 + 双向 ACL</td></tr>
+        <tr><td><strong>生产网私有部署大模型</strong></td><td>数据涉密、不允许出网</td><td>需 GPU 服务器 + 私有模型 + 运维能力</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">✅ 进机房前 20 问 checklist</div>
+    <ol style="margin-left: 24px;">
+      <li>你们内网分几层？分别是什么名字？</li>
+      <li>我们的服务准备部在哪一层？</li>
+      <li>我们要对接的业务系统在哪一层？</li>
+      <li>这两层之间打通需要走什么流程？</li>
+      <li>我们所在的网段能出外网吗？</li>
+      <li>如果要出网，走什么代理？代理地址是？</li>
+      <li>需要通过堡垒机吗？账号怎么开？开好需要几天？</li>
+      <li>我们能装 pip / npm / apt 包吗？有没有内网镜像源？</li>
+      <li>域名 DNS 谁管？内部 DNS 能解析什么？</li>
+      <li>白名单申请找谁？表格模板在哪？审批要几天？</li>
+      <li>需要 VPN 才能进办公网吗？给我们发 VPN 账号吗？</li>
+      <li>生产环境上线要走什么流程？变更管理系统叫啥？</li>
+      <li>发生故障了找谁？值班电话是？</li>
+      <li>数据允许持久化落盘吗？落哪个磁盘阵列？</li>
+      <li>加密要求是啥？国密还是通用？</li>
+      <li>日志要接入你们的 SIEM 吗？接入方式？</li>
+      <li>监控要接入你们的监控平台吗？</li>
+      <li>你们有 Docker / K8s 环境吗？镜像仓库地址？</li>
+      <li>安全扫描要不要过？扫描周期？</li>
+      <li>网络割接窗口是啥时候？我们不能碰的时段？</li>
+    </ol>
+  </div>
+</div>
+
+<!-- 板块 5：5 题测验 -->
+<div class="card">
+  <h2>📝 五、5 题小测验</h2>
+  <p style="color: var(--gray-600); font-size: 14px;">建议先自己想 20 秒再点开答案。错项解析比正确答案更值钱。</p>
+
+  <details class="quiz-item">
+    <summary>Q1 · 客户说"把 AI 服务部到我们内网"，你的第一反应最该是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 好的，我立刻安排把 Docker 镜像准备好</li>
+        <li>B. 追问一句"是办公网还是生产网？跟要对接的业务系统同网段吗？"</li>
+        <li>C. 让开发同学去部署，我不参与技术细节</li>
+        <li>D. 先跟客户申请 VPN，我自己在家远程部</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>"内网"是模糊词，政企内部至少有 3-4 个网段，各自约束差别巨大。<strong>不问清楚"哪层内网"就动手，是驻场 FDE 最常见的翻车姿势</strong>。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 是典型的"客户说啥我做啥"陷阱</strong>——部错了层要推倒重来。<strong>C 是撂挑子</strong>——FDE 的核心价值就是搞清楚这些"边界不清楚的问题"。<strong>D 在政企场景基本不可行</strong>——生产网大多数客户不给外包发 VPN，你必须现场部。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q2 · 关于堡垒机（跳板机），下面说法正确的是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 堡垒机是一台服务器，可以直接跳过它 ssh 到目标机器</li>
+        <li>B. 堡垒机是运维审计通道，你必须通过它才能访问生产网服务器，且全程录像</li>
+        <li>C. 只有开发才需要用堡垒机，PM/FDE 不用</li>
+        <li>D. 堡垒机只是名字好听，本质就是个 VPN 服务器</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>堡垒机是<strong>运维审计系统</strong>，核心作用是"所有生产网操作都必经这里 + 全程录像 + 高危命令拦截"。它不是网络设备是运维流程，能不能用取决于客户给你开不开账号和授权。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 说"可以跳过"是最危险的想法</strong>——政企生产网防火墙已经封了直连 SSH，你根本连不到目标机器。<strong>C 是身份错觉</strong>——FDE 也要登录服务器改配置、看日志、部署，同样需要堡垒机账号。<strong>D 混淆了堡垒机和 VPN</strong>——VPN 解决"能不能进内网"，堡垒机解决"进了内网后怎么管你"。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q3 · 政企 5 层网络，AI 服务最常见的部署位置是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. L1 互联网（放阿里云上，客户直接调）</li>
+        <li>B. L2 DMZ（所有 AI 服务放 DMZ 里）</li>
+        <li>C. L4 生产内网 + L2 DMZ 出网代理（80% 政企内部 AI 项目的架构）</li>
+        <li>D. L5 涉密网（越涉密越安全）</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：C</div>
+        <p>企业内部 AI 助手（80% 场景）的典型架构就是"服务在生产网 + 通过 DMZ 代理调用外部 LLM"。这个架构平衡了 <strong>数据安全（在生产网）+ 能调外部模型（走 DMZ）+ 客户可管控（有审计网关）</strong>。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 客户不会同意把数据发到互联网直接调</strong>——即使调外部 API，请求也必须从内网发出，不能让员工直连互联网。<strong>B 把所有 AI 服务放 DMZ 会导致敏感数据进 DMZ 违反安全规范</strong>。<strong>D 涉密网法规通常禁止 AI 服务，越涉密不代表越应该放</strong>——AI 上涉密网基本走不通。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q4 · 你的服务在客户生产网启动后调阿里云百炼 API 报 timeout，最先该查什么？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 换个更快的模型，可能是模型太慢了</li>
+        <li>B. 用 telnet / curl 测试生产网到目标域名的端口通不通</li>
+        <li>C. 重启服务器</li>
+        <li>D. 找开发同学，说代码有 bug</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>timeout 大概率是网络问题——白名单没开或代理没配。<code>telnet host 443</code> 或 <code>curl -v</code> 是政企驻场的第一把梯子，几秒就能判断是网络问题还是应用问题。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 换模型是最不靠谱的猜测</strong>——都 timeout 了根本没连上模型，换啥都白搭。<strong>C 重启服务器是运维老套路</strong>——网络问题不会重启就好。<strong>D 甩锅给开发是最糟的</strong>——同一份代码在办公室能跑说明代码没问题，问题在环境。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q5 · 综合题：客户是一家省级国税局，要做智能税务问答，你会怎么规划部署方案？</summary>
+    <div class="quiz-body">
+      <p style="color: var(--gray-600); margin-bottom: 8px;">给出你的部署位置建议 + 3 个进机房必问问题。</p>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 参考答案：分层部署 + 前期先摸清网络地形</div>
+        <p><strong>推荐架构：</strong></p>
+        <ul style="margin-left: 24px;">
+          <li><strong>L4 生产网</strong>：AI 服务集群（应用后端 + 向量库 + 知识库）</li>
+          <li><strong>L2 DMZ</strong>：AI 出网代理网关（做审计和过滤）</li>
+          <li><strong>L1 互联网</strong>：LLM API（阿里云百炼或类似，走白名单）</li>
+          <li>如果客户要求"数据不出境不出机房"——升级到"生产网私有部署开源大模型（如 Qwen 私有化）"</li>
+        </ul>
+        <p><strong>进机房必问 3 件事（收敛版）：</strong></p>
+        <ol style="margin-left: 24px;">
+          <li>"税务系统数据是否涉密？我们准备接的知识库敏感级别是啥？"——决定要不要私有部署</li>
+          <li>"生产网能出外网调用外部 LLM 吗？如果能，走什么代理和白名单流程？"——决定架构</li>
+          <li>"我们操作生产网服务器要通过什么？堡垒机账号怎么开？开好需要几天？"——决定驻场安排</li>
+        </ol>
+        <p><strong>面试金句：</strong><em>"税务这种客户，我不会一上来讲模型选型，我会先花 3 天摸清网络拓扑和合规要求。网络地形决定架构上限，模型只决定效果下限。"</em></p>
+      </div>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 6：面试金句 + 心得笔记 -->
+<div class="card">
+  <h2>💼 六、面试金句预埋</h2>
+
+  <div class="interview-quote">
+    <span class="iq-tag">网络拓扑意识</span>
+    "做政企 AI 驻场，第一周我不写代码——我画图。<strong>把客户的 5 层网络画清楚 · 每一层放啥业务 · 每道防火墙什么规则 · 堡垒机怎么走</strong>——这张图画完，后面所有部署问题都是照着图对答案。<strong>不画图就动手，是驻场翻船的头号原因</strong>。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">部署位置决定架构</span>
+    "AI 服务部署位置不是技术选型的结果，是<strong>反过来决定技术选型</strong>的因。放生产网要考虑私有化能力、放 DMZ 要考虑数据脱敏、要出网就要设计代理网关。<strong>先定位置再选栈</strong>是政企场景铁律。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">驻场敏感度</span>
+    "客户嘴上说'内网'，我心里立刻问三个字'哪一层'。<strong>办公网 / 生产网 / 涉密网</strong>是三个截然不同的世界。这种敏感度是驻场老兵和新人最大的分野——新人听到'内网'就点头，老兵听到就追问。"
+  </div>
+
+  <h3>📓 心得笔记</h3>
+  <div class="box box-red">
+    <div class="box-title">⚠️ 今天最反直觉的 3 件事</div>
+    <div>
+      <p><strong>1.</strong> 客户"内网"不是一个网——至少是 3-4 个网段，中间隔着好几道防火墙。<em>（听到"内网"永远要追问哪一层。）</em></p>
+      <p><strong>2.</strong> 办公室能连外网 ≠ 客户生产网能连外网——你的 Demo 到客户机房不一定能启动。<em>（提前问出网能力和代理配置。）</em></p>
+      <p><strong>3.</strong> 越涉密不代表越应该放涉密网——AI 上涉密网通常法规禁止。<em>（部署位置以业务数据敏感度反推，别以"感觉安全"反推。）</em></p>
+    </div>
+  </div>
+
+  <div class="box box-orange">
+    <div class="box-title">🎯 老 PM 转 FDE 的思维切换</div>
+    <div>
+      <p>你在某公司做过那么多某单位项目，堡垒机、白名单这些词你听过一百遍——但你听过不代表你说得清。以前是客户运维告诉你怎么办；现在做 FDE，<strong>你要能主动看图、主动追问、主动画部署架构</strong>。这个跨度就是从"执行者"到"设计者"的跨度。你的驻场经验是天然优势，缺的只是<strong>把这些零散的听说，串成一张系统的地图</strong>。今天这张 5 层地图就是那根线。</p>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  学习笔记 · AI 项目经理成长 · FDE v2 · Day 12<br>
+  下一站 → Day 13 LLM API 上内网全流程 · 白名单申请
+</div>
+
+</div>
+</body>
+</html>

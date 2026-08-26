@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FDE v2 · Day 1 · AI 适配判断 + 需求拆解</title>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-bg: #eff6ff;
+  --blue-dark: #1e40af;
+  --orange: #ea580c;
+  --orange-bg: #fff7ed;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --green: #059669;
+  --green-bg: #ecfdf5;
+  --yellow: #d97706;
+  --yellow-bg: #fffbeb;
+  --purple: #7c3aed;
+  --purple-bg: #f5f3ff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-800: #1f2937;
+  --text: #1a1a2e;
+  --text-light: #6b7280;
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: #f0f4f8; color: var(--text); line-height: 1.8; font-size: 16px;
+}
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+.hero {
+  background: linear-gradient(135deg, #1e3a5f 0%, #1a56db 55%, #0d7377 100%);
+  color: #fff; border-radius: var(--radius); padding: 32px 30px 26px; margin-bottom: 20px;
+}
+.hero-badge { display: inline-block; background: rgba(255,255,255,0.18); padding: 4px 14px; border-radius: 20px; font-size: 12px; margin-bottom: 10px; }
+.hero h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; }
+.hero .subtitle { font-size: 14.5px; opacity: 0.92; margin-bottom: 14px; line-height: 1.7; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; opacity: 0.85; }
+.hero-back { font-size: 12px; margin-top: 10px; opacity: 0.75; }
+.hero-back a { color: #fff; text-decoration: underline; }
+
+.card { background: #fff; border-radius: var(--radius); padding: 26px 26px 22px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.card h2 { font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.card h3 { font-size: 17px; font-weight: 600; color: var(--gray-800); margin: 22px 0 10px; padding-left: 12px; border-left: 3px solid var(--primary); }
+.card h4 { font-size: 15px; font-weight: 600; margin: 14px 0 8px; color: var(--gray-800); }
+p { margin-bottom: 10px; }
+code { background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-size: 14px; font-family: "Cascadia Code", "Fira Code", Consolas, monospace; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-size: 14px; }
+th { background: var(--primary); color: #fff; padding: 9px 12px; text-align: left; font-weight: 600; font-size: 13px; }
+td { padding: 9px 12px; border-bottom: 1px solid var(--gray-200); vertical-align: top; }
+tr:nth-child(even) td { background: var(--gray-50); }
+
+.box { border-radius: 8px; padding: 14px 16px; margin: 14px 0; border-left: 4px solid; font-size: 14.5px; }
+.box-blue { background: var(--primary-bg); border-color: var(--primary); }
+.box-green { background: var(--green-bg); border-color: var(--green); }
+.box-yellow { background: var(--yellow-bg); border-color: var(--yellow); }
+.box-red { background: var(--red-bg); border-color: var(--red); }
+.box-purple { background: var(--purple-bg); border-color: var(--purple); }
+.box-orange { background: var(--orange-bg); border-color: var(--orange); }
+.box-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+
+/* 导师说 */
+.mentor { background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%); border-radius: 10px; padding: 16px 18px; margin: 14px 0; border: 1px solid #dbeafe; position: relative; }
+.mentor::before { content: '👨‍🏫'; position: absolute; top: -12px; left: 16px; background: #fff; padding: 0 6px; font-size: 20px; }
+.mentor .mentor-title { font-weight: 700; color: var(--blue-dark); font-size: 14px; margin-bottom: 6px; margin-top: 4px; }
+.mentor .mentor-body { font-size: 14.5px; color: var(--gray-800); line-height: 1.75; }
+.mentor .mentor-body p { margin-bottom: 8px; }
+
+/* 目标清单 */
+.goal-list { list-style: none; padding: 0; }
+.goal-list li { padding: 8px 0 8px 32px; position: relative; font-size: 15px; }
+.goal-list li::before { content: '🎯'; position: absolute; left: 4px; top: 8px; font-size: 15px; }
+
+/* 口诀卡 */
+.mnemonic { background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 10px; padding: 14px 18px; margin: 14px 0; text-align: center; }
+.mnemonic .m-title { font-size: 12px; color: #92400e; margin-bottom: 6px; letter-spacing: 2px; }
+.mnemonic .m-line { font-size: 18px; font-weight: 700; color: #78350f; letter-spacing: 3px; }
+.mnemonic .m-explain { font-size: 13px; color: #92400e; margin-top: 6px; }
+
+/* 速查卡 */
+.cheatsheet { border: 2px dashed var(--primary); border-radius: 10px; padding: 16px 18px; margin: 14px 0; background: #f0f9ff; }
+.cheatsheet .cs-title { font-weight: 700; color: var(--blue-dark); font-size: 15px; margin-bottom: 10px; }
+
+/* 步骤 */
+.steps { counter-reset: step; margin: 12px 0; }
+.step-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px dashed var(--gray-200); }
+.step-item:last-child { border-bottom: none; }
+.step-item .step-num { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--primary); color: #fff; text-align: center; line-height: 34px; font-weight: 700; }
+.step-item .step-body { flex: 1; }
+.step-item .step-body strong { color: var(--blue-dark); }
+
+/* 测验 */
+.quiz-item { border: 1px solid var(--gray-200); border-radius: 8px; margin: 10px 0; overflow: hidden; }
+.quiz-item summary { background: var(--primary-bg); padding: 12px 14px; cursor: pointer; font-weight: 600; color: var(--primary); font-size: 14.5px; }
+.quiz-item[open] summary { border-bottom: 1px solid var(--gray-200); }
+.quiz-body { padding: 12px 16px; }
+.quiz-options { list-style: none; padding: 0; }
+.quiz-options li { padding: 5px 0; font-size: 14px; }
+.quiz-answer { background: var(--green-bg); border-left: 3px solid var(--green); padding: 10px 12px; margin-top: 10px; font-size: 14px; border-radius: 4px; }
+.quiz-answer .ans-title { font-weight: 700; color: var(--green); margin-bottom: 6px; }
+.wrong-analysis { background: var(--red-bg); border-left: 3px solid var(--red); padding: 10px 12px; margin-top: 8px; font-size: 13.5px; border-radius: 4px; }
+.wrong-analysis .wa-title { font-weight: 700; color: var(--red); margin-bottom: 4px; }
+
+/* 案例块 */
+.case-block { border: 1px solid var(--gray-200); border-radius: 8px; margin: 12px 0; overflow: hidden; }
+.case-block summary { background: linear-gradient(135deg, #ede9fe, #ddd6fe); padding: 12px 14px; cursor: pointer; font-weight: 600; color: #5b21b6; font-size: 14.5px; }
+.case-block .case-body { padding: 14px 16px; font-size: 14px; }
+.case-block .case-body h5 { color: var(--blue-dark); margin: 10px 0 6px; font-size: 14px; }
+
+/* 面试金句 */
+.interview-quote { background: linear-gradient(135deg, #1e3a5f, #1a56db); color: #fff; border-radius: 10px; padding: 18px 20px; margin: 14px 0; font-size: 15px; font-style: italic; line-height: 1.8; position: relative; }
+.interview-quote::before { content: '💼'; position: absolute; top: -10px; left: 16px; background: #fff; padding: 2px 6px; border-radius: 12px; font-size: 16px; }
+.interview-quote .iq-tag { display: block; font-size: 11px; opacity: 0.8; margin-bottom: 6px; font-style: normal; letter-spacing: 1px; }
+
+.footer { text-align: center; color: var(--text-light); font-size: 12px; padding: 20px 0 36px; border-top: 1px solid var(--gray-200); margin-top: 16px; }
+
+@media (max-width: 640px) {
+  .container { padding: 12px; }
+  .hero { padding: 24px 18px 20px; }
+  .hero h1 { font-size: 20px; }
+  .card { padding: 20px 16px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="hero">
+  <div class="hero-badge">FDE v2 · Phase 1 · Day 1</div>
+  <h1>🎯 AI 适配判断 + 需求拆解</h1>
+  <div class="subtitle">今天不学写代码。学一件更前置的事——<strong>拿到一个模糊需求，怎么在 10 分钟里判断值不值得接、要不要用 AI 做</strong>。这一步没想明白，后面 17 天代码写得再好也白搭。</div>
+  <div class="hero-meta">
+    <span>🎯 Phase 1 · 需求到方案</span>
+    <span>⏱️ 预计 60-70 分钟</span>
+    <span>🧭 补齐能力：① 懂业务 + ② 会翻译</span>
+  </div>
+  <div class="hero-back">FDE v2 学习路径 · <a href="./day00_fde_panorama_and_radar.html">← 回到 Day 0 起点校准</a></div>
+</div>
+
+<!-- 板块 1：今日目标 -->
+<div class="card">
+  <h2>🎯 一、今日目标</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>你自评 ① 懂业务 3.0、② 会翻译 2.4——PM 老本行本来最扎实的一块居然只是及格。这不奇怪，你以前的"懂业务"是懂<strong>项目怎么推进</strong>，不是懂<strong>这个业务活到底能不能用 AI 干</strong>。今天补的就是这个空档。</p>
+      <p>接下来 60 分钟，你要学的不是"AI 有多牛"，是"AI 什么时候<strong>不该</strong>牛"。学完你会发现，能把 AI 需求砍掉 30%，比把它做出来还有价值。</p>
+    </div>
+  </div>
+
+  <ul class="goal-list">
+    <li>用 <strong>「三条决策线」</strong> 10 分钟判断一个需求适不适合用 AI</li>
+    <li>识别 <strong>5 种典型的「AI 陷阱需求」</strong>，遇到会本能警觉</li>
+    <li>拿到 <strong>「需求四层拆解表」</strong>，从"客户说想要 XX"到"AI 具体做什么"</li>
+    <li>能对客户说出 <strong>「我为什么建议先不用 AI 做」</strong> 的话术</li>
+  </ul>
+</div>
+
+<!-- 板块 2：核心讲解 -->
+<div class="card">
+  <h2>📖 二、核心讲解</h2>
+
+  <h3>是什么：AI 适配判断到底判什么？</h3>
+  <p>大白话——AI 适配判断，判的不是 <em>AI 强不强</em>，是 <strong>"这个业务活给 AI 干值不值"</strong>。</p>
+  <p>三条决策线一起看：</p>
+  <table>
+    <thead>
+      <tr><th style="width: 22%">决策线</th><th style="width: 30%">回答的问题</th><th>没过关会怎样</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>① 能不能做</strong>（技术可行性）</td><td>今天的大模型有能力干这活吗？</td><td>硬上，效果只有 60 分，客户觉得 AI 是骗子</td></tr>
+      <tr><td><strong>② 值不值得做</strong>（ROI）</td><td>省的钱 / 提的效，抵得上开发和推理成本吗？</td><td>做完发现比人工还贵，被砍预算</td></tr>
+      <tr><td><strong>③ 风险大不大</strong>（合规 & 后果）</td><td>错了会怎样？监管允许 AI 决策吗？</td><td>上线后被审计打回，甚至变负面新闻</td></tr>
+    </tbody>
+  </table>
+  <p><strong>反直觉的地方：</strong>①②③ 三条<strong>任意一条不过</strong>，都要砍掉需求或改方案。不是"能做就做"，是"三条都过才做"。</p>
+
+  <div class="mnemonic">
+    <div class="m-title">□ □ □ 三条决策线口诀 □ □ □</div>
+    <div class="m-line">能做 · 值做 · 敢做</div>
+    <div class="m-explain">缺一票否决 · AI 需求 30% 死在这一步</div>
+  </div>
+
+  <h3>为什么：PM 视角下的三个大坑</h3>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 1 · 客户嘴上说要"智能 XX"，其实要的是规则引擎</div>
+    <div>
+      <p>客户说"我要一个智能审批助手，自动判断哪些合同能批"。你回去调研，发现他家所有合同的批准逻辑都写在一份 20 页的 SOP 里，条件明确、结果确定。</p>
+      <p>这种活给 AI 干反而糟糕——AI 有幻觉、有波动，规则引擎（if-else）100% 准确、免费、可解释。他嘴里的"智能"只是"自动"的口误。</p>
+      <p><strong>正确姿势：</strong>先问一句 <em>"如果我用规则引擎写死这 20 条判断，能满足你 90% 的场景吗？"</em>——他大概率会说"够了"。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 2 · AI 能做 80 分，客户要 99 分——够不着</div>
+    <div>
+      <p>客户要一个"电力设备缺陷识别助手"，说"你只要识别准确率到 99.5% 就上线"。当前大模型在这类专业细粒度识别上，Top 模型都只能做到 88-92%。</p>
+      <p>你硬接，交付前一定翻车。要么提前谈预期（"AI 做到 85%，剩下 15% 走人工复核"），要么建议先做小范围试点。</p>
+      <p><strong>正确姿势：</strong>拿基准数据 <em>先自己跑一遍</em> 看能到多少分，不到就摊开讲，不硬承诺。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 3 · 技术能做，但监管不许</div>
+    <div>
+      <p>金融风控、医疗诊断、政务决策——很多场景法规明确要求"人做最终决策，AI 只能辅助"。你做了个能自动出决策的 Agent，验收时被合规部一票否决。</p>
+      <p><strong>正确姿势：</strong>接需求前先问 <em>"最终决策由谁承担责任？AI 输出的位置在哪一环？"</em>——涉及决策链末端的 AI 用途要特别小心。</p>
+    </div>
+  </div>
+
+  <div class="box box-blue">
+    <div class="box-title">🧭 PM 行动指南：拿到需求先问 3 句</div>
+    <div>
+      <p><strong>Q1</strong>：如果这活让人工做，一天做多少个？做错了会怎么样？</p>
+      <p><strong>Q2</strong>：现在有没有规则 / 传统程序能做到 80%？（有的话 AI 只能锦上添花，别当核心）</p>
+      <p><strong>Q3</strong>：最终决策谁背？AI 只输出还是要拍板？</p>
+    </div>
+  </div>
+
+  <h3>怎么用：五步适配判断法</h3>
+
+  <div class="steps">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>追问真痛点</strong>——把客户模糊的"我要 AI 助手"翻译成具体动作。用 <em>"你想让它替谁 · 干什么 · 在什么时候 · 输出什么"</em> 四问追根。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>识别 AI 任务类型</strong>——分类 / 抽取 / 生成 / 推理 / 工具调用。不同类型难度和成熟度差 10 倍。分类最成熟，多步推理最难。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>三条决策线打分</strong>——能做（技术可行性 1-5 分）× 值做（ROI 1-5 分）× 敢做（风险合规 1-5 分）。任意一项 ≤ 2 就要认真砍。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>找替代方案</strong>——RPA（流程重复）、规则引擎（逻辑明确）、传统 ML（数据充足），能替代的一律先用替代。AI 只留给"非它不可"的场景。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>出结论：接 / 缓 / 拒</strong>——接（三条决策线都过 3 分）、缓（有条件不成熟，先做 PoC）、拒（三条中有一条 ≤ 2 分且短期改不了）。要写在方案首页。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 板块 3：动手步骤 -->
+<div class="card">
+  <h2>🛠️ 三、动手步骤：拿一个真实需求过一遍</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>我给你三个真实的需求案例，都是我在客户那儿真见过的。你先看第一个的完整拆解过程，后两个自己练。练完再看参考答案。</p>
+    </div>
+  </div>
+
+  <details class="case-block" open>
+    <summary>📌 案例 A · 智能员工问答助手（跟着做）</summary>
+    <div class="case-body">
+      <h5>客户原话</h5>
+      <p>"我们员工每天问 HR 一堆重复问题——年假几天、报销怎么走、社保怎么转。我要一个 AI 员工助手，员工问啥就答啥。"</p>
+
+      <h5>Step 1 · 追问真痛点</h5>
+      <ul style="margin-left: 24px;">
+        <li>替谁：HR（把她从重复问答中解放）</li>
+        <li>干什么：回答员工制度类问题</li>
+        <li>什么时候：员工上班时间随时问</li>
+        <li>输出什么：制度条款的准确解释</li>
+      </ul>
+      <p>——本质是"知识问答"，不是"决策"。</p>
+
+      <h5>Step 2 · AI 任务类型</h5>
+      <p>信息抽取 + 生成（从制度库里找答案 + 用人话讲出来）——RAG 场景，成熟度高。</p>
+
+      <h5>Step 3 · 三条决策线打分</h5>
+      <table>
+        <tr><td><strong>① 能做</strong></td><td>4 分</td><td>RAG 已经很成熟，答对率 85%+ 没问题</td></tr>
+        <tr><td><strong>② 值做</strong></td><td>4 分</td><td>HR 说她每天花 2 小时答重复问题，一年就是 500 小时</td></tr>
+        <tr><td><strong>③ 敢做</strong></td><td>4 分</td><td>制度类问答，答错影响可控，且底部可挂"以人工回复为准"</td></tr>
+      </table>
+      <p><strong>三条都过 → 可以做。</strong></p>
+
+      <h5>Step 4 · 有没有替代方案？</h5>
+      <p>规则引擎不行——制度语言千变万化，员工问法五花八门，if-else 覆盖不过来。传统关键词检索勉强，但答不出"人话"。<strong>AI 是最优选</strong>。</p>
+
+      <h5>Step 5 · 结论</h5>
+      <p><strong>接。</strong>方案：RAG（制度库切片 + 向量检索 + LLM 生成），配置"未命中时转人工"兜底。</p>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 B · 智能费用报销审批（自己练）</summary>
+    <div class="case-body">
+      <p><strong>客户原话：</strong>"我要一个 AI 助手，员工传报销单它自动判断能不能批。我们审批规则挺清楚的：金额、类目、票据齐不齐、有没有超预算。"</p>
+      <p style="color: var(--gray-500);">试着自己走一遍五步，写下你的结论。</p>
+
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--primary); font-weight: 600;">查看参考答案</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <p><strong>结论：拒（或改造方案）。</strong></p>
+          <p>Step 3 三条线：能做 5 分（判断规则明确）、值做 <strong>2 分</strong>（规则完全能覆盖，AI 反而增加不确定性和成本）、敢做 3 分（错了可能造成财务损失）。<strong>② 值做 = 2 分</strong>，直接改方案。</p>
+          <p><strong>推荐替代：</strong>规则引擎 + OCR 抽字段（票据识别用 AI，判断用规则）。这才是这类场景的正确打开方式。</p>
+          <p><strong>PM 话术：</strong>"这个场景我建议规则引擎打底 + AI 只用来识别票据字段，效果最稳、成本最低。全流程 AI 反而更贵、还有幻觉风险。"</p>
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 C · 智能巡检缺陷诊断（自己练）</summary>
+    <div class="case-body">
+      <p><strong>客户原话：</strong>"我要 AI 帮我判断设备巡检拍的照片里有没有安全隐患，识别出来自动派工单。要求准确率 99% 以上。"</p>
+      <p style="color: var(--gray-500);">试着自己走一遍五步。重点思考"能做"这一条。</p>
+
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--primary); font-weight: 600;">查看参考答案</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <p><strong>结论：缓（做 PoC 后再定）。</strong></p>
+          <p>Step 3 三条线：能做 <strong>2 分</strong>（细粒度缺陷识别是难题，99% 准确率对绝大多数场景是硬伤）、值做 4 分（人工巡检成本高）、敢做 3 分（漏判缺陷可能有安全事故）。<strong>① 能做 = 2 分</strong>，重点在这里。</p>
+          <p><strong>正确姿势：</strong>先做 PoC——拿客户 500 张真实巡检图跑一遍主流视觉模型，把真实准确率测出来。基于数据谈预期："我们跑下来是 87%，如果您能接受 AI 初筛 + 人工复核，可以上；如果坚持 99% 全自动，AI 现阶段做不到，建议缓一年"。</p>
+          <p><strong>面试金句：</strong><em>"99% 的准确率承诺，是 AI 项目最常见的自杀条款。"</em></p>
+        </div>
+      </details>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 4：速查卡 -->
+<div class="card">
+  <h2>📇 四、速查卡</h2>
+
+  <div class="cheatsheet">
+    <div class="cs-title">🚫 不该用 AI 的 5 种需求</div>
+    <ol style="margin-left: 24px;">
+      <li><strong>结果错了赔不起</strong>——医疗诊断、财务核算、法律定性（除非只做辅助 + 强人工复核）</li>
+      <li><strong>规则已经很清楚</strong>——if-else 能覆盖 90% 就别上 AI，AI 只会带来幻觉和成本</li>
+      <li><strong>训练/参考数据太少</strong>——RAG 少于 100 条知识、微调少于 500 条样本，效果不稳</li>
+      <li><strong>客户要求 100% 准确</strong>——AI 天然有波动，硬承诺就是给自己挖坑</li>
+      <li><strong>监管明确禁止 AI 决策</strong>——政务、医疗、金融风控的一些环节法规写死人工做</li>
+    </ol>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">🔍 需求四层拆解表（模板）</div>
+    <table>
+      <thead><tr><th>层级</th><th>要问客户什么</th><th>示例</th></tr></thead>
+      <tbody>
+        <tr><td><strong>业务目标</strong></td><td>你为什么要做？成不成对你意味着什么？</td><td>降低 HR 重复答问的成本</td></tr>
+        <tr><td><strong>触发场景</strong></td><td>谁在什么情况会用？多久用一次？</td><td>员工上班时间随时问，日均 80 次</td></tr>
+        <tr><td><strong>AI 任务粒度</strong></td><td>具体让 AI 做什么？分类/抽取/生成/推理/工具调用？</td><td>知识检索 + 生成回答</td></tr>
+        <tr><td><strong>验收标准</strong></td><td>怎么算做好？做到多少分才上线？</td><td>制度问答准确率 ≥ 85%，兜底转人工</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">💬 追问金句（拿到需求马上问）</div>
+    <ul style="margin-left: 24px;">
+      <li>"这活现在人工怎么做？做错了会怎么样？"</li>
+      <li>"你能接受 AI 做到 85% 吗？剩下 15% 怎么兜底？"</li>
+      <li>"如果规则引擎能做到 80%，你还坚持用 AI 吗？"</li>
+      <li>"这个结论最终谁签字？签字的人相信 AI 吗？"</li>
+      <li>"如果 3 个月做不出来，你的替代方案是什么？"</li>
+    </ul>
+  </div>
+</div>
+
+<!-- 板块 5：5 题测验 -->
+<div class="card">
+  <h2>📝 五、5 题小测验</h2>
+  <p style="color: var(--gray-600); font-size: 14px;">建议先自己想 20 秒再点开答案。答错也别慌——错项解析比正确答案更值钱。</p>
+
+  <details class="quiz-item">
+    <summary>Q1 · 三条决策线中，任意一条不过就要砍需求，对不对？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 对，一票否决，直接拒</li>
+        <li>B. 对，但可以先做 PoC 再决定接不接</li>
+        <li>C. 不对，只要有一条过就可以试试</li>
+        <li>D. 不对，三条打分加起来 ≥ 9 分就能做</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>三条决策线是一票否决，但"否决"不等于"直接拒"。① 能做 = 2 分时，可以先做 PoC 用数据说话；② 值做 = 2 分时，可以先谈替代方案；③ 敢做 = 2 分时才是真拒（合规问题短期动不了）。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 错在太绝对</strong>——能做 2 分不代表未来做不到，做个 PoC 拿真实数据说话最合适。<strong>C 错在容忍度太高</strong>——三条线是并集必要条件，缺一条整个链条断掉。<strong>D 错在把并集变加权</strong>——① 能做 = 1 分即使 ②③ 都 5 分总分 11 也不能做，AI 硬做不出来的事再想干也白搭。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q2 · 下面哪个需求属于典型的"AI 陷阱需求"？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 客户要 AI 帮他从 200 份 PDF 合同里抽取金额、日期、甲乙方</li>
+        <li>B. 客户要 AI 自动给员工做绩效评分，要求 100% 客观公平</li>
+        <li>C. 客户要 AI 帮他把长会议录音转成摘要</li>
+        <li>D. 客户要 AI 判断一段代码有没有明显 bug</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>B 触发多个陷阱：①"结果错了赔不起"（绩效影响员工利益，容易变劳动纠纷）+ ② "100% 客观公平" 这种要求 AI 天然做不到（AI 输出有波动，训练数据自带偏见）+ ③ 监管敏感（绩效决策一般法规要求人做最终决定）。这题几乎三条决策线全阵亡。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 是标准 RAG/抽取场景</strong>，容忍度高、错了能改，非常适合 AI。<strong>C 是成熟的会议摘要场景</strong>，客户对摘要的容忍度也高（漏点细节人可以补）。<strong>D 场景可做但有边界</strong>——明显 bug（语法错、空指针）能做，深层逻辑 bug 就难了；这题相比 B 风险小很多。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q3 · 五步适配判断法的正确顺序是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 三条决策线 → 追问真痛点 → 识别任务类型 → 找替代方案 → 出结论</li>
+        <li>B. 追问真痛点 → 识别任务类型 → 三条决策线 → 找替代方案 → 出结论</li>
+        <li>C. 识别任务类型 → 追问真痛点 → 三条决策线 → 出结论 → 找替代方案</li>
+        <li>D. 追问真痛点 → 三条决策线 → 识别任务类型 → 找替代方案 → 出结论</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>顺序背后有因果链：不追问就搞不清真痛点（Step 1）→ 不识别任务类型就估不准难度（Step 2）→ 才能打三条决策线的分（Step 3）→ 分不理想才想替代方案（Step 4）→ 最后出结论（Step 5）。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 错在把打分放最前</strong>——痛点没摸清就打分，分出来也是拍脑袋。<strong>C 错在把找替代方案放结论后</strong>——发现"这个不能做"了才想替代，前面 5 分钟白花。<strong>D 把任务类型放决策线后</strong>——不知道任务类型难度，"能做"这条线打分没依据。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q4 · 客户说"AI 助手要能识别我们工单的意图并自动分配"，你的第一句追问最该是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. "你们有多少种意图分类？每种大概多少工单样本？"</li>
+        <li>B. "你希望用什么模型？开源的还是商业 API？"</li>
+        <li>C. "你们现在的工单是怎么分配的？有没有明确的分配规则？"</li>
+        <li>D. "预算多少？多久要上线？"</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：C</div>
+        <p>这就是"需求四层拆解表"的第一层——业务目标 + 现状。搞清楚现在人工怎么做 / 有没有规则可循，是判断"AI 值不值上"的前提。很多工单分配场景其实规则引擎就能覆盖 90%，AI 只是锦上添花。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 太早陷入技术细节</strong>——还没判断该不该做，就在算样本量。<strong>B 是最典型的 FDE 反模式</strong>——上来聊模型选型，业务还没搞懂。<strong>D 是纯 PM 视角，缺 FDE 判断</strong>——预算和交付期是接单后才谈的事。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q5 · 综合题——客户说"我要一个 AI 助手帮我审业务合同关键条款是否合规"，请判断该不该接？</summary>
+    <div class="quiz-body">
+      <p style="color: var(--gray-600); margin-bottom: 8px;">按五步走一遍，给出你的判断。</p>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 参考答案：缓（PoC 后再定，且默认转"辅助人工"方案）</div>
+        <p><strong>Step 1 · 追问真痛点：</strong>替法务从合同里找出高风险条款（垄断条款、免责范围过大、付款条件不利），一个法务一天审 8 份，公司月均 200 份积压。</p>
+        <p><strong>Step 2 · 任务类型：</strong>信息抽取 + 分类（是否高风险）+ 生成（解释理由）——多任务组合，难度中偏高。</p>
+        <p><strong>Step 3 · 三条决策线：</strong>能做 3 分（合同条款语言复杂、法律术语细致，抽取准确率能到 80% 但不到 95%）、值做 4 分（省法务时间明显）、敢做 <strong>2 分</strong>（法务判断错误可能造成商业损失和法律责任）。</p>
+        <p><strong>Step 4 · 替代方案：</strong>关键词/正则能找到部分明显条款，但灵活性差；传统 NLP 精度低。</p>
+        <p><strong>Step 5 · 结论：</strong><strong>缓。</strong>因为③ 敢做 = 2 分，直接砍太可惜。改造方案：<em>"AI 只做初筛提示 + 法务最终判断 + AI 的输出必须有原文引用"</em>。上线前跑 PoC 拿真实合同验证准确率，超过 85% 且法务愿意用才推。</p>
+        <p><strong>面试金句预埋：</strong><em>"AI 用在决策链末端要格外小心，最好的位置是决策链前段的信息处理和风险提示。"</em></p>
+      </div>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 6：面试金句 + 心得笔记 -->
+<div class="card">
+  <h2>💼 六、面试金句预埋</h2>
+
+  <div class="interview-quote">
+    <span class="iq-tag">FDE 视角的需求判断</span>
+    "拿到 AI 需求我先问三个问题——<strong>能不能做、值不值得做、风险大不大</strong>。三条决策线过不了就砍或改。我做 PM 时候踩过坑，AI 项目最贵的成本不是开发，是<strong>接了一个本来就不该用 AI 做的活</strong>。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">合规意识</span>
+    "AI 在决策链上的位置很关键。<strong>前段做信息处理和风险提示</strong>——这是最舒服的位置；<strong>末端做最终决策</strong>——法规常常不允许，也难解释。我给客户的默认建议永远是'AI 辅助人工判断'。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">替代方案思维</span>
+    "AI 不是万能解药，规则引擎能做到 80% 的场景就先别上 AI。这不是保守，是<strong>省客户的钱</strong>。等规则真的覆盖不到了，AI 上马才有说服力。"
+  </div>
+
+  <h3>📓 心得笔记</h3>
+  <div class="box box-red">
+    <div class="box-title">⚠️ 今天最反直觉的 3 件事</div>
+    <div>
+      <p><strong>1.</strong> AI 最贵的成本不是开发——是接了一个不该用 AI 做的活。<em>（一句话对客户价值：AI 项目的第一次砍需求，最有价值。）</em></p>
+      <p><strong>2.</strong> "能做 & 值做 & 敢做" 是并集必要条件，不是加权总分。<em>（有一条 ≤ 2 分就要认真砍或改。）</em></p>
+      <p><strong>3.</strong> 客户嘴上说"智能"，很多时候要的是"自动"。<em>（追问一句"如果规则能做到 80% 呢"能救很多命。）</em></p>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  学习笔记 · AI 项目经理成长 · FDE v2 · Day 1<br>
+  下一站 → Day 2 架构选型决策树
+</div>
+
+</div>
+</body>
+</html>
