@@ -42,6 +42,17 @@
   .start p{color:#666;line-height:1.8;font-size:14px;}
   .hidden{display:none;}
   .note{font-size:12px;color:#aaa;text-align:center;margin-top:16px;line-height:1.7;}
+  .wrongbox{margin-top:14px;text-align:left;background:#fff8f8;border:1px solid #f0c0c0;
+            border-radius:10px;padding:10px 12px;max-height:340px;overflow-y:auto;}
+  .wrongbox .wt{font-weight:700;color:#c0392b;font-size:14px;margin-bottom:8px;text-align:center;}
+  .witem{border-bottom:1px dashed #e8d0d0;padding:9px 2px;}
+  .witem:last-child{border-bottom:none;}
+  .wq{font-weight:700;font-size:14px;line-height:1.5;margin-bottom:5px;color:var(--ink);}
+  .wa{font-size:13px;line-height:1.5;margin:2px 0;}
+  .wa .bad{color:#c62828;font-weight:700;}
+  .wa .good{color:#2e7d32;font-weight:700;}
+  .we{font-size:12px;color:#666;line-height:1.6;margin-top:5px;background:#fafafa;
+      padding:6px 8px;border-radius:6px;border-left:3px solid #c9a96a;}
 </style>
 </head>
 <body>
@@ -78,9 +89,14 @@
       <div class="big" id="rscore">0</div>
       <div class="verdict" id="rverdict"></div>
       <div class="rrow"><span>答对题数</span><b id="rcorrect">0 / 99</b></div>
+      <div class="rrow"><span>答错题数</span><b id="rwrong">0 / 99</b></div>
       <div class="rrow"><span>折合百分制</span><b id="rpercent">0</b></div>
       <div class="rrow"><span>用时</span><b id="rtime">—</b></div>
       <div class="rrow"><span>防伪指纹</span><b id="rhash" style="font-size:11px;word-break:break-all;"></b></div>
+      <div id="wrongBox" class="wrongbox hidden">
+        <div class="wt">📕 错题清单与解析（共 <span id="wcount">0</span> 题）</div>
+        <div id="wrongList"></div>
+      </div>
       <div class="acts">
         <button class="ghost" onclick="shareResult()">生成成绩存证链接</button>
         <button class="ghost" onclick="location.reload()">重新测验</button>
@@ -94,6 +110,7 @@
 </div>
 
 <script src="questions.js"></script>
+<script src="explain.js"></script>
 <script>
 // ── 纯 JS sha256（无外部依赖，离线可用）─────────────
 function sha256(ascii){
@@ -138,6 +155,10 @@ function sha256(ascii){
   return result.slice(0,16);
 }
 
+function escapeHtml(s){
+  return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
 // ── 状态 ──────────────────────────────────────────────
 let Q=[], answers=[], cur=0, t0=0;
 
@@ -151,6 +172,7 @@ function startQuiz(){
   document.getElementById("start").classList.add("hidden");
   document.getElementById("result").classList.add("hidden");
   document.getElementById("quiz").classList.remove("hidden");
+  document.getElementById("wrongBox").classList.add("hidden");
   render();
 }
 
@@ -199,15 +221,42 @@ function finish(){
   document.getElementById("rtime").textContent=`${mm}:${ss}`;
   document.getElementById("rhash").textContent=fp;
 
+  // ── 生成错题清单与解析 ──
+  const wrong=[];
+  answers.forEach((a,i)=>{
+    if(a!==Q[i].answer){
+      const item=Q[i];
+      const optOf=idx=>item.opts.find(o=>o.i===idx);
+      const corr=optOf(item.answer);
+      const your=optOf(a);
+      const yourL=a===null?"—":String.fromCharCode(65+a);
+      const yourT=a===null?"（未作答）":(your?your.t:"（无效选项）");
+      const corrL=String.fromCharCode(65+item.answer);
+      const expl=(window.EXPLAIN&&window.EXPLAIN[item.id])?window.EXPLAIN[item.id]:"（本题暂无解析）";
+      wrong.push({q:item.q,yourL,yourT,corrL,corrT:corr.t,expl});
+    }
+  });
+  document.getElementById("wrongList").innerHTML=wrong.map(w=>`
+    <div class="witem">
+      <div class="wq">${escapeHtml(w.q)}</div>
+      <div class="wa">你的答案：<span class="bad">${escapeHtml(w.yourL)}. ${escapeHtml(w.yourT)}</span></div>
+      <div class="wa">正确答案：<span class="good">${escapeHtml(w.corrL)}. ${escapeHtml(w.corrT)}</span></div>
+      <div class="we">解析：${escapeHtml(w.expl)}</div>
+    </div>`).join("");
+  document.getElementById("wcount").textContent=wrong.length;
+  document.getElementById("rwrong").textContent=`${99-correct} / 99`;
+  const wb=document.getElementById("wrongBox");
+  if(wrong.length>0) wb.classList.remove("hidden"); else wb.classList.add("hidden");
+
   document.getElementById("quiz").classList.add("hidden");
   document.getElementById("result").classList.remove("hidden");
 
-  sessionStorage.setItem("fde_result",JSON.stringify({correct,pct,dur:mm+":"+ss,fp,pass}));
+  sessionStorage.setItem("fde_result",JSON.stringify({correct,wrong:99-correct,pct,dur:mm+":"+ss,fp,pass}));
 }
 
 function shareResult(){
   const r=JSON.parse(sessionStorage.getItem("fde_result")||"{}");
-  const url=`result.html?score=${r.pct}&correct=${r.correct}&time=${encodeURIComponent(r.dur)}&hash=${r.fp}&pass=${r.pass}`;
+  const url=`result.html?score=${r.pct}&correct=${r.correct}&wrong=${r.wrong}&time=${encodeURIComponent(r.dur)}&hash=${r.fp}&pass=${r.pass}`;
   window.open(url,"_blank");
 }
 </script>

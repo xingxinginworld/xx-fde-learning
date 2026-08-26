@@ -18,5 +18,15 @@
     "quiz_score": 99,
     "capstone_pass": false,
     "hash": "f26e2e8707decc95"
+  },
+  {
+    "id": "FDE-B-2026-00003",
+    "tier": "basic",
+    "tier_name": "结营基础证书",
+    "name": "孙宇",
+    "date": "2026-08-26",
+    "quiz_score": 99,
+    "capstone_pass": false,
+    "hash": "23eb4f8e413d9485"
   }
 ]

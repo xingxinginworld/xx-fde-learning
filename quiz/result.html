@@ -33,6 +33,7 @@
     <div class="big" id="rscore">—</div>
     <div class="verdict" id="rverdict">读取中…</div>
     <div class="row"><span>答对题数</span><b id="rcorrect">—</b></div>
+    <div class="row"><span>答错题数</span><b id="rwrong">—</b></div>
     <div class="row"><span>折合百分制</span><b id="rpercent">—</b></div>
     <div class="row"><span>用时</span><b id="rtime">—</b></div>
     <div class="row"><span>防伪指纹</span><b id="rhash" style="font-size:11px;word-break:break-all;"></b></div>
@@ -45,13 +46,14 @@
 </div>
 <script>
 const p=new URLSearchParams(location.search);
-const score=p.get("score"), correct=p.get("correct"), time=p.get("time"),
+const score=p.get("score"), correct=p.get("correct"), wrong=p.get("wrong"), time=p.get("time"),
       hash=p.get("hash"), pass=p.get("pass")==="true";
 document.getElementById("rscore").textContent=score??"—";
 const v=document.getElementById("rverdict");
 v.textContent=(pass?"✔ 通过 · 具备结营基础证书资格":"✘ 未通过 · 需 ≥80 分");
 v.className="verdict "+(pass?"pass":"fail");
 document.getElementById("rcorrect").textContent=(correct??"—")+" / 99";
+document.getElementById("rwrong").textContent=(wrong??"—")+" / 99";
 document.getElementById("rpercent").textContent=score??"—";
 document.getElementById("rtime").textContent=time??"—";
 document.getElementById("rhash").textContent=hash??"—";
