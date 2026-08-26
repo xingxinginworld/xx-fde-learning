@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "id": "FDE-B-2026-00001",
+    "tier": "basic",
+    "tier_name": "结营基础证书",
+    "name": "关星星",
+    "date": "2026-08-26",
+    "quiz_score": 99,
+    "capstone_pass": false,
+    "hash": "8e50c701c0124be3"
+  }
+]
