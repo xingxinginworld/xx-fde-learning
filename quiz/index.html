@@ -61,7 +61,7 @@
   <div class="sub">99 题 · 覆盖 Day00–Day18 · 通过线 ≥ 80 分（答对 ≥ 80 题）</div>
 
   <div id="start" class="card start">
-    <p>
+    <p id="startDesc">
       这是「FDE 学习先锋小队」的结营测验。<br/>
       题目随机抽取、选项乱序，请独立作答。<br/>
       完成后的成绩卡可在 9.9 学习群内截图提交，<br/>
@@ -110,7 +110,7 @@
         <button class="ghost" onclick="location.reload()">重新测验</button>
       </div>
     </div>
-    <div class="note">
+    <div class="note" id="resultNote">
       成绩卡请截图发到 9.9 学习群；群主核对指纹与用时后，<br/>
       将为你签发带编号结营证书，证书可在 GitHub Pages 验证页在线核验。
     </div>
@@ -175,9 +175,28 @@ const BANK = IS_INTER ? window.QUESTIONS_INTERMEDIATE : window.QUESTIONS;
 const EXPLAIN = IS_INTER ? window.EXPLAIN_INTERMEDIATE : window.EXPLAIN;
 const EXAM_LEN = IS_INTER ? BANK.length : 99;
 (function syncTitle(){
+  document.title = IS_INTER
+    ? 'FDE 学习先锋小队 · 中级认证测验（100 题）'
+    : 'FDE 学习先锋小队 · 99 题知识测验';
   document.querySelector('h1').textContent = IS_INTER ? 'FDE 学习先锋小队 · 中级认证测验' : 'FDE 学习先锋小队 · 知识测验';
   document.querySelector('.sub').textContent =
-    `${EXAM_LEN} 题 · ${IS_INTER ? '中级认证 · 通过后可申中级证书（需另过 capstone）' : '覆盖 Day00–Day18'} · 通过线 ≥ 80 分（答对 ≥ ${Math.round(EXAM_LEN*0.8)} 题）`;
+    IS_INTER
+      ? `${EXAM_LEN} 题 · 中级认证（49.9 FDE 中级专项学习微信群）· 通过并完成结营项目（Capstone）后可申中级证书 · 通过线 ≥ 80 分（答对 ≥ ${Math.round(EXAM_LEN*0.8)} 题）`
+      : `${EXAM_LEN} 题 · 覆盖 Day00–Day18 · 通过线 ≥ 80 分（答对 ≥ ${Math.round(EXAM_LEN*0.8)} 题）`;
+  document.getElementById('startDesc').innerHTML = IS_INTER
+    ? '这是「FDE 学习先锋小队」的<b>中级认证测验</b>。<br/>'
+      + '题目随机抽取、选项乱序，请独立作答。<br/>'
+      + '完成后的成绩卡请在 <b>49.9 FDE 中级专项学习微信群</b>内截图提交，<br/>'
+      + '测验通过并完成结营项目（Capstone）后，签发带编号的中级证书（GitHub 在线可查）。'
+    : '这是「FDE 学习先锋小队」的结营测验。<br/>'
+      + '题目随机抽取、选项乱序，请独立作答。<br/>'
+      + '完成后的成绩卡可在 9.9 学习群内截图提交，<br/>'
+      + '通过即发放带编号的结营证书（GitHub 在线可查）。';
+  document.getElementById('resultNote').innerHTML = IS_INTER
+    ? '成绩卡请截图发到 <b>49.9 FDE 中级专项学习微信群</b>；群主核对指纹与用时后，<br/>'
+      + '你需再完成结营项目（Capstone）并达标，方可签发带编号中级证书（GitHub Pages 可核验）。'
+    : '成绩卡请截图发到 9.9 学习群；群主核对指纹与用时后，<br/>'
+      + '将为你签发带编号结营证书，证书可在 GitHub Pages 验证页在线核验。';
 })();
 
 // ── 状态 ──────────────────────────────────────────────
@@ -221,7 +240,7 @@ function render(){
 
 function prev(){if(cur>0){cur--;render();}}
 function next(){
-  if(cur<98){cur++;render();}
+  if(cur<EXAM_LEN-1){cur++;render();}
   else finish();
 }
 
@@ -232,13 +251,16 @@ function finish(){
   const dur=Math.round((Date.now()-t0)/1000);
   const mm=String(Math.floor(dur/60)).padStart(2,"0"), ss=String(dur%60).padStart(2,"0");
   const fp=sha256(answers.join(",")+"|"+dur+"|"+"fde-learning");
-  const pass=correct>=80;
+  const passLine=Math.round(EXAM_LEN*0.8);
+  const pass=correct>=passLine;
 
   document.getElementById("rscore").textContent=pct;
   const v=document.getElementById("rverdict");
-  v.textContent=pass?"✔ 通过 · 具备结营基础证书资格":"✘ 未通过 · 再接再厉";
+  v.textContent=pass
+    ? (IS_INTER?"✔ 通过 · 具备结营中级证书申请资格（需另过 Capstone）":"✔ 通过 · 具备结营基础证书资格")
+    : "✘ 未通过 · 再接再厉";
   v.className="verdict "+(pass?"pass":"fail");
-  document.getElementById("rcorrect").textContent=`${correct} / 99`;
+  document.getElementById("rcorrect").textContent=`${correct} / ${EXAM_LEN}`;
   document.getElementById("rpercent").textContent=pct;
   document.getElementById("rtime").textContent=`${mm}:${ss}`;
   document.getElementById("rhash").textContent=fp;

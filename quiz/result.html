@@ -39,7 +39,7 @@
     <div class="row"><span>防伪指纹</span><b id="rhash" style="font-size:11px;word-break:break-all;"></b></div>
     <div class="fp">说明：指纹由『作答序列 + 用时 + 站点盐值』哈希生成，用于群主核验成绩真实性，不可篡改。</div>
   </div>
-  <div class="note">
+  <div class="note" id="rnote">
     将本页截图发到 9.9 学习群，群主核对指纹后即可为你签发带编号结营证书。<br/>
     证书核验：xx-fde-learning 仓库 certs/verify.html（GitHub Pages）。
   </div>
@@ -50,7 +50,12 @@ const IS_INTER=p.get("bank")==="inter";
 const TOTAL=IS_INTER?100:99;
 const score=p.get("score"), correct=p.get("correct"), wrong=p.get("wrong"), time=p.get("time"),
       hash=p.get("hash"), pass=p.get("pass")==="true";
-if(IS_INTER) document.getElementById("rsub").textContent="FDE 学习先锋小队 · 中级认证测验（100 题）";
+if(IS_INTER){
+  document.getElementById("rsub").textContent="FDE 学习先锋小队 · 中级认证测验（100 题）";
+  document.getElementById("rnote").innerHTML=
+    "将本页截图发到 <b>49.9 FDE 中级专项学习微信群</b>，群主核对指纹后，<br/>"+
+    "你需再完成结营项目（Capstone）并达标，方可签发带编号中级证书。证书核验：certs/verify.html（GitHub Pages）。";
+}
 document.getElementById("rscore").textContent=score??"—";
 const v=document.getElementById("rverdict");
 v.textContent=(pass?(IS_INTER?"✔ 通过 · 具备申中级证书资格（需另过 capstone）":"✔ 通过 · 具备结营基础证书资格"):"✘ 未通过 · 需 ≥80 分");
