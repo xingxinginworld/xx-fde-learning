@@ -1,0 +1,19 @@
+# 密钥（绝不入库）
+.env
+.env.*
+!.env.template
+
+# 运行时生成物（索引含真实分块，按需本地重建；日志含运行痕迹）
+index/
+logs/
+eval_result.json
+
+# Python 缓存
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# 系统
+.DS_Store
+Thumbs.db
