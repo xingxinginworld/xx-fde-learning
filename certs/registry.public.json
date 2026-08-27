@@ -28,5 +28,16 @@
     "quiz_score": 99,
     "capstone_pass": false,
     "hash": "23eb4f8e413d9485"
+  },
+  {
+    "id": "FDE-I-2026-00001",
+    "tier": "intermediate",
+    "tier_name": "结营中级证书",
+    "name": "关星星",
+    "date": "2026-08-27",
+    "quiz_score": 97,
+    "capstone_pass": true,
+    "capstone_score": 90,
+    "hash": "d548ab1d414ec2b8"
   }
 ]
